@@ -2,7 +2,7 @@ package com.Jeka8833.TNTServer.packet.packets;
 
 import com.Jeka8833.TNTServer.Main;
 import com.Jeka8833.TNTServer.TNTUser;
-import com.Jeka8833.TNTServer.dataBase.TNTClientBDManager;
+import com.Jeka8833.TNTServer.dataBase.TNTClientDBManager;
 import com.Jeka8833.TNTServer.packet.Packet;
 import com.Jeka8833.TNTServer.packet.PacketInputStream;
 import com.Jeka8833.TNTServer.packet.PacketOutputStream;
@@ -31,7 +31,7 @@ public class RequestPlayerStatusPacket implements Packet {
 
     @Override
     public void serverProcess(WebSocket socket, TNTUser user) {
-        TNTClientBDManager.readOrCashUser(users, tntUsers ->
+        TNTClientDBManager.readOrCashUser(users, tntUsers ->
                 Main.serverSend(socket, new SendPlayerStatusPacket(tntUsers, user.donate > 50)), true);
     }
 }

@@ -1,7 +1,7 @@
 package com.Jeka8833.TNTServer;
 
 import com.Jeka8833.TNTServer.dataBase.DatabaseManager;
-import com.Jeka8833.TNTServer.dataBase.TNTClientBDManager;
+import com.Jeka8833.TNTServer.dataBase.TNTClientDBManager;
 import com.Jeka8833.TNTServer.packet.Packet;
 import com.Jeka8833.TNTServer.packet.PacketInputStream;
 import com.Jeka8833.TNTServer.packet.PacketOutputStream;
@@ -115,12 +115,12 @@ public class Main extends WebSocketServer {
 
             server = new Main(new InetSocketAddress(Integer.parseInt(Util.getParam(args, "-server_port"))));
             server.start();
-            TNTClientBDManager.init();
+            TNTClientDBManager.init();
         } finally {
-            TNTClientBDManager.writeUsers(TNTUser.keyUserList.values().stream()
+            TNTClientDBManager.writeUsers(TNTUser.keyUserList.values().stream()
                     .filter(tntUser -> tntUser.key != null && tntUser.version != null)
                     .map(tntUser -> tntUser.user).toList(), null);
-            TNTClientBDManager.forceWrite();
+            TNTClientDBManager.forceWrite();
         }
     }
 }

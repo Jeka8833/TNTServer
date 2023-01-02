@@ -11,9 +11,9 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class TNTClientBDManager {
+public class TNTClientDBManager {
 
-    private static final Logger LOGGER = LogManager.getLogger(TNTClientBDManager.class);
+    private static final Logger LOGGER = LogManager.getLogger(TNTClientDBManager.class);
     private static final DateFormat FORMATTER = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     private static final Map<UUID, UserQuire> USERS = new HashMap<>();
@@ -47,7 +47,7 @@ public class TNTClientBDManager {
         infinityThread.start();
     }
 
-    public static void forceRead() {
+    private static void forceRead() {
         final List<UserQuire> needRead = USERS.values().stream().filter(UserQuire::isRead).toList();
         if (!needRead.isEmpty()) {
             try {
@@ -173,7 +173,7 @@ public class TNTClientBDManager {
     /**
      * @param callbackList May not return some users if there is a failure in the database or other circumstances.
      */
-    public static void readUsers(final List<UUID> users, final UsersCallback callbackList, final boolean fillDefault) {
+    private static void readUsers(final List<UUID> users, final UsersCallback callbackList, final boolean fillDefault) {
         if (callbackList == null) {
             for (UUID uuid : users)
                 readUser(uuid, null);
@@ -222,7 +222,7 @@ public class TNTClientBDManager {
     /**
      * @param callback Will return null in callback if the database response has timed out or other circumstances.
      */
-    public static void readUser(final UUID uuid, final UserCallback callback) {
+    private static void readUser(final UUID uuid, final UserCallback callback) {
         final UserQuire quire = USERS.getOrDefault(uuid, new UserQuire(uuid));
         quire.needRead();
         if (callback != null) quire.addReadCallback(callback);
@@ -243,7 +243,7 @@ public class TNTClientBDManager {
         private final UUID user;
         private final List<UserCallback> readCallbackList = new ArrayList<>();
         private final List<UserCallback> writeCallbackList = new ArrayList<>();
-        private final long timeout = System.currentTimeMillis() + 30_000; // Wait 30 second
+        private long timeout = System.currentTimeMillis() + 20_000; // Wait 30 second
 
         private boolean needRead;
         private boolean needWrite;
@@ -253,14 +253,21 @@ public class TNTClientBDManager {
         }
 
         public boolean isNeed() {
+            if (!needRead && !needWrite) return false;
+
             if (timeout < System.currentTimeMillis()) {
-                LOGGER.warn("Timeout get or read information for user: " + user);
+                if (needRead) {
+                    LOGGER.warn("Timeout read information, user: " + user + " user in query: " + isRead());
+                }
+                if (needWrite) {
+                    LOGGER.warn("Timeout write information, user: " + user + " user in query: " + isWrite());
+                }
 
                 callRead(null);
                 callWrite(null);
                 return false;
             }
-            return needRead || needWrite;
+            return true;
         }
 
         /*
@@ -307,10 +314,12 @@ public class TNTClientBDManager {
         }
 
         public void needRead() {
+            timeout = System.currentTimeMillis() + 20_000;
             this.needRead = true;
         }
 
         public void needWrite() {
+            timeout = System.currentTimeMillis() + 20_000;
             this.needWrite = true;
         }
     }

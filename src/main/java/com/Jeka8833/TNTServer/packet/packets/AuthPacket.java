@@ -2,7 +2,7 @@ package com.Jeka8833.TNTServer.packet.packets;
 
 import com.Jeka8833.TNTServer.Main;
 import com.Jeka8833.TNTServer.TNTUser;
-import com.Jeka8833.TNTServer.dataBase.TNTClientBDManager;
+import com.Jeka8833.TNTServer.dataBase.TNTClientDBManager;
 import com.Jeka8833.TNTServer.packet.Packet;
 import com.Jeka8833.TNTServer.packet.PacketInputStream;
 import com.Jeka8833.TNTServer.packet.PacketOutputStream;
@@ -64,13 +64,13 @@ public class AuthPacket implements Packet {
                     case Util.GOOD_AUTH -> {
                         socket.setAttachment(key);
 
-                        TNTClientBDManager.readOrCashUser(this.user, tntUser -> {
+                        TNTClientDBManager.readOrCashUser(this.user, tntUser -> {
                             final TNTUser account = tntUser == null ? new TNTUser(this.user, this.key, this.version) : tntUser;
                             account.key = key;
                             account.version = version;
                             account.timeLogin = System.currentTimeMillis();
                             TNTUser.addUser(account);
-                            TNTClientBDManager.writeUser(this.user, null);
+                            TNTClientDBManager.writeUser(this.user, null);
                             Main.serverSend(socket, new BlockModulesPacket(account.forceBlock, account.forceActive));
                         });
                     }
