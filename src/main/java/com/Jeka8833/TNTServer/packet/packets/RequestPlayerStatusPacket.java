@@ -18,7 +18,7 @@ public class RequestPlayerStatusPacket implements Packet {
     private final List<UUID> users = new ArrayList<>();
 
     @Override
-    public void write(PacketOutputStream stream) throws IOException {
+    public void write(PacketOutputStream stream) {
         throw new NullPointerException("Fail write packet");
     }
 

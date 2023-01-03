@@ -36,6 +36,13 @@ public class ChatPacket implements Packet {
 
     @Override
     public void serverProcess(WebSocket socket, TNTUser user) {
-        Main.serverBroadcast(new ChatPacket(user.user, text));
+        // Fixed Log4j exploit
+        String fixedText = text.replaceAll("\\$\\{.+}", "***")
+                .replaceAll(
+                        "(http|ftp|https)://([\\w_\\-]+(?:\\.[\\w_\\-]+)+)([\\w.,@?^=%&:/~+#\\-]*[\\w@?^=%&/~+#\\-])",
+                        "***");
+
+
+        Main.serverBroadcast(new ChatPacket(user.user, fixedText));
     }
 }

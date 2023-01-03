@@ -36,7 +36,7 @@ public record SendPlayerStatusPacket(List<TNTUser> users, boolean isAdmin) imple
     }
 
     @Override
-    public void read(PacketInputStream stream) throws IOException {
+    public void read(PacketInputStream stream) {
         throw new NullPointerException("Fail read packet");
     }
 

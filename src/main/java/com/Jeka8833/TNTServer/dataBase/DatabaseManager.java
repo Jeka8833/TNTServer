@@ -40,7 +40,7 @@ public class DatabaseManager {
                 close();
                 connect();
             }
-        } catch (SQLException throwables) {
+        } catch (SQLException throwable) {
             close();
             connect();
         }

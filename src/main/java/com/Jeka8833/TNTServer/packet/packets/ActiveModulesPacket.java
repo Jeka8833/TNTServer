@@ -13,7 +13,7 @@ public class ActiveModulesPacket implements Packet {
     private long activeModules = 0;
 
     @Override
-    public void write(PacketOutputStream stream) throws IOException {
+    public void write(PacketOutputStream stream) {
         throw new NullPointerException("Fail write packet");
     }
 

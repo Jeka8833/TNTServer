@@ -29,7 +29,7 @@ public class BlockModulesPacket implements Packet {
     }
 
     @Override
-    public void read(PacketInputStream stream) throws IOException {
+    public void read(PacketInputStream stream) {
         throw new NullPointerException("Fail read packet");
     }
 

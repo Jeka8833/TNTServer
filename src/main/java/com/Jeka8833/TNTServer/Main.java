@@ -9,8 +9,10 @@ import com.Jeka8833.TNTServer.packet.packets.*;
 import com.Jeka8833.TNTServer.util.BiMap;
 import com.Jeka8833.TNTServer.util.Util;
 import com.google.gson.Gson;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.io.IoBuilder;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
@@ -108,6 +110,15 @@ public class Main extends WebSocketServer {
     }
 
     public static void main(String[] args) {
+        System.setOut(
+                IoBuilder.forLogger(LogManager.getLogger("system.out"))
+                        .setLevel(Level.INFO)
+                        .buildPrintStream());
+        System.setErr(
+                IoBuilder.forLogger(LogManager.getLogger("system.err"))
+                        .setLevel(Level.ERROR)
+                        .buildPrintStream());
+
         try {
             logger.info("TNTServer start");
             DatabaseManager.initConnect(Util.getParam(args, "-db_ip"), Util.getParam(args, "-db_user"),

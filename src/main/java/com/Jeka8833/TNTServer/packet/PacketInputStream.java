@@ -18,7 +18,6 @@ public class PacketInputStream extends DataInputStream {
             throw new RuntimeException("Very big data");
 
         packet = Main.packetsList.get(readByte()).getDeclaredConstructor().newInstance();
-        //System.out.println("In: " + packet);
     }
 
     public final UUID readUUID() throws IOException {

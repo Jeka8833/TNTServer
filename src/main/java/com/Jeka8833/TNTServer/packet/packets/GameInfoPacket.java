@@ -13,7 +13,7 @@ public class GameInfoPacket implements Packet {
     private String gameInfo;
 
     @Override
-    public void write(PacketOutputStream stream) throws IOException {
+    public void write(PacketOutputStream stream) {
         throw new NullPointerException("Fail read packet");
     }
 
