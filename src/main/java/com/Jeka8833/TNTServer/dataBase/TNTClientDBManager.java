@@ -159,7 +159,7 @@ public class TNTClientDBManager {
             TNTUser user = TNTUser.uuid2User.get(quire.user);
             if (user == null) continue;
 
-            sqlRequest.add("('" + user.user + "','" + (user.key == null ? "" : user.key) + "','" + user.version + "','"
+            sqlRequest.add("('" + user.user + "'," + (user.key == null ? "NULL" : "'" + user.key + "'") + ",'" + user.version + "','"
                     + FORMATTER.format(new Date(user.timeLogin)) + "'," + user.forceBlock
                     + "," + user.donate + "," + user.status + ")");
         }
