@@ -41,7 +41,7 @@ public class Main extends WebSocketServer {
         packetsList.put((byte) 7, BlockModulesPacket.class);
         packetsList.put((byte) 8, GameInfoPacket.class);
         packetsList.put((byte) 9, FightPacket.class);
-
+        packetsList.put((byte) 10, AuthV2Packet.class);
     }
 
     public Main(final InetSocketAddress address) {
@@ -65,9 +65,9 @@ public class Main extends WebSocketServer {
     @Override
     public void onMessage(WebSocket conn, ByteBuffer message) {
         try (final PacketInputStream stream = new PacketInputStream(message)) {
-            final UUID key = conn.getAttachment();
-            final TNTUser user = TNTUser.keyUserList.get(key);
-            if (user == null && !(stream.packet instanceof AuthPacket)) {
+            final UUID uuid = conn.getAttachment();
+            final TNTUser user = uuid == null ? null : TNTUser.uuid2User.get(uuid);
+            if (user == null && !(stream.packet instanceof AuthPacket || stream.packet instanceof AuthV2Packet)) {
                 conn.close();
             } else {
                 stream.packet.read(stream);
@@ -128,8 +128,8 @@ public class Main extends WebSocketServer {
             server.start();
             TNTClientDBManager.init();
         } finally {
-            TNTClientDBManager.writeUsers(TNTUser.keyUserList.values().stream()
-                    .filter(tntUser -> tntUser.key != null && tntUser.version != null)
+            TNTClientDBManager.writeUsers(TNTUser.uuid2User.values().stream()
+                    .filter(tntUser -> tntUser.version != null)
                     .map(tntUser -> tntUser.user).toList(), null);
             TNTClientDBManager.forceWrite();
         }

@@ -29,7 +29,11 @@ public class FightPacket implements Packet {
     @Override
     public void write(PacketOutputStream stream) throws IOException {
         final List<TNTUser> users = activeConnection.stream()
-                .map(webSocket -> TNTUser.keyUserList.get((UUID) webSocket.getAttachment()))
+                .map(webSocket -> {
+                    UUID user = webSocket.getAttachment();
+                    if(user == null) return null;
+                    return TNTUser.uuid2User.get(user);
+                })
                 .filter(tntUser -> tntUser != null && tntUser.fight != 0).toList();
 
         stream.writeByte(users.size());

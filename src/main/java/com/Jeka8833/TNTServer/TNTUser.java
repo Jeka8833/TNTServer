@@ -1,9 +1,12 @@
 package com.Jeka8833.TNTServer;
 
-import java.util.HashMap;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class TNTUser {
 
@@ -12,8 +15,8 @@ public class TNTUser {
     public static final byte STATUS_INVISIBLE = 1;
     public static final byte STATUS_OFFLINE = 0;
 
-    public final UUID user;
-    public UUID key;
+    public @NotNull UUID user;
+    public @Nullable UUID key;
     public String version;
     public String gameInfo;
 
@@ -30,7 +33,11 @@ public class TNTUser {
 
     public int fight;
 
-    public TNTUser(final UUID user, final UUID key, final String version) {
+    public TNTUser(@NotNull UUID user, final String version) {
+        this(user, null, version);
+    }
+
+    public TNTUser(@NotNull UUID user, @Nullable UUID key, final String version) {
         this.user = user;
         this.key = key;
         this.version = version;
@@ -58,7 +65,7 @@ public class TNTUser {
 
     @Override
     public int hashCode() {
-        return user != null ? user.hashCode() : 0;
+        return user.hashCode();
     }
 
     @Override
@@ -80,17 +87,9 @@ public class TNTUser {
     }
 
     public static void addUser(final TNTUser tntUser) {
-        user2key.put(tntUser.user, tntUser.key);
-        keyUserList.put(tntUser.key, tntUser);
+        uuid2User.put(tntUser.user, tntUser);
         tntUser.heartBeat();
     }
 
-    public static void removeUser(final UUID key) {
-        final TNTUser user = TNTUser.keyUserList.remove(key);
-        if (user != null)
-            TNTUser.user2key.remove(user.user);
-    }
-
-    public static final Map<UUID, TNTUser> keyUserList = new HashMap<>();
-    public static final Map<UUID, UUID> user2key = new HashMap<>();
+    public static final Map<UUID, TNTUser> uuid2User = new ConcurrentHashMap<>();
 }

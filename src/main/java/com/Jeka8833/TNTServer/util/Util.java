@@ -19,7 +19,7 @@ public class Util {
     public static final int KEY_THROTTLING = 4;
 
     private static final Logger logger = LogManager.getLogger(Util.class);
-    private static final HttpClient client = HttpClient.newHttpClient();
+    public static final HttpClient client = HttpClient.newHttpClient();
 
     public static String getParam(final String[] args, final String key) {
         for (int i = 0; i < args.length - 1; i++)
@@ -60,6 +60,8 @@ public class Util {
 
     private static class Record {
         private UUID owner;
+        private int limit;
+        private int queriesInPastMin;
     }
 
 }

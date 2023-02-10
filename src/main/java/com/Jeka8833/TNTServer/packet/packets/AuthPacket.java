@@ -16,7 +16,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 public class AuthPacket implements Packet {
 
-    private static final ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(5);
+    public static final ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(5);
 
     public UUID user;
     public UUID key;
@@ -53,24 +53,30 @@ public class AuthPacket implements Packet {
             Main.serverSend(socket, new AuthPacket(5, "This server is overloading"));
             socket.close();
         } else {
-            if (TNTUser.keyUserList.containsKey(key)) {
-                final UUID realUUID = TNTUser.keyUserList.get(key).user;
-                TNTUser.removeUser(realUUID);
+            if (this.user == null || this.key == null) {
+                Main.serverSend(socket, new AuthPacket(Util.FAIL_CONNECTION,
+                        "Internal server error"));
+                socket.close();
             }
+
+            TNTUser.uuid2User.remove(this.user);
 
             executor.execute(() -> {
                 int status = Util.checkKey(this.user, key);
                 switch (status) {
                     case Util.GOOD_AUTH -> {
-                        socket.setAttachment(key);
+                        socket.setAttachment(this.user);
 
                         TNTClientDBManager.readOrCashUser(this.user, tntUser -> {
                             final TNTUser account = tntUser == null ? new TNTUser(this.user, this.key, this.version) : tntUser;
                             account.key = key;
                             account.version = version;
                             account.timeLogin = System.currentTimeMillis();
+                            account.heartBeat();
                             TNTUser.addUser(account);
+
                             TNTClientDBManager.writeUser(this.user, null);
+
                             Main.serverSend(socket, new BlockModulesPacket(account.forceBlock, account.forceActive));
                         });
                     }
