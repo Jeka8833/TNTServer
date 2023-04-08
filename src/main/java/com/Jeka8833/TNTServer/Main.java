@@ -42,6 +42,7 @@ public class Main extends WebSocketServer {
         packetsList.put((byte) 8, GameInfoPacket.class);
         packetsList.put((byte) 9, FightPacket.class);
         packetsList.put((byte) 10, AuthV2Packet.class);
+        packetsList.put((byte) 11, PlayersPingPacket.class);
     }
 
     public Main(final InetSocketAddress address) {

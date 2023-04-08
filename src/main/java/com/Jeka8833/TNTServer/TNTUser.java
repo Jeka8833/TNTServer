@@ -1,5 +1,6 @@
 package com.Jeka8833.TNTServer;
 
+import com.Jeka8833.TNTServer.util.PlayerPing;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -17,6 +18,7 @@ public class TNTUser {
 
     public @NotNull UUID user;
     public @Nullable UUID key;
+    public @Nullable PlayerPing playerPing;
     public String version;
     public String gameInfo;
 

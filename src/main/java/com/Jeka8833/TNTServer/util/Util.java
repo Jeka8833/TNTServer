@@ -60,8 +60,5 @@ public class Util {
 
     private static class Record {
         private UUID owner;
-        private int limit;
-        private int queriesInPastMin;
     }
-
 }

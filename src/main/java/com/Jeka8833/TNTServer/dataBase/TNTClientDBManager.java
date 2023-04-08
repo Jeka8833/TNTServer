@@ -79,8 +79,18 @@ public class TNTClientDBManager {
         }
     }
 
+    @NotNull
+    public static Set<Map.Entry<UUID, TNTUser>> getLoadedUsers() {
+        return TNTUser.uuid2User.entrySet();
+    }
+
+    @Nullable
+    public static TNTUser getUser(@NotNull UUID uuid) {
+        return TNTUser.uuid2User.get(uuid);
+    }
+
     public static void readOrCashUser(@NotNull UUID uuid, final UserCallback callback) {
-        TNTUser user = TNTUser.uuid2User.get(uuid);
+        TNTUser user = getUser(uuid);
         if (user == null) {
             readUser(uuid, callback);
         } else {
@@ -92,7 +102,7 @@ public class TNTClientDBManager {
         final List<UUID> needRequest = new ArrayList<>();
         final List<TNTUser> returnUsers = new ArrayList<>();
         for (UUID uuid : users) {
-            TNTUser user = TNTUser.uuid2User.get(uuid);
+            TNTUser user = getUser(uuid);
             if (user == null) {
                 needRequest.add(uuid);
             } else {
@@ -156,7 +166,7 @@ public class TNTClientDBManager {
                         "\"blockModules\" = EXCLUDED.\"blockModules\", \"donate\" = EXCLUDED.\"donate\", " +
                         "\"status\" = EXCLUDED.\"status\"");
         for (UserQuire quire : userList) {
-            TNTUser user = TNTUser.uuid2User.get(quire.user);
+            TNTUser user = getUser(quire.user);
             if (user == null) continue;
 
             sqlRequest.add("('" + user.user + "'," + (user.key == null ? "NULL" : "'" + user.key + "'") + ",'" + user.version + "','"
@@ -167,7 +177,7 @@ public class TNTClientDBManager {
         DatabaseManager.db.checkConnect();
         DatabaseManager.db.statement.executeUpdate(sqlRequest.toString()); // Maybe throw an exception
 
-        for (UserQuire quire : userList) quire.callWrite(TNTUser.uuid2User.get(quire.user));
+        for (UserQuire quire : userList) quire.callWrite(getUser(quire.user));
     }
 
     /**
@@ -285,14 +295,26 @@ public class TNTClientDBManager {
         }
 
         public void callRead(@Nullable TNTUser tntUser) {
-            for (UserCallback callback : readCallbackList) callback.update(tntUser);
+            for (UserCallback callback : readCallbackList) {
+                try {
+                    callback.update(tntUser);
+                } catch (Exception e) {
+                    LOGGER.warn("Read callback throw exception", e);
+                }
+            }
             readCallbackList.clear();
 
             needRead = false;
         }
 
         public void callWrite(@Nullable TNTUser tntUser) {
-            for (UserCallback callback : writeCallbackList) callback.update(tntUser);
+            for (UserCallback callback : writeCallbackList) {
+                try {
+                    callback.update(tntUser);
+                } catch (Exception e) {
+                    LOGGER.warn("Write callback throw exception", e);
+                }
+            }
             writeCallbackList.clear();
 
             needWrite = false;
