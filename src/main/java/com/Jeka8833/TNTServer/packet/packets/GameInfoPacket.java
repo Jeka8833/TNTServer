@@ -24,6 +24,11 @@ public class GameInfoPacket implements Packet {
 
     @Override
     public void serverProcess(WebSocket socket, TNTUser user) {
+        if (user == null) {
+            socket.close();
+            return;
+        }
+
         user.gameInfo = gameInfo;
     }
 }

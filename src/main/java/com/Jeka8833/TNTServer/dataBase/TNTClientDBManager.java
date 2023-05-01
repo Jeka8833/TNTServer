@@ -7,11 +7,11 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TNTClientDBManager {
@@ -19,10 +19,9 @@ public class TNTClientDBManager {
     private static final Logger LOGGER = LogManager.getLogger(TNTClientDBManager.class);
     private static final DateFormat FORMATTER = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-    private static final Map<UUID, UserQuire> USERS = new ConcurrentHashMap<>();
+    private static final Map<UUID, UserQuire> USER_REQUEST_LIST = new ConcurrentHashMap<>();
 
     public static void init() {
-        // scheduleWithFixedDelay crashes
         var infinityThread = new Thread(() -> {
             while (true) {
                 try {
@@ -31,9 +30,9 @@ public class TNTClientDBManager {
 
                     TNTUser.uuid2User.values().removeIf(TNTUser::isUserDead);
 
-                    USERS.values().removeIf(userQuire -> !userQuire.isNeed());
+                    USER_REQUEST_LIST.values().removeIf(userQuire -> !userQuire.isNeed());
 
-                    Thread.sleep(5000);
+                    Thread.sleep(3000);
                 } catch (Exception e) {
                     LOGGER.warn("DB Tick error:", e);
                 }
@@ -44,7 +43,7 @@ public class TNTClientDBManager {
     }
 
     private static void forceRead() {
-        final List<UserQuire> needRead = USERS.values().stream().filter(UserQuire::isRead).toList();
+        final List<UserQuire> needRead = USER_REQUEST_LIST.values().stream().filter(UserQuire::isRead).toList();
         if (!needRead.isEmpty()) {
             try {
                 read(needRead);
@@ -53,7 +52,7 @@ public class TNTClientDBManager {
                 for (UserQuire quire : needRead) {
                     try {
                         read(Collections.singletonList(quire));
-                    } catch (SQLException ex) {
+                    } catch (Exception ex) {
                         LOGGER.warn("User Read Error: " + quire.user + ", error: ", ex);
                     }
                 }
@@ -61,8 +60,33 @@ public class TNTClientDBManager {
         }
     }
 
+    private static void read(@NotNull Collection<UserQuire> userList) throws Exception {
+        var joiner = new StringJoiner("','",
+                "SELECT * FROM \"TC_Players\" WHERE \"user\" IN ('", "')");
+
+        for (UserQuire quire : userList) joiner.add(quire.user.toString());
+
+        DatabaseManager.db.checkConnect();
+        try (ResultSet resultSet = DatabaseManager.db.statement.executeQuery(joiner.toString())) { // Throw force exit
+            while (resultSet.next()) {
+                TNTUser user = TNTUser.uuid2User.computeIfAbsent(
+                        resultSet.getObject("user", UUID.class), TNTUser::new);
+                user.version = resultSet.getString("version");
+
+                final Date date = resultSet.getTimestamp("timeLogin");
+                user.timeLogin = date == null ? System.currentTimeMillis() : date.getTime();
+
+                user.forceBlock = resultSet.getLong("blockModules");
+                user.donate = resultSet.getByte("donate");
+                user.status = resultSet.getByte("status");
+            }
+        }
+
+        for (UserQuire quire : userList) quire.callRead();
+    }
+
     public static void forceWrite() {
-        final List<UserQuire> needWrite = USERS.values().stream().filter(UserQuire::isWrite).toList();
+        final List<UserQuire> needWrite = USER_REQUEST_LIST.values().stream().filter(UserQuire::isWrite).toList();
         if (!needWrite.isEmpty()) {
             try {
                 write(needWrite);
@@ -71,7 +95,7 @@ public class TNTClientDBManager {
                 for (UserQuire quire : needWrite) {
                     try {
                         write(Collections.singletonList(quire));
-                    } catch (SQLException ex) {
+                    } catch (Exception ex) {
                         LOGGER.warn("User Write Error: " + quire.user + ", error: ", ex);
                     }
                 }
@@ -79,97 +103,19 @@ public class TNTClientDBManager {
         }
     }
 
-    @NotNull
-    public static Set<Map.Entry<UUID, TNTUser>> getLoadedUsers() {
-        return TNTUser.uuid2User.entrySet();
-    }
+    private static void write(@NotNull Collection<UserQuire> userList) throws Exception {
+        var sqlRequest = new StringJoiner(",",
+                "INSERT INTO \"TC_Players\" (\"user\", \"version\", " +
+                        "\"timeLogin\", \"blockModules\", \"donate\", \"status\") VALUES ",
 
-    @Nullable
-    public static TNTUser getUser(@NotNull UUID uuid) {
-        return TNTUser.uuid2User.get(uuid);
-    }
-
-    public static void readOrCashUser(@NotNull UUID uuid, final UserCallback callback) {
-        TNTUser user = getUser(uuid);
-        if (user == null) {
-            readUser(uuid, callback);
-        } else {
-            callback.update(user);
-        }
-    }
-
-    public static void readOrCashUser(final List<UUID> users, final UsersCallback callbackList, final boolean fillDefault) {
-        final List<UUID> needRequest = new ArrayList<>();
-        final List<TNTUser> returnUsers = new ArrayList<>();
-        for (UUID uuid : users) {
-            TNTUser user = getUser(uuid);
-            if (user == null) {
-                needRequest.add(uuid);
-            } else {
-                returnUsers.add(user);
-            }
-        }
-        if (needRequest.isEmpty()) {
-            callbackList.update(returnUsers);
-        } else {
-            readUsers(needRequest, tntUsers -> {
-                returnUsers.addAll(tntUsers);
-                callbackList.update(returnUsers);
-            }, fillDefault);
-        }
-    }
-
-    private static void read(final List<UserQuire> userList) throws SQLException {
-        if (userList == null || userList.isEmpty()) return;
-
-        var joiner = new StringJoiner("','",
-                "SELECT * FROM \"TC_Players\" WHERE \"user\" IN ('", "')");
-
-        for (UserQuire quire : userList) joiner.add(quire.user.toString());
-
-        DatabaseManager.db.checkConnect();
-        try (ResultSet resultSet = DatabaseManager.db.statement.executeQuery(joiner.toString())) { // Throw force exit
-            try {
-                while (resultSet.next()) {
-                    var tntUser = new TNTUser(resultSet.getObject("user", UUID.class),
-                            resultSet.getObject("key", UUID.class), resultSet.getString("version"));
-
-                    final Date date = resultSet.getTimestamp("timeLogin");
-                    tntUser.timeLogin = date == null ? System.currentTimeMillis() : date.getTime();
-                    tntUser.forceBlock = resultSet.getLong("blockModules");
-                    tntUser.donate = resultSet.getByte("donate");
-                    tntUser.status = resultSet.getByte("status");
-
-
-                    for (UserQuire quire : userList) {
-                        if (quire.user.equals(tntUser.user)) {
-                            quire.callRead(tntUser);
-                            break;
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                LOGGER.warn("Fail read data");
-            }
-        }
-
-        for (UserQuire quire : userList) quire.callRead(null);
-    }
-
-    private static void write(final List<UserQuire> userList) throws SQLException {
-        if (userList == null || userList.isEmpty()) return;
-
-        var sqlRequest = new StringJoiner(",", "INSERT INTO \"TC_Players\" (\"user\", \"key\", " +
-                "\"version\", \"timeLogin\", \"blockModules\", \"donate\", \"status\") VALUES ",
-                " ON CONFLICT (\"user\") DO UPDATE SET \"key\" = EXCLUDED.\"key\", " +
-                        "\"version\" = EXCLUDED.\"version\", \"timeLogin\" = EXCLUDED.\"timeLogin\", " +
-                        "\"blockModules\" = EXCLUDED.\"blockModules\", \"donate\" = EXCLUDED.\"donate\", " +
-                        "\"status\" = EXCLUDED.\"status\"");
+                " ON CONFLICT (\"user\") DO UPDATE SET \"version\" = EXCLUDED.\"version\", " +
+                        "\"timeLogin\" = EXCLUDED.\"timeLogin\", \"blockModules\" = EXCLUDED.\"blockModules\", " +
+                        "\"donate\" = EXCLUDED.\"donate\", \"status\" = EXCLUDED.\"status\"");
         for (UserQuire quire : userList) {
-            TNTUser user = getUser(quire.user);
+            TNTUser user = TNTUser.getUser(quire.user);
             if (user == null) continue;
 
-            sqlRequest.add("('" + user.user + "'," + (user.key == null ? "NULL" : "'" + user.key + "'") + ",'" + user.version + "','"
+            sqlRequest.add("('" + user.uuid + "','" + user.version + "','"
                     + FORMATTER.format(new Date(user.timeLogin)) + "'," + user.forceBlock
                     + "," + user.donate + "," + user.status + ")");
         }
@@ -177,171 +123,143 @@ public class TNTClientDBManager {
         DatabaseManager.db.checkConnect();
         DatabaseManager.db.statement.executeUpdate(sqlRequest.toString()); // Maybe throw an exception
 
-        for (UserQuire quire : userList) quire.callWrite(getUser(quire.user));
-    }
-
-    /**
-     * @param callbackList May not return some users if there is a failure in the database or other circumstances.
-     */
-    private static void readUsers(final List<UUID> users, final UsersCallback callbackList, final boolean fillDefault) {
-        if (callbackList == null) {
-            for (UUID uuid : users)
-                readUser(uuid, null);
-        } else {
-            final AtomicInteger readCount = new AtomicInteger();
-            final List<TNTUser> returnUsers = new ArrayList<>(users.size());
-            for (UUID uuid : users) {
-                readUser(uuid, tntUser -> {
-                    readCount.getAndIncrement();
-
-                    if (tntUser != null) // Check timeout
-                        returnUsers.add(tntUser);
-                    else if (fillDefault)
-                        returnUsers.add(new TNTUser(uuid, null, null));
-
-                    if (users.size() <= readCount.get())
-                        callbackList.update(returnUsers);
-                });
-            }
-        }
-    }
-
-    /**
-     * @param callbackList May not return some users if there is a failure in the database or other circumstances.
-     */
-    public static void writeUsers(final List<UUID> users, final UsersCallback callbackList) {
-        if (callbackList == null) {
-            for (UUID uuid : users)
-                writeUser(uuid, null);
-        } else {
-            final AtomicInteger readCount = new AtomicInteger();
-            final List<TNTUser> returnUsers = new ArrayList<>(users.size());
-            for (UUID uuid : users) {
-                writeUser(uuid, tntUser -> {
-                    readCount.getAndIncrement();
-
-                    if (tntUser != null)  // Check timeout
-                        returnUsers.add(tntUser);
-                    else if (users.size() <= readCount.get())
-                        callbackList.update(returnUsers);
-                });
-            }
-        }
+        for (UserQuire quire : userList) quire.callWrite();
     }
 
     /**
      * @param callback Will return null in callback if the database response has timed out or other circumstances.
      */
     private static void readUser(@NotNull UUID uuid, @Nullable UserCallback callback) {
-        final UserQuire quire = USERS.getOrDefault(uuid, new UserQuire(uuid));
-        quire.needRead();
-        if (callback != null) quire.addReadCallback(callback);
-        USERS.put(quire.user, quire);
+        if (uuid.version() != 4) {
+            if (callback != null) callback.update(null);
+            return;
+        }
+
+        UserQuire quire = USER_REQUEST_LIST.computeIfAbsent(uuid, UserQuire::new);
+        quire.addReadCallback(callback);
+    }
+
+    public static void readOrCashUser(@NotNull UUID uuid, final UserCallback callback) {
+        TNTUser user = TNTUser.getUser(uuid);
+        if (user == null) {
+            readUser(uuid, callback);
+        } else {
+            callback.update(user);
+        }
+    }
+
+    public static void readOrCashUsers(@NotNull List<UUID> users, @Nullable UsersCallback callbackList,
+                                       boolean createConstructor) {
+        if (callbackList == null) {
+            for (UUID uuid : users) readOrCashUser(uuid, null);
+        } else {
+            AtomicInteger answerCount = new AtomicInteger(users.size());
+            TNTUser[] returnUsers = new TNTUser[users.size()];
+            for (int i = 0; i < returnUsers.length; i++) {
+                final int finalI = i;
+                UUID uuid = users.get(i);
+                readOrCashUser(uuid, tntUser -> {
+                    returnUsers[finalI] = createConstructor && tntUser == null ? new TNTUser(uuid) : tntUser;
+
+                    if (answerCount.decrementAndGet() <= 0) callbackList.update(returnUsers);
+                });
+            }
+        }
     }
 
     /**
      * @param callback Will return null in callback if the database response has timed out or other circumstances.
      */
     public static void writeUser(@NotNull UUID uuid, @Nullable UserCallback callback) {
-        final UserQuire quire = USERS.getOrDefault(uuid, new UserQuire(uuid));
-        quire.needWrite();
-        if (callback != null) quire.addWriteCallback(callback);
-        USERS.put(quire.user, quire);
+        if (uuid.version() != 4) {
+            if (callback != null) callback.update(null);
+            return;
+        }
+
+        UserQuire quire = USER_REQUEST_LIST.computeIfAbsent(uuid, UserQuire::new);
+        quire.addWriteCallback(callback);
     }
 
     private static class UserQuire {
         private final @NotNull UUID user;
-        private final List<UserCallback> readCallbackList = new ArrayList<>();
-        private final List<UserCallback> writeCallbackList = new ArrayList<>();
-        private long timeout = System.currentTimeMillis() + 20_000; // Wait 30 second
-
-        private boolean needRead;
-        private boolean needWrite;
+        private final Queue<UserCallback> readCallbackList = new ConcurrentLinkedQueue<>();
+        private final Queue<UserCallback> writeCallbackList = new ConcurrentLinkedQueue<>();
+        private long readWriteTimeout = System.currentTimeMillis() + 20_000; // Wait 20 second
 
         public UserQuire(@NotNull UUID user) {
             this.user = user;
         }
 
         public boolean isNeed() {
-            if (!needRead && !needWrite) return false;
+            if (readCallbackList.isEmpty() && writeCallbackList.isEmpty()) return false;
 
-            if (timeout < System.currentTimeMillis()) {
-                if (needRead) {
+            if (readWriteTimeout < System.currentTimeMillis()) {
+                if (readCallbackList.isEmpty()) {
                     LOGGER.warn("Timeout read information, user: " + user + " user in query: " + isRead());
                 }
-                if (needWrite) {
+                if (writeCallbackList.isEmpty()) {
                     LOGGER.warn("Timeout write information, user: " + user + " user in query: " + isWrite());
                 }
 
-                callRead(null);
-                callWrite(null);
+                callRead();
+                callWrite();
                 return false;
             }
             return true;
         }
 
-        /*
+        /**
          * Write always in priority
-         * */
+         */
         public boolean isWrite() {
-            return needWrite;
+            return !writeCallbackList.isEmpty();
         }
 
-        /*
+        /**
          * Read is not priority
-         * */
+         */
         public boolean isRead() {
-            return needRead && !isWrite();
+            return !readCallbackList.isEmpty() && !isWrite();
         }
 
-        public void callRead(@Nullable TNTUser tntUser) {
-            for (UserCallback callback : readCallbackList) {
+        public void callRead() {
+            UserCallback callback;
+            while ((callback = readCallbackList.poll()) != null) {
                 try {
-                    callback.update(tntUser);
+                    callback.update(TNTUser.getUser(user));
                 } catch (Exception e) {
                     LOGGER.warn("Read callback throw exception", e);
                 }
             }
-            readCallbackList.clear();
-
-            needRead = false;
         }
 
-        public void callWrite(@Nullable TNTUser tntUser) {
-            for (UserCallback callback : writeCallbackList) {
+        public void callWrite() {
+            UserCallback callback;
+            while ((callback = writeCallbackList.poll()) != null) {
                 try {
-                    callback.update(tntUser);
+                    callback.update(TNTUser.getUser(user));
                 } catch (Exception e) {
-                    LOGGER.warn("Write callback throw exception", e);
+                    LOGGER.warn("Read callback throw exception", e);
                 }
             }
-            writeCallbackList.clear();
-
-            needWrite = false;
         }
 
-        /*
+        /**
          * Throw null in callback when timeout
-         * */
-        public void addReadCallback(@NotNull UserCallback callback) {
-            readCallbackList.add(callback);
+         */
+        public void addReadCallback(@Nullable UserCallback callback) {
+            if (callback != null) readCallbackList.offer(callback);
+
+            readWriteTimeout = System.currentTimeMillis() + 20_000;
         }
 
-        /*
+        /**
          * Throw null in callback when timeout
-         * */
-        public void addWriteCallback(@NotNull UserCallback callback) {
-            writeCallbackList.add(callback);
-        }
+         */
+        public void addWriteCallback(@Nullable UserCallback callback) {
+            if (callback != null) writeCallbackList.offer(callback);
 
-        public void needRead() {
-            timeout = System.currentTimeMillis() + 20_000;
-            this.needRead = true;
-        }
-
-        public void needWrite() {
-            timeout = System.currentTimeMillis() + 20_000;
-            this.needWrite = true;
+            readWriteTimeout = System.currentTimeMillis() + 20_000;
         }
     }
 
@@ -350,6 +268,6 @@ public class TNTClientDBManager {
     }
 
     public interface UsersCallback {
-        void update(@NotNull List<TNTUser> tntUsers);
+        void update(@NotNull TNTUser @Nullable [] tntUsers);
     }
 }

@@ -24,6 +24,11 @@ public class ActiveModulesPacket implements Packet {
 
     @Override
     public void serverProcess(WebSocket socket, final TNTUser user) {
+        if (user == null) {
+            socket.close();
+            return;
+        }
+
         user.activeModules = activeModules;
     }
 }

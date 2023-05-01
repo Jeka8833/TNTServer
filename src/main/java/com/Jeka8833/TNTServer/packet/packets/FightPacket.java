@@ -32,13 +32,13 @@ public class FightPacket implements Packet {
                 .map(webSocket -> {
                     UUID user = webSocket.getAttachment();
                     if(user == null) return null;
-                    return TNTUser.uuid2User.get(user);
+                    return TNTUser.getUser(user);
                 })
                 .filter(tntUser -> tntUser != null && tntUser.fight != 0).toList();
 
         stream.writeByte(users.size());
         for (TNTUser user : users) {
-            stream.writeUUID(user.user);
+            stream.writeUUID(user.uuid);
             stream.writeInt(user.fight);
         }
     }
@@ -50,6 +50,11 @@ public class FightPacket implements Packet {
 
     @Override
     public void serverProcess(WebSocket socket, TNTUser user) {
+        if (user == null) {
+            socket.close();
+            return;
+        }
+
         user.fight = playerFight;
         Main.serverSend(socket, new FightPacket(Main.server.getConnections()));
     }

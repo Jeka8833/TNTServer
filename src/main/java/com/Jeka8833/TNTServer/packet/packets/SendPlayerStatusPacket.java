@@ -7,17 +7,16 @@ import com.Jeka8833.TNTServer.packet.PacketOutputStream;
 import org.java_websocket.WebSocket;
 
 import java.io.IOException;
-import java.util.List;
 
-public record SendPlayerStatusPacket(List<TNTUser> users, boolean isAdmin) implements Packet {
+public record SendPlayerStatusPacket(TNTUser[] users, boolean isAdmin) implements Packet {
 
     @Override
     public void write(PacketOutputStream stream) throws IOException {
-        stream.writeByte(users.size());
+        stream.writeByte(users.length);
         for (TNTUser user : users) {
-            stream.writeUUID(user.user);
-            stream.writeBoolean(user.isClient());
-            if (user.isClient()) {
+            stream.writeUUID(user.uuid);
+            stream.writeBoolean(user.hasInDB());
+            if (user.hasInDB()) {
                 stream.writeByte(user.donate);
                 stream.writeByte(switch (user.status) {
                     case TNTUser.STATUS_ONLINE -> 3;

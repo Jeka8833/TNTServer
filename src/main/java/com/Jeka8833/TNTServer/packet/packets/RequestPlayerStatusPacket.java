@@ -31,7 +31,13 @@ public class RequestPlayerStatusPacket implements Packet {
 
     @Override
     public void serverProcess(WebSocket socket, TNTUser user) {
-        TNTClientDBManager.readOrCashUser(users, tntUsers ->
-                Main.serverSend(socket, new SendPlayerStatusPacket(tntUsers, user.donate > 50)), true);
+        if (user == null) {
+            socket.close();
+            return;
+        }
+
+        TNTClientDBManager.readOrCashUsers(users,
+                tntUsers -> Main.serverSend(socket, new SendPlayerStatusPacket(tntUsers, user.donate > 50)),
+                true);
     }
 }

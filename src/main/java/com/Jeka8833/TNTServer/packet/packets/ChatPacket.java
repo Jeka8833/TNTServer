@@ -36,6 +36,11 @@ public class ChatPacket implements Packet {
 
     @Override
     public void serverProcess(WebSocket socket, TNTUser user) {
+        if (user == null) {
+            socket.close();
+            return;
+        }
+
         // Fixed Log4j exploit
         String fixedText = text.replaceAll("\\$\\{.+}", "***")
                 .replaceAll(
@@ -43,6 +48,6 @@ public class ChatPacket implements Packet {
                         "***");
 
 
-        Main.serverBroadcast(new ChatPacket(user.user, fixedText));
+        Main.serverBroadcast(new ChatPacket(user.uuid, fixedText));
     }
 }

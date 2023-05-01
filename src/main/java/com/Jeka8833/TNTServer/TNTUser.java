@@ -1,6 +1,7 @@
 package com.Jeka8833.TNTServer;
 
 import com.Jeka8833.TNTServer.util.PlayerPing;
+import org.intellij.lang.annotations.MagicConstant;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -16,44 +17,41 @@ public class TNTUser {
     public static final byte STATUS_INVISIBLE = 1;
     public static final byte STATUS_OFFLINE = 0;
 
-    public @NotNull UUID user;
-    public @Nullable UUID key;
-    public @Nullable PlayerPing playerPing;
+
+    public final @NotNull UUID uuid;
     public String version;
-    public String gameInfo;
-
     public long timeLogin;
-    private long lastTimePacket;
+    public long forceBlock;
+    public byte donate;
 
+
+    @Nullable
+    public PlayerPing ping;
+    @Nullable
+    public String gameInfo;
+    private long nextTimeDead;
+    public long forceActive;
     public long activeModules;
 
-    public long forceBlock;
-    public long forceActive;
-
-    public byte donate;
+    @MagicConstant(flags = {STATUS_ONLINE, STATUS_AFK, STATUS_INVISIBLE, STATUS_OFFLINE})
     public byte status;
-
     public int fight;
 
-    public TNTUser(@NotNull UUID user, final String version) {
-        this(user, null, version);
-    }
+    public TNTUser(@NotNull UUID uuid) {
+        this.uuid = uuid;
 
-    public TNTUser(@NotNull UUID user, @Nullable UUID key, final String version) {
-        this.user = user;
-        this.key = key;
-        this.version = version;
+        heartBeat();
     }
 
     public void heartBeat() {
-        lastTimePacket = System.currentTimeMillis();
+        nextTimeDead = System.currentTimeMillis() + 60_000;
     }
 
     public boolean isUserDead() {
-        return System.currentTimeMillis() - lastTimePacket > 60_000;
+        return System.currentTimeMillis() > nextTimeDead;
     }
 
-    public boolean isClient() {
+    public boolean hasInDB() {
         return version != null;
     }
 
@@ -62,23 +60,22 @@ public class TNTUser {
         if (this == o) return true;
         if (!(o instanceof TNTUser tntUser)) return false;
 
-        return Objects.equals(user, tntUser.user);
+        return Objects.equals(uuid, tntUser.uuid);
     }
 
     @Override
     public int hashCode() {
-        return user.hashCode();
+        return uuid.hashCode();
     }
 
     @Override
     public String toString() {
         return "TNTUser{" +
-                "user=" + user +
-                ", key=" + key +
+                "user=" + uuid +
                 ", version='" + version + '\'' +
                 ", gameInfo='" + gameInfo + '\'' +
                 ", timeLogin=" + timeLogin +
-                ", lastTimePacket=" + lastTimePacket +
+                ", lastTimePacket=" + nextTimeDead +
                 ", activeModules=" + activeModules +
                 ", forceBlock=" + forceBlock +
                 ", forceActive=" + forceActive +
@@ -88,10 +85,13 @@ public class TNTUser {
                 '}';
     }
 
-    public static void addUser(final TNTUser tntUser) {
-        uuid2User.put(tntUser.user, tntUser);
-        tntUser.heartBeat();
-    }
-
     public static final Map<UUID, TNTUser> uuid2User = new ConcurrentHashMap<>();
+
+    @Nullable
+    public static TNTUser getUser(@NotNull UUID uuid) {
+        TNTUser user = uuid2User.get(uuid);
+        if (user != null) user.heartBeat();
+
+        return user;
+    }
 }

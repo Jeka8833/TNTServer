@@ -6,6 +6,10 @@ import com.Jeka8833.TNTServer.packet.Packet;
 import com.Jeka8833.TNTServer.packet.PacketInputStream;
 import com.Jeka8833.TNTServer.packet.PacketOutputStream;
 import com.Jeka8833.TNTServer.packet.packets.*;
+import com.Jeka8833.TNTServer.packet.packets.authorization.AuthClientOldPacket;
+import com.Jeka8833.TNTServer.packet.packets.authorization.AuthClientPacket;
+import com.Jeka8833.TNTServer.packet.packets.authorization.AuthWebPacket;
+import com.Jeka8833.TNTServer.packet.packets.web.ModulesStatusPacket;
 import com.Jeka8833.TNTServer.util.BiMap;
 import com.Jeka8833.TNTServer.util.Util;
 import com.google.gson.Gson;
@@ -21,7 +25,6 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 
-
 public class Main extends WebSocketServer {
 
     private static final Logger logger = LogManager.getLogger(Main.class);
@@ -33,7 +36,7 @@ public class Main extends WebSocketServer {
 
     static {
         packetsList.put((byte) 1, ActiveModulesPacket.class);
-        packetsList.put((byte) 2, AuthPacket.class);
+        packetsList.put((byte) 2, AuthClientOldPacket.class);
         packetsList.put((byte) 3, PingPacket.class);
         packetsList.put((byte) 4, RequestPlayerStatusPacket.class);
         packetsList.put((byte) 5, SendPlayerStatusPacket.class);
@@ -41,8 +44,11 @@ public class Main extends WebSocketServer {
         packetsList.put((byte) 7, BlockModulesPacket.class);
         packetsList.put((byte) 8, GameInfoPacket.class);
         packetsList.put((byte) 9, FightPacket.class);
-        packetsList.put((byte) 10, AuthV2Packet.class);
+        packetsList.put((byte) 10, AuthClientPacket.class);
         packetsList.put((byte) 11, PlayersPingPacket.class);
+        packetsList.put((byte) 12, TokenPacket.class);
+        packetsList.put((byte) 254, ModulesStatusPacket.class);
+        packetsList.put((byte) 255, AuthWebPacket.class);
     }
 
     public Main(final InetSocketAddress address) {
@@ -57,6 +63,8 @@ public class Main extends WebSocketServer {
     @Override
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
         logger.info("Current online: " + Main.server.getConnections().size());
+
+        BotsManager.clearDisconnectedBots();
     }
 
     @Override
@@ -65,15 +73,27 @@ public class Main extends WebSocketServer {
 
     @Override
     public void onMessage(WebSocket conn, ByteBuffer message) {
-        try (final PacketInputStream stream = new PacketInputStream(message)) {
-            final UUID uuid = conn.getAttachment();
-            final TNTUser user = uuid == null ? null : TNTUser.uuid2User.get(uuid);
-            if (user == null && !(stream.packet instanceof AuthPacket || stream.packet instanceof AuthV2Packet)) {
+        try (PacketInputStream stream = new PacketInputStream(message)) {
+            UUID playerUUID = conn.getAttachment();
+
+            if (stream.packet instanceof AuthClientPacket || stream.packet instanceof AuthWebPacket ||
+                    stream.packet instanceof AuthClientOldPacket) {
+                stream.packet.read(stream);
+                stream.packet.serverProcess(conn, null);
+            } else if (playerUUID == null) {
                 conn.close();
             } else {
-                stream.packet.read(stream);
-                stream.packet.serverProcess(conn, user);
-                if (user != null) user.heartBeat();
+                TNTUser user = TNTUser.getUser(playerUUID);
+                if (user == null && playerUUID.version() == 4) {
+                    conn.close(); // The player doesn't exist in the cache, disconnecting...
+                } else {
+                    try {
+                        stream.packet.read(stream);
+                        stream.packet.serverProcess(conn, user);
+                    } catch (Exception e) {
+                        logger.error("Fail parse packet", e);
+                    }
+                }
             }
         } catch (Exception e) {
             logger.error("Fail parse packet", e);
@@ -104,21 +124,28 @@ public class Main extends WebSocketServer {
     public static void serverBroadcast(final Packet packet) {
         try (final PacketOutputStream stream = new PacketOutputStream()) {
             packet.write(stream);
-            server.broadcast(stream.getByteBuffer(packet.getClass()));
+            ByteBuffer send = stream.getByteBuffer(packet.getClass());
+
+            for (WebSocket client : server.getConnections()) {
+                try {
+                    UUID userID = client.getAttachment();
+                    if (userID == null || userID.version() != 4) continue;
+
+                    if (client.isOpen()) client.send(send);
+                } catch (Exception e) {
+                    logger.error("Fail send packet:", e);
+                }
+            }
         } catch (Exception e) {
-            logger.error("Fail send packet:", e);
+            logger.error("Fail generate packet:", e);
         }
     }
 
     public static void main(String[] args) {
         System.setOut(
-                IoBuilder.forLogger(LogManager.getLogger("system.out"))
-                        .setLevel(Level.INFO)
-                        .buildPrintStream());
+                IoBuilder.forLogger(LogManager.getLogger("system.out")).setLevel(Level.INFO).buildPrintStream());
         System.setErr(
-                IoBuilder.forLogger(LogManager.getLogger("system.err"))
-                        .setLevel(Level.ERROR)
-                        .buildPrintStream());
+                IoBuilder.forLogger(LogManager.getLogger("system.err")).setLevel(Level.ERROR).buildPrintStream());
 
         try {
             logger.info("TNTServer start");
@@ -128,10 +155,8 @@ public class Main extends WebSocketServer {
             server = new Main(new InetSocketAddress(Integer.parseInt(Util.getParam(args, "-server_port"))));
             server.start();
             TNTClientDBManager.init();
+            BlockModulesPacket.readAndSetGlobalBlock();
         } finally {
-            TNTClientDBManager.writeUsers(TNTUser.uuid2User.values().stream()
-                    .filter(tntUser -> tntUser.version != null)
-                    .map(tntUser -> tntUser.user).toList(), null);
             TNTClientDBManager.forceWrite();
         }
     }
