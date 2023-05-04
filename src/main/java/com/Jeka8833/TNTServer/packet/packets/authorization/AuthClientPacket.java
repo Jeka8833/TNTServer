@@ -40,11 +40,10 @@ public class AuthClientPacket implements Packet {
                 socket.setAttachment(user);
 
                 TNTClientDBManager.readOrCashUser(user, ignore -> {
-                    TNTUser account = TNTUser.uuid2User.computeIfAbsent(user, TNTUser::new);
+                    TNTUser account = TNTClientDBManager.getOrCreate(user);
                     account.version = version;
                     account.status = TNTUser.STATUS_ONLINE;
                     account.timeLogin = System.currentTimeMillis();
-                    account.heartBeat();
 
                     TNTClientDBManager.writeUser(user, null);
 

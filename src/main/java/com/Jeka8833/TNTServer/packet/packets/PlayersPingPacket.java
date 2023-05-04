@@ -2,6 +2,7 @@ package com.Jeka8833.TNTServer.packet.packets;
 
 import com.Jeka8833.TNTServer.Main;
 import com.Jeka8833.TNTServer.TNTUser;
+import com.Jeka8833.TNTServer.dataBase.TNTClientDBManager;
 import com.Jeka8833.TNTServer.packet.Packet;
 import com.Jeka8833.TNTServer.packet.PacketInputStream;
 import com.Jeka8833.TNTServer.packet.PacketOutputStream;
@@ -22,7 +23,7 @@ public class PlayersPingPacket implements Packet {
     @Override
     public void write(PacketOutputStream stream) throws IOException {
         TNTUser[] playerPings = requestedPlayers.stream()
-                .map(TNTUser::getUser)
+                .map(TNTClientDBManager::getUser)
                 .filter(tntUser -> tntUser != null && tntUser.ping != null)
                 .toArray(TNTUser[]::new);
 

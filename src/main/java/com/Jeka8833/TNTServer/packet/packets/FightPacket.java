@@ -2,6 +2,7 @@ package com.Jeka8833.TNTServer.packet.packets;
 
 import com.Jeka8833.TNTServer.Main;
 import com.Jeka8833.TNTServer.TNTUser;
+import com.Jeka8833.TNTServer.dataBase.TNTClientDBManager;
 import com.Jeka8833.TNTServer.packet.Packet;
 import com.Jeka8833.TNTServer.packet.PacketInputStream;
 import com.Jeka8833.TNTServer.packet.PacketOutputStream;
@@ -32,7 +33,7 @@ public class FightPacket implements Packet {
                 .map(webSocket -> {
                     UUID user = webSocket.getAttachment();
                     if(user == null) return null;
-                    return TNTUser.getUser(user);
+                    return TNTClientDBManager.getUser(user);
                 })
                 .filter(tntUser -> tntUser != null && tntUser.fight != 0).toList();
 

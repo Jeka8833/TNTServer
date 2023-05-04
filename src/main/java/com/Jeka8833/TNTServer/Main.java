@@ -83,8 +83,8 @@ public class Main extends WebSocketServer {
             } else if (playerUUID == null) {
                 conn.close();
             } else {
-                TNTUser user = TNTUser.getUser(playerUUID);
-                if (user == null && playerUUID.version() == 4) {
+                TNTUser user = TNTClientDBManager.getUser(playerUUID);
+                if (user == null && playerUUID.variant() == 2) {
                     conn.close(); // The player doesn't exist in the cache, disconnecting...
                 } else {
                     try {

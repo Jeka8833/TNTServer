@@ -103,7 +103,7 @@ public class AuthManager {
     }
 
     public static void authTNTClient(@NotNull UUID user, @NotNull UUID key, @NotNull AuthResponse response) {
-        if (user.version() != 6) {
+        if (user.version() != 4 || user.variant() != 0) {
             response.bad(ERROR_LOGIN_FAIL);
             return;
         }

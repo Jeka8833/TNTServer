@@ -57,7 +57,7 @@ public class BlockModulesPacket implements Packet {
             globalBlock = block;
 
             TNTClientDBManager.readOrCashUser(settingUser, ignore -> {
-                TNTUser account = TNTUser.uuid2User.computeIfAbsent(settingUser, TNTUser::new);
+                TNTUser account = TNTClientDBManager.getOrCreate(settingUser);
                 account.forceActive = active;
                 account.forceBlock = block;
 
@@ -76,7 +76,7 @@ public class BlockModulesPacket implements Packet {
             }
         } else {
             TNTClientDBManager.readOrCashUser(editedUser, ignore -> {
-                TNTUser account = TNTUser.uuid2User.computeIfAbsent(settingUser, TNTUser::new);
+                TNTUser account = TNTClientDBManager.getOrCreate(settingUser);
                 account.forceActive = active;
                 account.forceBlock = block;
 

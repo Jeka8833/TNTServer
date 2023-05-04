@@ -5,13 +5,9 @@ import org.intellij.lang.annotations.MagicConstant;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class TNTUser {
-
     public static final byte STATUS_ONLINE = 3;
     public static final byte STATUS_AFK = 2;
     public static final byte STATUS_INVISIBLE = 1;
@@ -39,8 +35,6 @@ public class TNTUser {
 
     public TNTUser(@NotNull UUID uuid) {
         this.uuid = uuid;
-
-        heartBeat();
     }
 
     public void heartBeat() {
@@ -58,40 +52,15 @@ public class TNTUser {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof TNTUser tntUser)) return false;
+        if (o == null || getClass() != o.getClass()) return false;
 
-        return Objects.equals(uuid, tntUser.uuid);
+        TNTUser user = (TNTUser) o;
+
+        return uuid.equals(user.uuid);
     }
 
     @Override
     public int hashCode() {
         return uuid.hashCode();
-    }
-
-    @Override
-    public String toString() {
-        return "TNTUser{" +
-                "user=" + uuid +
-                ", version='" + version + '\'' +
-                ", gameInfo='" + gameInfo + '\'' +
-                ", timeLogin=" + timeLogin +
-                ", lastTimePacket=" + nextTimeDead +
-                ", activeModules=" + activeModules +
-                ", forceBlock=" + forceBlock +
-                ", forceActive=" + forceActive +
-                ", donate=" + donate +
-                ", status=" + status +
-                ", fight=" + fight +
-                '}';
-    }
-
-    public static final Map<UUID, TNTUser> uuid2User = new ConcurrentHashMap<>();
-
-    @Nullable
-    public static TNTUser getUser(@NotNull UUID uuid) {
-        TNTUser user = uuid2User.get(uuid);
-        if (user != null) user.heartBeat();
-
-        return user;
     }
 }
