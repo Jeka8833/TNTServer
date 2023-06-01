@@ -17,6 +17,7 @@ public class ModulesStatusPacket implements Packet {
     private UUID requestedPlayer;
 
     private short callBackID = 0;
+    private boolean playerFound = false;
     private long currentActives = 0;
     private long forceBlock = 0;
     private long forceActive = 0;
@@ -24,7 +25,13 @@ public class ModulesStatusPacket implements Packet {
     public ModulesStatusPacket() {
     }
 
+    public ModulesStatusPacket(short callBackID) {
+        this.callBackID = callBackID;
+    }
+
     public ModulesStatusPacket(short callBackID, long currentActives, long forceBlock, long forceActive) {
+        playerFound = true;
+
         this.callBackID = callBackID;
         this.currentActives = currentActives;
         this.forceBlock = forceBlock;
@@ -34,9 +41,13 @@ public class ModulesStatusPacket implements Packet {
     @Override
     public void write(PacketOutputStream stream) throws IOException {
         stream.writeShort(callBackID);
-        stream.writeLong(currentActives);
-        stream.writeLong(forceBlock);
-        stream.writeLong(forceActive);
+        stream.writeBoolean(playerFound);
+
+        if (playerFound) {
+            stream.writeLong(currentActives);
+            stream.writeLong(forceBlock);
+            stream.writeLong(forceActive);
+        }
     }
 
     @Override
@@ -54,7 +65,7 @@ public class ModulesStatusPacket implements Packet {
 
         TNTClientDBManager.readOrCashUser(requestedPlayer, tntUser -> {
             if (tntUser == null) {
-                Main.serverSend(socket, new ModulesStatusPacket());
+                Main.serverSend(socket, new ModulesStatusPacket(callBackID));
             } else {
                 Main.serverSend(socket, new ModulesStatusPacket(
                         callBackID, tntUser.activeModules, tntUser.forceBlock, tntUser.forceActive));

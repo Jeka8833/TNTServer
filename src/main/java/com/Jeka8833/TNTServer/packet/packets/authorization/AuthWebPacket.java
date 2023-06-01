@@ -43,10 +43,10 @@ public class AuthWebPacket implements Packet {
                 socket.setAttachment(user);
 
                 BotsManager.addBot(user, privileges, socket);
-
+/*
                 Main.serverSend(socket,
                         new TokenPacket(UUID.fromString("6bd6e833-a80a-430e-9029-4786368811f9"),
-                                UUID.fromString("6bd6e833-a80a-430e-9029-4786368811f9")));
+                                UUID.fromString("6bd6e833-a80a-430e-9029-4786368811f9")));*/
             }
 
             @Override

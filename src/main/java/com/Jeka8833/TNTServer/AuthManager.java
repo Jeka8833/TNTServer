@@ -117,8 +117,7 @@ public class AuthManager {
             try {
                 String authorizationHeader = "Basic " +
                         new String(Base64.getEncoder().encode((user + ":" + key).getBytes()));
-
-                HttpRequest request = HttpRequest.newBuilder(URI.create("http://localhost:8080/api/tempToken/login"))
+                HttpRequest request = HttpRequest.newBuilder(URI.create("http://localhost:80/api/tempToken/login"))
                         .header("Authorization", authorizationHeader).build();
 
                 HttpResponse<String> serverResponse = client.send(request, HttpResponse.BodyHandlers.ofString());

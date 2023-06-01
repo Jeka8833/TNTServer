@@ -76,7 +76,7 @@ public class BlockModulesPacket implements Packet {
             }
         } else {
             TNTClientDBManager.readOrCashUser(editedUser, ignore -> {
-                TNTUser account = TNTClientDBManager.getOrCreate(settingUser);
+                TNTUser account = TNTClientDBManager.getOrCreate(editedUser);
                 account.forceActive = active;
                 account.forceBlock = block;
 

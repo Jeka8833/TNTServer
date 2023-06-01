@@ -17,6 +17,7 @@ import java.util.UUID;
 
 public class TokenPacket implements Packet {
     private static final Logger logger = LogManager.getLogger(TokenPacket.class);
+    private static final UUID nullUUID = new UUID(0, 0);
 
     private final UUID user;
     private final UUID key;
@@ -51,22 +52,20 @@ public class TokenPacket implements Packet {
         }
 
         List<Map.Entry<UUID, BotsManager.BotUser>> bots = BotsManager.getBots("SERVER_TOKEN");
-        if (bots.isEmpty()) {
-            Main.serverSend(socket, new TokenPacket(user.uuid, new UUID(0, 0)));
-        } else {
-            TokenPacket packet = new TokenPacket(user.uuid,
-                    unregister ? new UUID(0, 0) : UUID.randomUUID());
+        if (!bots.isEmpty()) {
+            var packet = new TokenPacket(user.uuid, unregister ? nullUUID : UUID.randomUUID());
 
             try {
-                for (Map.Entry<UUID, BotsManager.BotUser> entry : bots) {
+                for (Map.Entry<UUID, BotsManager.BotUser> entry : bots)
                     Main.serverSend(entry.getValue().connection(), packet);
-                }
+
                 Main.serverSend(socket, packet);
+                return;
             } catch (Exception e) {
                 logger.warn("Fail send to bot", e);
-
-                Main.serverSend(socket, new TokenPacket(user.uuid, new UUID(0, 0)));
             }
         }
+
+        Main.serverSend(socket, new TokenPacket(nullUUID, nullUUID));
     }
 }
