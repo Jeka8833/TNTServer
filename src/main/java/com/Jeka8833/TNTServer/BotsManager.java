@@ -1,5 +1,6 @@
 package com.Jeka8833.TNTServer;
 
+import com.Jeka8833.TNTServer.util.Util;
 import com.google.gson.reflect.TypeToken;
 import org.java_websocket.WebSocket;
 import org.jetbrains.annotations.Contract;
@@ -23,7 +24,7 @@ public class BotsManager {
     public static Set<String> validateBotAndCutPrivilege(@Nullable String privileges) {
         if (privileges == null) return null;
 
-        Set<String> privilegesArray = Main.GSON.fromJson(privileges, setType);
+        Set<String> privilegesArray = Util.GSON.fromJson(privileges, setType);
         if (!privilegesArray.remove(BOT_LABEL)) return null;
 
         return Collections.unmodifiableSet(privilegesArray);
@@ -33,6 +34,7 @@ public class BotsManager {
         BOTS.put(user, new BotUser(privileges, connection));
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public static boolean checkPrivilege(@NotNull WebSocket socket, @NotNull String privilege) {
         UUID botUUID = socket.getAttachment();
         if (botUUID == null) return false;

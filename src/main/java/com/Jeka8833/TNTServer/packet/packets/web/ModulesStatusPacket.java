@@ -2,8 +2,8 @@ package com.Jeka8833.TNTServer.packet.packets.web;
 
 import com.Jeka8833.TNTServer.BotsManager;
 import com.Jeka8833.TNTServer.Main;
-import com.Jeka8833.TNTServer.TNTUser;
-import com.Jeka8833.TNTServer.dataBase.TNTClientDBManager;
+import com.Jeka8833.TNTServer.database.Player;
+import com.Jeka8833.TNTServer.database.managers.TNTClientDBManager;
 import com.Jeka8833.TNTServer.packet.Packet;
 import com.Jeka8833.TNTServer.packet.PacketInputStream;
 import com.Jeka8833.TNTServer.packet.PacketOutputStream;
@@ -22,6 +22,7 @@ public class ModulesStatusPacket implements Packet {
     private long forceBlock = 0;
     private long forceActive = 0;
 
+    @SuppressWarnings("unused")
     public ModulesStatusPacket() {
     }
 
@@ -57,18 +58,19 @@ public class ModulesStatusPacket implements Packet {
     }
 
     @Override
-    public void serverProcess(WebSocket socket, TNTUser user) {
+    public void serverProcess(WebSocket socket, Player user) {
         if (!BotsManager.checkPrivilege(socket, "SERVER_CONTROL_MODULES")) {
             socket.close();
             return;
         }
 
         TNTClientDBManager.readOrCashUser(requestedPlayer, tntUser -> {
-            if (tntUser == null) {
+            if (tntUser == null || tntUser.tntPlayerInfo == null) {
                 Main.serverSend(socket, new ModulesStatusPacket(callBackID));
             } else {
                 Main.serverSend(socket, new ModulesStatusPacket(
-                        callBackID, tntUser.activeModules, tntUser.forceBlock, tntUser.forceActive));
+                        callBackID, tntUser.tntPlayerInfo.activeModules,
+                        tntUser.tntPlayerInfo.forceBlock, tntUser.tntPlayerInfo.forceActive));
             }
         });
     }

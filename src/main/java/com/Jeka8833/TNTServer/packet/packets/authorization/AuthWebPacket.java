@@ -3,7 +3,7 @@ package com.Jeka8833.TNTServer.packet.packets.authorization;
 import com.Jeka8833.TNTServer.AuthManager;
 import com.Jeka8833.TNTServer.BotsManager;
 import com.Jeka8833.TNTServer.Main;
-import com.Jeka8833.TNTServer.TNTUser;
+import com.Jeka8833.TNTServer.database.Player;
 import com.Jeka8833.TNTServer.packet.Packet;
 import com.Jeka8833.TNTServer.packet.PacketInputStream;
 import com.Jeka8833.TNTServer.packet.PacketOutputStream;
@@ -31,7 +31,7 @@ public class AuthWebPacket implements Packet {
     }
 
     @Override
-    public void serverProcess(WebSocket socket, TNTUser user) {
+    public void serverProcess(WebSocket socket, Player user) {
         AuthManager.authTNTClient(this.user, key, new AuthManager.AuthResponse() {
             @Override
             public void good(@NotNull UUID user, @Nullable Set<String> privileges) {
@@ -43,10 +43,10 @@ public class AuthWebPacket implements Packet {
                 socket.setAttachment(user);
 
                 BotsManager.addBot(user, privileges, socket);
-/*
+
                 Main.serverSend(socket,
                         new TokenPacket(UUID.fromString("6bd6e833-a80a-430e-9029-4786368811f9"),
-                                UUID.fromString("6bd6e833-a80a-430e-9029-4786368811f9")));*/
+                                UUID.fromString("6bd6e833-a80a-430e-9029-4786368811f9")));
             }
 
             @Override

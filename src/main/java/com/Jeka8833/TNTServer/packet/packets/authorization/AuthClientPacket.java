@@ -2,8 +2,10 @@ package com.Jeka8833.TNTServer.packet.packets.authorization;
 
 import com.Jeka8833.TNTServer.AuthManager;
 import com.Jeka8833.TNTServer.Main;
-import com.Jeka8833.TNTServer.TNTUser;
-import com.Jeka8833.TNTServer.dataBase.TNTClientDBManager;
+import com.Jeka8833.TNTServer.database.Player;
+import com.Jeka8833.TNTServer.database.PlayersDatabase;
+import com.Jeka8833.TNTServer.database.managers.TNTClientDBManager;
+import com.Jeka8833.TNTServer.database.storage.TNTPlayerStorage;
 import com.Jeka8833.TNTServer.packet.Packet;
 import com.Jeka8833.TNTServer.packet.PacketInputStream;
 import com.Jeka8833.TNTServer.packet.PacketOutputStream;
@@ -33,21 +35,24 @@ public class AuthClientPacket implements Packet {
     }
 
     @Override
-    public void serverProcess(WebSocket socket, TNTUser user) {
+    public void serverProcess(WebSocket socket, Player user) {
         AuthManager.authMojang(playerUsername, serverKey, new AuthManager.AuthResponse() {
             @Override
             public void good(@NotNull UUID user, @Nullable Set<String> privileges) {
                 socket.setAttachment(user);
 
                 TNTClientDBManager.readOrCashUser(user, ignore -> {
-                    TNTUser account = TNTClientDBManager.getOrCreate(user);
-                    account.version = version;
-                    account.status = TNTUser.STATUS_ONLINE;
-                    account.timeLogin = System.currentTimeMillis();
+                    Player player = PlayersDatabase.getOrCreate(user);
+
+                    player.tntPlayerInfo = new TNTPlayerStorage();
+                    player.tntPlayerInfo.version = version;
+                    player.tntPlayerInfo.status = TNTPlayerStorage.STATUS_ONLINE;
+                    player.tntPlayerInfo.timeLogin = System.currentTimeMillis();
 
                     TNTClientDBManager.writeUser(user, null);
 
-                    Main.serverSend(socket, new BlockModulesPacket(account.forceBlock, account.forceActive));
+                    Main.serverSend(socket,
+                            new BlockModulesPacket(player.tntPlayerInfo.forceBlock, player.tntPlayerInfo.forceActive));
                 });
             }
 

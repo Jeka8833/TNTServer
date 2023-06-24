@@ -1,4 +1,4 @@
-package com.Jeka8833.TNTServer.dataBase;
+package com.Jeka8833.TNTServer.database.managers;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

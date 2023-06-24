@@ -1,8 +1,8 @@
 package com.Jeka8833.TNTServer.packet.packets;
 
 import com.Jeka8833.TNTServer.Main;
-import com.Jeka8833.TNTServer.TNTUser;
-import com.Jeka8833.TNTServer.dataBase.TNTClientDBManager;
+import com.Jeka8833.TNTServer.database.Player;
+import com.Jeka8833.TNTServer.database.managers.TNTClientDBManager;
 import com.Jeka8833.TNTServer.packet.Packet;
 import com.Jeka8833.TNTServer.packet.PacketInputStream;
 import com.Jeka8833.TNTServer.packet.PacketOutputStream;
@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class RequestPlayerStatusPacket implements Packet {
+public class RequestTNTClientPlayerPacket implements Packet {
 
     private final List<UUID> users = new ArrayList<>();
 
@@ -30,14 +30,15 @@ public class RequestPlayerStatusPacket implements Packet {
     }
 
     @Override
-    public void serverProcess(WebSocket socket, TNTUser user) {
+    public void serverProcess(WebSocket socket, Player user) {
         if (user == null) {
             socket.close();
             return;
         }
 
         TNTClientDBManager.readOrCashUsers(users,
-                tntUsers -> Main.serverSend(socket, new SendPlayerStatusPacket(tntUsers, user.donate > 50)),
+                tntUsers -> Main.serverSend(socket, new ReceiveTNTClientPlayerPacket(tntUsers,
+                        user.tntPlayerInfo != null && user.tntPlayerInfo.donate > 50)),
                 true);
     }
 }

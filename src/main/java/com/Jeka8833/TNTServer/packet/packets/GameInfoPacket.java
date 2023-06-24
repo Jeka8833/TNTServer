@@ -1,6 +1,6 @@
 package com.Jeka8833.TNTServer.packet.packets;
 
-import com.Jeka8833.TNTServer.TNTUser;
+import com.Jeka8833.TNTServer.database.Player;
 import com.Jeka8833.TNTServer.packet.Packet;
 import com.Jeka8833.TNTServer.packet.PacketInputStream;
 import com.Jeka8833.TNTServer.packet.PacketOutputStream;
@@ -23,12 +23,12 @@ public class GameInfoPacket implements Packet {
     }
 
     @Override
-    public void serverProcess(WebSocket socket, TNTUser user) {
+    public void serverProcess(WebSocket socket, Player user) {
         if (user == null) {
             socket.close();
             return;
         }
 
-        user.gameInfo = gameInfo;
+        if (user.tntPlayerInfo != null) user.tntPlayerInfo.gameInfo = gameInfo;
     }
 }

@@ -1,8 +1,8 @@
 package com.Jeka8833.TNTServer.packet.packets;
 
 import com.Jeka8833.TNTServer.Main;
-import com.Jeka8833.TNTServer.TNTUser;
-import com.Jeka8833.TNTServer.dataBase.TNTClientDBManager;
+import com.Jeka8833.TNTServer.database.Player;
+import com.Jeka8833.TNTServer.database.PlayersDatabase;
 import com.Jeka8833.TNTServer.packet.Packet;
 import com.Jeka8833.TNTServer.packet.PacketInputStream;
 import com.Jeka8833.TNTServer.packet.PacketOutputStream;
@@ -19,6 +19,7 @@ public class FightPacket implements Packet {
 
     private final Collection<WebSocket> activeConnection;
 
+    @SuppressWarnings("unused")
     public FightPacket() {
         this(null);
     }
@@ -29,18 +30,19 @@ public class FightPacket implements Packet {
 
     @Override
     public void write(PacketOutputStream stream) throws IOException {
-        final List<TNTUser> users = activeConnection.stream()
+        final List<Player> users = activeConnection.stream()
                 .map(webSocket -> {
                     UUID user = webSocket.getAttachment();
-                    if(user == null) return null;
-                    return TNTClientDBManager.getUser(user);
+                    if (user == null) return null;
+                    return PlayersDatabase.getUser(user);
                 })
-                .filter(tntUser -> tntUser != null && tntUser.fight != 0).toList();
+                .filter(tntUser -> tntUser != null && tntUser.tntPlayerInfo != null && tntUser.tntPlayerInfo.fight != 0)
+                .toList();
 
         stream.writeByte(users.size());
-        for (TNTUser user : users) {
+        for (Player user : users) {
             stream.writeUUID(user.uuid);
-            stream.writeInt(user.fight);
+            stream.writeInt(user.tntPlayerInfo == null ? 0 : user.tntPlayerInfo.fight);
         }
     }
 
@@ -50,13 +52,13 @@ public class FightPacket implements Packet {
     }
 
     @Override
-    public void serverProcess(WebSocket socket, TNTUser user) {
+    public void serverProcess(WebSocket socket, Player user) {
         if (user == null) {
             socket.close();
             return;
         }
 
-        user.fight = playerFight;
+        if (user.tntPlayerInfo != null) user.tntPlayerInfo.fight = playerFight;
         Main.serverSend(socket, new FightPacket(Main.server.getConnections()));
     }
 }

@@ -2,7 +2,7 @@ package com.Jeka8833.TNTServer.packet.packets;
 
 import com.Jeka8833.TNTServer.BotsManager;
 import com.Jeka8833.TNTServer.Main;
-import com.Jeka8833.TNTServer.TNTUser;
+import com.Jeka8833.TNTServer.database.Player;
 import com.Jeka8833.TNTServer.packet.Packet;
 import com.Jeka8833.TNTServer.packet.PacketInputStream;
 import com.Jeka8833.TNTServer.packet.PacketOutputStream;
@@ -24,6 +24,7 @@ public class TokenPacket implements Packet {
 
     private boolean unregister;
 
+    @SuppressWarnings("unused")
     public TokenPacket() {
         this(null, null);
     }
@@ -45,7 +46,7 @@ public class TokenPacket implements Packet {
     }
 
     @Override
-    public void serverProcess(WebSocket socket, TNTUser user) {
+    public void serverProcess(WebSocket socket, Player user) {
         if (user == null) {
             socket.close();
             return;

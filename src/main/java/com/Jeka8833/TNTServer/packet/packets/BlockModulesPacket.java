@@ -2,8 +2,10 @@ package com.Jeka8833.TNTServer.packet.packets;
 
 import com.Jeka8833.TNTServer.BotsManager;
 import com.Jeka8833.TNTServer.Main;
-import com.Jeka8833.TNTServer.TNTUser;
-import com.Jeka8833.TNTServer.dataBase.TNTClientDBManager;
+import com.Jeka8833.TNTServer.database.Player;
+import com.Jeka8833.TNTServer.database.PlayersDatabase;
+import com.Jeka8833.TNTServer.database.managers.TNTClientDBManager;
+import com.Jeka8833.TNTServer.database.storage.TNTPlayerStorage;
 import com.Jeka8833.TNTServer.packet.Packet;
 import com.Jeka8833.TNTServer.packet.PacketInputStream;
 import com.Jeka8833.TNTServer.packet.PacketOutputStream;
@@ -24,6 +26,7 @@ public class BlockModulesPacket implements Packet {
     private long block = 0;
     private long active = 0;
 
+    @SuppressWarnings("unused")
     public BlockModulesPacket() {
     }
 
@@ -46,7 +49,7 @@ public class BlockModulesPacket implements Packet {
     }
 
     @Override
-    public void serverProcess(WebSocket socket, TNTUser user) {
+    public void serverProcess(WebSocket socket, Player user) {
         if (!BotsManager.checkPrivilege(socket, "SERVER_CONTROL_MODULES")) {
             socket.close();
             return;
@@ -57,9 +60,11 @@ public class BlockModulesPacket implements Packet {
             globalBlock = block;
 
             TNTClientDBManager.readOrCashUser(settingUser, ignore -> {
-                TNTUser account = TNTClientDBManager.getOrCreate(settingUser);
-                account.forceActive = active;
-                account.forceBlock = block;
+                Player player = PlayersDatabase.getOrCreate(settingUser);
+
+                player.tntPlayerInfo = new TNTPlayerStorage();
+                player.tntPlayerInfo.forceActive = active;
+                player.tntPlayerInfo.forceBlock = block;
 
                 TNTClientDBManager.writeUser(settingUser, null);
             });
@@ -67,23 +72,26 @@ public class BlockModulesPacket implements Packet {
             for (WebSocket socket1 : Main.server.getConnections()) {
                 UUID id = socket1.getAttachment();
                 if (id != null && id.version() == 4) {
-                    TNTClientDBManager.readOrCashUser(id, tntUser1 -> {
-                        if (tntUser1 == null) return;
+                    TNTClientDBManager.readOrCashUser(id, tntUser -> {
+                        if (tntUser == null || tntUser.tntPlayerInfo == null) return;
 
-                        Main.serverSend(socket1, new BlockModulesPacket(tntUser1.forceBlock, tntUser1.forceActive));
+                        Main.serverSend(socket1, new BlockModulesPacket(
+                                tntUser.tntPlayerInfo.forceBlock, tntUser.tntPlayerInfo.forceActive));
                     });
                 }
             }
         } else {
             TNTClientDBManager.readOrCashUser(editedUser, ignore -> {
-                TNTUser account = TNTClientDBManager.getOrCreate(editedUser);
-                account.forceActive = active;
-                account.forceBlock = block;
+                Player player = PlayersDatabase.getOrCreate(editedUser);
+
+                player.tntPlayerInfo = new TNTPlayerStorage();
+                player.tntPlayerInfo.forceActive = active;
+                player.tntPlayerInfo.forceBlock = block;
 
                 TNTClientDBManager.writeUser(editedUser, null);
 
                 Main.server.getConnections().stream()
-                        .filter(socket1 -> account.uuid.equals(socket1.getAttachment()))
+                        .filter(socket1 -> player.uuid.equals(socket1.getAttachment()))
                         .forEach(socket1 -> Main.serverSend(socket1, new BlockModulesPacket(block, active)));
             });
         }
@@ -91,10 +99,10 @@ public class BlockModulesPacket implements Packet {
 
     public static void readAndSetGlobalBlock() {
         TNTClientDBManager.readOrCashUser(settingUser, tntUser -> {
-            if (tntUser == null) return;
+            if (tntUser == null || tntUser.tntPlayerInfo == null) return;
 
-            globalActive = tntUser.forceActive;
-            globalBlock = tntUser.forceBlock;
+            globalActive = tntUser.tntPlayerInfo.forceActive;
+            globalBlock = tntUser.tntPlayerInfo.forceBlock;
         });
     }
 }

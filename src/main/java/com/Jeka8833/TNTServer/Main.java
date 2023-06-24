@@ -1,18 +1,19 @@
 package com.Jeka8833.TNTServer;
 
-import com.Jeka8833.TNTServer.dataBase.DatabaseManager;
-import com.Jeka8833.TNTServer.dataBase.TNTClientDBManager;
+import com.Jeka8833.TNTServer.database.Player;
+import com.Jeka8833.TNTServer.database.PlayersDatabase;
+import com.Jeka8833.TNTServer.database.managers.DatabaseManager;
+import com.Jeka8833.TNTServer.database.managers.HypixelDBManager;
+import com.Jeka8833.TNTServer.database.managers.TNTClientDBManager;
 import com.Jeka8833.TNTServer.packet.Packet;
 import com.Jeka8833.TNTServer.packet.PacketInputStream;
 import com.Jeka8833.TNTServer.packet.PacketOutputStream;
 import com.Jeka8833.TNTServer.packet.packets.*;
-import com.Jeka8833.TNTServer.packet.packets.authorization.AuthClientOldPacket;
 import com.Jeka8833.TNTServer.packet.packets.authorization.AuthClientPacket;
 import com.Jeka8833.TNTServer.packet.packets.authorization.AuthWebPacket;
 import com.Jeka8833.TNTServer.packet.packets.web.ModulesStatusPacket;
 import com.Jeka8833.TNTServer.util.BiMap;
 import com.Jeka8833.TNTServer.util.Util;
-import com.google.gson.Gson;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -28,7 +29,6 @@ import java.util.UUID;
 public class Main extends WebSocketServer {
 
     private static final Logger logger = LogManager.getLogger(Main.class);
-    public static final Gson GSON = new Gson();
 
     public static final BiMap<Byte, Class<? extends Packet>> packetsList = new BiMap<>();
 
@@ -36,10 +36,8 @@ public class Main extends WebSocketServer {
 
     static {
         packetsList.put((byte) 1, ActiveModulesPacket.class);
-        packetsList.put((byte) 2, AuthClientOldPacket.class);
-        packetsList.put((byte) 3, PingPacket.class);
-        packetsList.put((byte) 4, RequestPlayerStatusPacket.class);
-        packetsList.put((byte) 5, SendPlayerStatusPacket.class);
+        packetsList.put((byte) 4, RequestTNTClientPlayerPacket.class);
+        packetsList.put((byte) 5, ReceiveTNTClientPlayerPacket.class);
         packetsList.put((byte) 6, ChatPacket.class);
         packetsList.put((byte) 7, BlockModulesPacket.class);
         packetsList.put((byte) 8, GameInfoPacket.class);
@@ -47,6 +45,8 @@ public class Main extends WebSocketServer {
         packetsList.put((byte) 10, AuthClientPacket.class);
         packetsList.put((byte) 11, PlayersPingPacket.class);
         packetsList.put((byte) 12, TokenPacket.class);
+        packetsList.put((byte) 13, ReceiveHypixelPlayerPacket.class);
+        packetsList.put((byte) 14, RequestHypixelPlayerPacket.class);
         packetsList.put((byte) 254, ModulesStatusPacket.class);
         packetsList.put((byte) 255, AuthWebPacket.class);
     }
@@ -76,14 +76,13 @@ public class Main extends WebSocketServer {
         try (PacketInputStream stream = new PacketInputStream(message)) {
             UUID playerUUID = conn.getAttachment();
 
-            if (stream.packet instanceof AuthClientPacket || stream.packet instanceof AuthWebPacket ||
-                    stream.packet instanceof AuthClientOldPacket) {
+            if (stream.packet instanceof AuthClientPacket || stream.packet instanceof AuthWebPacket) {
                 stream.packet.read(stream);
                 stream.packet.serverProcess(conn, null);
             } else if (playerUUID == null) {
                 conn.close();
             } else {
-                TNTUser user = TNTClientDBManager.getUser(playerUUID);
+                Player user = PlayersDatabase.getUser(playerUUID);
                 if (user == null && playerUUID.variant() == 2) {
                     conn.close(); // The player doesn't exist in the cache, disconnecting...
                 } else {
@@ -149,6 +148,7 @@ public class Main extends WebSocketServer {
 
         try {
             logger.info("TNTServer start");
+            HypixelDBManager.init(Util.getParam(args, "-hypixel_key"));
             DatabaseManager.initConnect(Util.getParam(args, "-db_ip"), Util.getParam(args, "-db_user"),
                     Util.getParam(args, "-db_password"));
 

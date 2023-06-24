@@ -1,6 +1,8 @@
-package com.Jeka8833.TNTServer.dataBase;
+package com.Jeka8833.TNTServer.database.managers;
 
-import com.Jeka8833.TNTServer.TNTUser;
+import com.Jeka8833.TNTServer.database.Player;
+import com.Jeka8833.TNTServer.database.PlayersDatabase;
+import com.Jeka8833.TNTServer.database.storage.TNTPlayerStorage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -20,7 +22,6 @@ public class TNTClientDBManager {
     private static final DateFormat FORMATTER = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     private static final Map<UUID, UserQuire> USER_REQUEST_LIST = new ConcurrentHashMap<>();
-    private static final Map<UUID, TNTUser> uuid2User = new ConcurrentHashMap<>();
 
     public static void init() {
         var infinityThread = new Thread(() -> {
@@ -29,10 +30,10 @@ public class TNTClientDBManager {
                     forceWrite();
                     forceRead();
 
-                    uuid2User.values().removeIf(TNTUser::isUserDead);
-
+                    PlayersDatabase.clearInactivePeople();
                     USER_REQUEST_LIST.values().removeIf(userQuire -> !userQuire.isNeed());
 
+                    //noinspection BusyWait
                     Thread.sleep(3000);
                 } catch (Exception e) {
                     LOGGER.warn("DB Tick error:", e);
@@ -70,14 +71,15 @@ public class TNTClientDBManager {
         DatabaseManager.db.checkConnect();
         try (ResultSet resultSet = DatabaseManager.db.statement.executeQuery(joiner.toString())) { // Throw force exit
             while (resultSet.next()) {
-                TNTUser user = getOrCreate(resultSet.getObject("user", UUID.class));
-                user.version = resultSet.getString("version");
+                Player player = PlayersDatabase.getOrCreate(resultSet.getObject("user", UUID.class));
+                player.tntPlayerInfo = new TNTPlayerStorage();
+                player.tntPlayerInfo.version = resultSet.getString("version");
 
                 final Date date = resultSet.getTimestamp("timeLogin");
-                user.timeLogin = date == null ? System.currentTimeMillis() : date.getTime();
+                player.tntPlayerInfo.timeLogin = date == null ? System.currentTimeMillis() : date.getTime();
 
-                user.forceBlock = resultSet.getLong("blockModules");
-                user.donate = resultSet.getByte("donate");
+                player.tntPlayerInfo.forceBlock = resultSet.getLong("blockModules");
+                player.tntPlayerInfo.donate = resultSet.getByte("donate");
             }
         }
 
@@ -111,15 +113,16 @@ public class TNTClientDBManager {
                         "\"timeLogin\" = EXCLUDED.\"timeLogin\", \"blockModules\" = EXCLUDED.\"blockModules\", " +
                         "\"donate\" = EXCLUDED.\"donate\"");
         for (UserQuire quire : userList) {
-            TNTUser user = getUser(quire.user);
-            if (user == null) continue;
+            Player user = PlayersDatabase.getUser(quire.user);
+            if (user == null || user.tntPlayerInfo == null) continue;
 
-            sqlRequest.add("('" + user.uuid + "','" + user.version + "','"
-                    + FORMATTER.format(new Date(user.timeLogin)) + "'," + user.forceBlock + "," + user.donate + ")");
+            sqlRequest.add("('" + user.uuid + "','" + user.tntPlayerInfo.version + "','"
+                    + FORMATTER.format(new Date(user.tntPlayerInfo.timeLogin)) + "'," +
+                    user.tntPlayerInfo.forceBlock + "," + user.tntPlayerInfo.donate + ")");
         }
 
         DatabaseManager.db.checkConnect();
-        DatabaseManager.db.statement.executeUpdate(sqlRequest.toString()); // Maybe throw an exception
+        DatabaseManager.db.statement.executeUpdate(sqlRequest.toString()); // Might throw an exception
 
         for (UserQuire quire : userList) quire.callWrite();
     }
@@ -138,7 +141,7 @@ public class TNTClientDBManager {
     }
 
     public static void readOrCashUser(@NotNull UUID uuid, final UserCallback callback) {
-        TNTUser user = getUser(uuid);
+        Player user = PlayersDatabase.getUser(uuid);
         if (user == null) {
             readUser(uuid, callback);
         } else {
@@ -152,12 +155,12 @@ public class TNTClientDBManager {
             for (UUID uuid : users) readOrCashUser(uuid, null);
         } else {
             AtomicInteger answerCount = new AtomicInteger(users.size());
-            TNTUser[] returnUsers = new TNTUser[users.size()];
+            Player[] returnUsers = new Player[users.size()];
             for (int i = 0; i < returnUsers.length; i++) {
                 final int finalI = i;
                 UUID uuid = users.get(i);
                 readOrCashUser(uuid, tntUser -> {
-                    returnUsers[finalI] = createConstructor && tntUser == null ? new TNTUser(uuid) : tntUser;
+                    returnUsers[finalI] = createConstructor && tntUser == null ? new Player(uuid) : tntUser;
 
                     if (answerCount.decrementAndGet() <= 0) callbackList.update(returnUsers);
                 });
@@ -176,22 +179,6 @@ public class TNTClientDBManager {
 
         UserQuire quire = USER_REQUEST_LIST.computeIfAbsent(uuid, UserQuire::new);
         quire.addWriteCallback(callback);
-    }
-
-    @NotNull
-    public static TNTUser getOrCreate(@NotNull UUID uuid) {
-        TNTUser user = uuid2User.computeIfAbsent(uuid, TNTUser::new);
-        user.heartBeat();
-
-        return user;
-    }
-
-    @Nullable
-    public static TNTUser getUser(@NotNull UUID uuid) {
-        TNTUser user = uuid2User.get(uuid);
-        if (user != null) user.heartBeat();
-
-        return user;
     }
 
     private static class UserQuire {
@@ -240,7 +227,7 @@ public class TNTClientDBManager {
             UserCallback callback;
             while ((callback = readCallbackList.poll()) != null) {
                 try {
-                    callback.update(getUser(user));
+                    callback.update(PlayersDatabase.getUser(user));
                 } catch (Exception e) {
                     LOGGER.warn("Read callback throw exception", e);
                 }
@@ -251,7 +238,7 @@ public class TNTClientDBManager {
             UserCallback callback;
             while ((callback = writeCallbackList.poll()) != null) {
                 try {
-                    callback.update(getUser(user));
+                    callback.update(PlayersDatabase.getUser(user));
                 } catch (Exception e) {
                     LOGGER.warn("Read callback throw exception", e);
                 }
@@ -287,10 +274,10 @@ public class TNTClientDBManager {
     }
 
     public interface UserCallback {
-        void update(@Nullable TNTUser tntUser);
+        void update(@Nullable Player tntUser);
     }
 
     public interface UsersCallback {
-        void update(@NotNull TNTUser @Nullable [] tntUsers);
+        void update(@NotNull Player @Nullable [] tntUsers);
     }
 }
