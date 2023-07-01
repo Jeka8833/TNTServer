@@ -9,15 +9,12 @@ public class TNTPlayerStorage {
     public static final byte STATUS_INVISIBLE = 1;
     public static final byte STATUS_OFFLINE = 0;
 
-    public String version;
-    public long timeLogin;
+    public @Nullable String version;
     public long forceBlock;
     public byte donate;
 
-    @Nullable
-    public TNTPlayerPingStorage playerPing;
-    @Nullable
-    public String gameInfo;
+    public @Nullable TNTPlayerPingStorage playerPing;
+    public @Nullable String gameInfo;
     public long forceActive;
     public long activeModules;
 

@@ -62,7 +62,7 @@ public class BlockModulesPacket implements Packet {
             TNTClientDBManager.readOrCashUser(settingUser, ignore -> {
                 Player player = PlayersDatabase.getOrCreate(settingUser);
 
-                player.tntPlayerInfo = new TNTPlayerStorage();
+                if (player.tntPlayerInfo == null) player.tntPlayerInfo = new TNTPlayerStorage();
                 player.tntPlayerInfo.forceActive = active;
                 player.tntPlayerInfo.forceBlock = block;
 
@@ -72,7 +72,7 @@ public class BlockModulesPacket implements Packet {
             for (WebSocket socket1 : Main.server.getConnections()) {
                 UUID id = socket1.getAttachment();
                 if (id != null && id.version() == 4) {
-                    TNTClientDBManager.readOrCashUser(id, tntUser -> {
+                    TNTClientDBManager.readUser(id, tntUser -> {
                         if (tntUser == null || tntUser.tntPlayerInfo == null) return;
 
                         Main.serverSend(socket1, new BlockModulesPacket(
@@ -81,10 +81,10 @@ public class BlockModulesPacket implements Packet {
                 }
             }
         } else {
-            TNTClientDBManager.readOrCashUser(editedUser, ignore -> {
+            TNTClientDBManager.readUser(editedUser, ignore -> {
                 Player player = PlayersDatabase.getOrCreate(editedUser);
 
-                player.tntPlayerInfo = new TNTPlayerStorage();
+                if (player.tntPlayerInfo == null) player.tntPlayerInfo = new TNTPlayerStorage();
                 player.tntPlayerInfo.forceActive = active;
                 player.tntPlayerInfo.forceBlock = block;
 

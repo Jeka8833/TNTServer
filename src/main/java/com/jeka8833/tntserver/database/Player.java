@@ -1,13 +1,16 @@
 package com.jeka8833.tntserver.database;
 
-import com.jeka8833.tntserver.database.storage.HypixelPlayer;
-import com.jeka8833.tntserver.database.storage.HypixelPlayerStorage;
-import com.jeka8833.tntserver.database.storage.TNTPlayerStorage;
+import com.jeka8833.tntserver.database.storage.*;
+import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 public class Player {
     private static final long INACTIVE_TIME = TimeUnit.MINUTES.toMillis(1);
@@ -15,7 +18,7 @@ public class Player {
 
     public final @NotNull UUID uuid;
     private long timeDelete;
-
+    private final Object HYPIXEL_MUTEX = new Object();
     public volatile @Nullable HypixelPlayer hypixelPlayerInfo;
     public @Nullable TNTPlayerStorage tntPlayerInfo;
 
@@ -32,6 +35,54 @@ public class Player {
             timeDelete = System.currentTimeMillis() + HYPIXEL_CACHE;
         else
             timeDelete = System.currentTimeMillis() + INACTIVE_TIME;
+    }
+
+    @Blocking
+    public boolean tryAddToLoadingQueue(Predicate<HypixelPlayerLoading> addToQueueAndCheck,
+                                        Consumer<HypixelPlayer> listener) {
+        synchronized (HYPIXEL_MUTEX) {
+            if (hypixelPlayerInfo instanceof HypixelPlayerLoading loading) {
+                if (loading.isTimeout()) {
+                    if (!addToQueueAndCheck.test(loading)) return false;
+                    loading.setTimeout(30);
+                }
+
+                loading.listeners().add(listener);
+            } else {
+                var loading = new HypixelPlayerLoading(new ArrayList<>());
+
+                if (!addToQueueAndCheck.test(loading)) return false;
+
+                loading.setTimeout(30);
+                loading.listeners().add(listener);
+
+                hypixelPlayerInfo = loading;
+            }
+        }
+        return true;
+    }
+
+    @Blocking
+    public void setHypixelStorage(HypixelPlayer storage) {
+        synchronized (HYPIXEL_MUTEX) {
+            if ((storage instanceof HypixelPlayerLoading && hypixelPlayerInfo instanceof HypixelPlayerLoading) ||
+                    (storage instanceof HypixelPlayerError && hypixelPlayerInfo instanceof HypixelPlayerStorage)) {
+                return;
+            }
+
+            Collection<Consumer<HypixelPlayer>> list = null;
+            if (hypixelPlayerInfo instanceof HypixelPlayerLoading loading) {
+                list = loading.listeners();
+            }
+
+            hypixelPlayerInfo = storage;
+
+            if (list != null) {
+                for (Consumer<HypixelPlayer> consumer : list) {
+                    consumer.accept(storage);
+                }
+            }
+        }
     }
 
     @Override

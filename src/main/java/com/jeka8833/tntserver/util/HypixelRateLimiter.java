@@ -17,6 +17,7 @@ public class HypixelRateLimiter {
     private @Range(from = 1, to = Integer.MAX_VALUE) int refreshDuration;
     private @Range(from = INFINITY_GROUPS, to = ONE_GROUP) int groupSize;
     private @Range(from = 0, to = Long.MAX_VALUE) long sleepAfterFail;
+    private long nextRefresh = 0;
 
     private @Nullable ServerResponse response;
 
@@ -46,15 +47,20 @@ public class HypixelRateLimiter {
 
         this.response = response;
 
+        long restTime = response.getReset() + 1000L;
+        if (restTime < nextRefresh || restTime - nextRefresh > refreshDuration / 4) {
+            nextRefresh = restTime;
+        }
+
         // 2000 - 2 seconds makes up for the mathematical rounding.
         if (response.getRemaining() >= (2000 * response.getLimit()) / refreshDuration) {
             int groupRemaining = response.getLimit() -
                     (response.getLimit() - response.getRemaining()) / groupSize * groupSize;   // Math round
-            int sleepTime = response.getToReset() - (refreshDuration * groupRemaining) / response.getLimit();
+            int sleepTime = getToResetUnchecked() - (refreshDuration * groupRemaining) / response.getLimit();
 
             if (sleepTime > 0) Thread.sleep(sleepTime);
         } else if (response.getRemaining() == 0) {
-            int sleepTime = response.getToReset();
+            int sleepTime = getToResetUnchecked();
 
             if (sleepTime > 0) Thread.sleep(sleepTime);
         }
@@ -94,13 +100,13 @@ public class HypixelRateLimiter {
     public OptionalInt getToReset() {
         if (response == null) return OptionalInt.empty();
 
-        return OptionalInt.of(Math.max(0, response.getToReset()));
+        return OptionalInt.of(Math.max(0, getToResetUnchecked()));
     }
 
     public OptionalInt getFreeAtMoment() {
         if (response == null) return OptionalInt.empty();
 
-        if (response.getToReset() < 0) return OptionalInt.of(groupSize);
+        if (getToResetUnchecked() < 0) return OptionalInt.of(Math.min(groupSize, response.getLimit()));
 
         long mustCount = ((System.currentTimeMillis() -
                 (response.getReset() - refreshDuration)) * response.getLimit()) / refreshDuration;
@@ -108,8 +114,15 @@ public class HypixelRateLimiter {
         return OptionalInt.of(Math.toIntExact(roundCount - (response.getLimit() - response.getRemaining())));
     }
 
-    public static class ServerResponse {
+    private int getToResetUnchecked() {
+        return Math.toIntExact(nextRefresh - System.currentTimeMillis());
+    }
 
+    public boolean isFail() {
+        return response == null;
+    }
+
+    public static class ServerResponse {
         private final @Range(from = 0, to = Long.MAX_VALUE) long reset;
         private final @Range(from = 1, to = Integer.MAX_VALUE) int limit;
         private final @Range(from = 0, to = Integer.MAX_VALUE) int remaining;
@@ -157,10 +170,6 @@ public class HypixelRateLimiter {
 
         public long getReset() {
             return reset;
-        }
-
-        public int getToReset() {
-            return Math.toIntExact((reset + 1000) - System.currentTimeMillis());
         }
 
         @Override

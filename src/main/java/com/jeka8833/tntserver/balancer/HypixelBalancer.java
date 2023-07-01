@@ -9,10 +9,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Range;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.Queue;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -20,7 +17,8 @@ import java.util.function.Consumer;
 public class HypixelBalancer {
     private static final long TIME_TO_LEAVE_FROM_QUEUE = TimeUnit.MINUTES.toMillis(1);
     @SuppressWarnings("unchecked")
-    private static final Balancer<UUID, HypixelPlayer>[] SOURCES = new Balancer[]{new HypixelAPIRequest()};
+    private static final Balancer<UUID, HypixelPlayer>[] SOURCES =
+            new Balancer[]{new HypixelAPIRequest(), new HypixelTNTRequest()};
     @SuppressWarnings("unchecked")
     private static final Balancer<UUID, HypixelPlayer>[] SOURCES_CACHE = new Balancer[]{new HypixelCache()};
 
@@ -51,6 +49,7 @@ public class HypixelBalancer {
         return false;
     }
 
+    // TODO: Need rewrite
     public static void tryGet(@NotNull UUID sender, @NotNull Collection<@NotNull UUID> players,
                               @NotNull Consumer<PlayersReady> listener, long timeSend, int maxSendCount) {
         PLAYER_TIMEOUTS.put(sender, System.currentTimeMillis() + TIME_TO_LEAVE_FROM_QUEUE);
@@ -116,9 +115,18 @@ public class HypixelBalancer {
     @Range(from = 0, to = Integer.MAX_VALUE)
     public static int getCountOfRequesters() {
         long currentTime = System.currentTimeMillis();
-        PLAYER_TIMEOUTS.values().removeIf(timeout -> timeout < currentTime);
+        int count = 0;
 
-        return PLAYER_TIMEOUTS.size();
+        Iterator<Long> iterator = PLAYER_TIMEOUTS.values().iterator();
+        while (iterator.hasNext()) {
+            if (currentTime < iterator.next()) {
+                count++;
+            } else {
+                iterator.remove();
+            }
+        }
+
+        return count;
     }
 
     @Range(from = 0, to = Integer.MAX_VALUE)

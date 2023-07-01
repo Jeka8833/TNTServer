@@ -9,6 +9,7 @@ import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
 import com.jeka8833.tntserver.packet.packets.*;
+import com.jeka8833.tntserver.packet.packets.authorization.AuthClientDeprecatedPacket;
 import com.jeka8833.tntserver.packet.packets.authorization.AuthClientPacket;
 import com.jeka8833.tntserver.packet.packets.authorization.AuthWebPacket;
 import com.jeka8833.tntserver.packet.packets.web.ModulesStatusPacket;
@@ -36,6 +37,7 @@ public class Main extends WebSocketServer {
 
     static {
         packetsList.put((byte) 1, ActiveModulesPacket.class);
+        packetsList.put((byte) 2, AuthClientDeprecatedPacket.class);    // Plug
         packetsList.put((byte) 4, RequestTNTClientPlayerPacket.class);
         packetsList.put((byte) 5, ReceiveTNTClientPlayerPacket.class);
         packetsList.put((byte) 6, ChatPacket.class);
@@ -47,6 +49,7 @@ public class Main extends WebSocketServer {
         packetsList.put((byte) 12, TokenPacket.class);
         packetsList.put((byte) 13, ReceiveHypixelPlayerPacket.class);
         packetsList.put((byte) 14, RequestHypixelPlayerPacket.class);
+        packetsList.put((byte) 15, UpdateFreeRequestsPacket.class);
         packetsList.put((byte) 254, ModulesStatusPacket.class);
         packetsList.put((byte) 255, AuthWebPacket.class);
     }
@@ -76,7 +79,8 @@ public class Main extends WebSocketServer {
         try (PacketInputStream stream = new PacketInputStream(message)) {
             UUID playerUUID = conn.getAttachment();
 
-            if (stream.packet instanceof AuthClientPacket || stream.packet instanceof AuthWebPacket) {
+            if (stream.packet instanceof AuthClientPacket || stream.packet instanceof AuthWebPacket ||
+                    stream.packet instanceof AuthClientDeprecatedPacket) {
                 stream.packet.read(stream);
                 stream.packet.serverProcess(conn, null);
             } else if (playerUUID == null) {
@@ -110,14 +114,17 @@ public class Main extends WebSocketServer {
         setConnectionLostTimeout(15);
     }
 
-    public static void serverSend(final WebSocket socket, final Packet packet) {
+    public static boolean serverSend(WebSocket socket, Packet packet) {
         try (final PacketOutputStream stream = new PacketOutputStream()) {
             packet.write(stream);
-            if (socket.isOpen())
+            if (socket.isOpen()) {
                 socket.send(stream.getByteBuffer(packet.getClass()));
+                return true;
+            }
         } catch (Exception e) {
             logger.error("Fail send packet:", e);
         }
+        return false;
     }
 
     public static void serverBroadcast(final Packet packet) {

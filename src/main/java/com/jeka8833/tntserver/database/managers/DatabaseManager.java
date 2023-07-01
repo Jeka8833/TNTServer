@@ -12,7 +12,7 @@ public class DatabaseManager {
 
     private static final Logger LOGGER = LogManager.getLogger(DatabaseManager.class);
 
-    private Connection connection;
+    public Connection connection;
     public Statement statement;
 
     private final String host;

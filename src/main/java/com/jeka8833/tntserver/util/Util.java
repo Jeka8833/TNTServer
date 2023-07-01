@@ -24,6 +24,7 @@ public class Util {
         return System.getenv(key.substring(1).toUpperCase());
     }
 
+    @NotNull
     public static UUID fromString(@NotNull String input) {
         return UUID.fromString(
                 input.replaceFirst("(\\w{8})(\\w{4})(\\w{4})(\\w{4})(\\w{12})", "$1-$2-$3-$4-$5"));

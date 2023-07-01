@@ -41,13 +41,13 @@ public class AuthClientPacket implements Packet {
             public void good(@NotNull UUID user, @Nullable Set<String> privileges) {
                 socket.setAttachment(user);
 
-                TNTClientDBManager.readOrCashUser(user, ignore -> {
+                TNTClientDBManager.readUser(user, ignore -> {
                     Player player = PlayersDatabase.getOrCreate(user);
 
-                    player.tntPlayerInfo = new TNTPlayerStorage();
+                    if (player.tntPlayerInfo == null) player.tntPlayerInfo = new TNTPlayerStorage();
+
                     player.tntPlayerInfo.version = version;
                     player.tntPlayerInfo.status = TNTPlayerStorage.STATUS_ONLINE;
-                    player.tntPlayerInfo.timeLogin = System.currentTimeMillis();
 
                     TNTClientDBManager.writeUser(user, null);
 

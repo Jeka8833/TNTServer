@@ -49,7 +49,6 @@ public class ReceiveHypixelPlayerPacket implements Packet {
 
     @Override
     public void read(PacketInputStream stream) throws IOException {
-        lastPacket = stream.readBoolean();
         int size = stream.readUnsignedByte();
         for (int i = 0; i < size; i++) {
             int status = stream.readUnsignedByte();
@@ -59,7 +58,7 @@ public class ReceiveHypixelPlayerPacket implements Packet {
 
                 var storage = new HypixelPlayerStorage();
                 storage.readStream(stream);
-                player.hypixelPlayerInfo = storage;
+                player.setHypixelStorage(storage);
             }
         }
     }

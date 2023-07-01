@@ -8,22 +8,32 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TNTClientDBManager {
-
     private static final Logger LOGGER = LogManager.getLogger(TNTClientDBManager.class);
-    private static final DateFormat FORMATTER = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private static PreparedStatement preparedWrite;
 
     private static final Map<UUID, UserQuire> USER_REQUEST_LIST = new ConcurrentHashMap<>();
 
     public static void init() {
+        try {
+            //noinspection SqlNoDataSourceInspection,SqlResolve
+            preparedWrite = DatabaseManager.db.connection.prepareStatement(
+                    "INSERT INTO \"TC_Players\" (\"user\", \"version\", \"timeLogin\", \"blockModules\") " +
+                            "VALUES (?,?,CURRENT_TIMESTAMP,?) ON CONFLICT (\"user\") DO UPDATE SET " +
+                            "\"version\" = EXCLUDED.\"version\", \"timeLogin\" = EXCLUDED.\"timeLogin\"," +
+                            " \"blockModules\" = EXCLUDED.\"blockModules\"");
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
         var infinityThread = new Thread(() -> {
             while (true) {
                 try {
@@ -64,7 +74,8 @@ public class TNTClientDBManager {
 
     private static void read(@NotNull Collection<UserQuire> userList) throws Exception {
         var joiner = new StringJoiner("','",
-                "SELECT * FROM \"TC_Players\" WHERE \"user\" IN ('", "')");
+                "SELECT\"user\",\"version\",\"blockModules\",\"donate\"FROM\"TC_Players\"WHERE\"user\"IN('",
+                "')");
 
         for (UserQuire quire : userList) joiner.add(quire.user.toString());
 
@@ -72,12 +83,9 @@ public class TNTClientDBManager {
         try (ResultSet resultSet = DatabaseManager.db.statement.executeQuery(joiner.toString())) { // Throw force exit
             while (resultSet.next()) {
                 Player player = PlayersDatabase.getOrCreate(resultSet.getObject("user", UUID.class));
-                player.tntPlayerInfo = new TNTPlayerStorage();
+
+                if (player.tntPlayerInfo == null) player.tntPlayerInfo = new TNTPlayerStorage();
                 player.tntPlayerInfo.version = resultSet.getString("version");
-
-                final Date date = resultSet.getTimestamp("timeLogin");
-                player.tntPlayerInfo.timeLogin = date == null ? System.currentTimeMillis() : date.getTime();
-
                 player.tntPlayerInfo.forceBlock = resultSet.getLong("blockModules");
                 player.tntPlayerInfo.donate = resultSet.getByte("donate");
             }
@@ -105,24 +113,22 @@ public class TNTClientDBManager {
     }
 
     private static void write(@NotNull Collection<UserQuire> userList) throws Exception {
-        var sqlRequest = new StringJoiner(",",
-                "INSERT INTO \"TC_Players\" (\"user\", \"version\", " +
-                        "\"timeLogin\", \"blockModules\", \"donate\") VALUES ",
-
-                " ON CONFLICT (\"user\") DO UPDATE SET \"version\" = EXCLUDED.\"version\", " +
-                        "\"timeLogin\" = EXCLUDED.\"timeLogin\", \"blockModules\" = EXCLUDED.\"blockModules\", " +
-                        "\"donate\" = EXCLUDED.\"donate\"");
         for (UserQuire quire : userList) {
             Player user = PlayersDatabase.getUser(quire.user);
             if (user == null || user.tntPlayerInfo == null) continue;
 
-            sqlRequest.add("('" + user.uuid + "','" + user.tntPlayerInfo.version + "','"
-                    + FORMATTER.format(new Date(user.tntPlayerInfo.timeLogin)) + "'," +
-                    user.tntPlayerInfo.forceBlock + "," + user.tntPlayerInfo.donate + ")");
+            preparedWrite.setObject(1, user.uuid);
+            preparedWrite.setString(2, user.tntPlayerInfo.version);
+            preparedWrite.setLong(3, user.tntPlayerInfo.forceBlock);
+
+            preparedWrite.addBatch();
         }
 
         DatabaseManager.db.checkConnect();
-        DatabaseManager.db.statement.executeUpdate(sqlRequest.toString()); // Might throw an exception
+        int[] results = preparedWrite.executeBatch();
+        for (int result : results) {
+            if (result == Statement.EXECUTE_FAILED) throw new NullPointerException("Execution failed.");
+        }
 
         for (UserQuire quire : userList) quire.callWrite();
     }
@@ -130,7 +136,7 @@ public class TNTClientDBManager {
     /**
      * @param callback Will return null in callback if the database response has timed out or other circumstances.
      */
-    private static void readUser(@NotNull UUID uuid, @Nullable UserCallback callback) {
+    public static void readUser(@NotNull UUID uuid, @Nullable UserCallback callback) {
         if (uuid.version() != 4) {
             if (callback != null) callback.update(null);
             return;

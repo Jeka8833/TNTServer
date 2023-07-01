@@ -18,22 +18,18 @@ import java.util.UUID;
 public class RequestHypixelPlayerPacket implements Packet {
 
     private @Nullable Collection<UUID> userList;
-    private int timeout = 0;
 
     public RequestHypixelPlayerPacket() {
     }
 
-    public RequestHypixelPlayerPacket(@NotNull Collection<UUID> userList, int timeout) {
+    public RequestHypixelPlayerPacket(@NotNull Collection<UUID> userList) {
         this.userList = userList;
-        this.timeout = timeout;
     }
-
 
     @Override
     public void write(PacketOutputStream stream) throws IOException {
         if (userList == null || userList.isEmpty()) throw new NullPointerException("User list is empty");
 
-        stream.writeByte(timeout);
         stream.writeByte(userList.size());
         for (UUID user : userList) {
             stream.writeUUID(user);
