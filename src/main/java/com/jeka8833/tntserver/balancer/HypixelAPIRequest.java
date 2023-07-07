@@ -14,6 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 
+import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URI;
@@ -90,8 +91,9 @@ public class HypixelAPIRequest implements Balancer<UUID, HypixelPlayer> {
                     .newBuilder(URI.create("https://api.hypixel.net/player?uuid=" + playerUUID))
                     .header("API-Key", key.toString()).build();
 
-            HttpResponse<InputStream> serverResponse = Util.client.send(request,
-                    HttpResponse.BodyHandlers.ofInputStream());
+            // Answer size around 100-1000 KByte
+            HttpResponse<InputStream> serverResponse =
+                    Util.client.send(request, HttpResponse.BodyHandlers.ofInputStream());
             response = HypixelRateLimiter.ServerResponse.create(
                     serverResponse.headers().firstValueAsLong("RateLimit-Reset"),
                     serverResponse.headers().firstValueAsLong("RateLimit-Limit"),
@@ -99,7 +101,9 @@ public class HypixelAPIRequest implements Balancer<UUID, HypixelPlayer> {
 
             if (serverResponse.statusCode() == 200) {
                 HypixelAPIRequest structure = Util.GSON.fromJson(
-                        new InputStreamReader(serverResponse.body(), StandardCharsets.UTF_8), HypixelAPIRequest.class);
+                        new BufferedReader(
+                                new InputStreamReader(serverResponse.body(), StandardCharsets.UTF_8), 64 * 1024),
+                        HypixelAPIRequest.class);
                 if (structure == null || structure.player == null) return null;
 
                 return structure.player;

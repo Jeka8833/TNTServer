@@ -30,8 +30,9 @@ public class RequestHypixelPlayerPacket implements Packet {
     public void write(PacketOutputStream stream) throws IOException {
         if (userList == null || userList.isEmpty()) throw new NullPointerException("User list is empty");
 
-        stream.writeByte(userList.size());
-        for (UUID user : userList) {
+        UUID[] array = userList.toArray(UUID[]::new);
+        stream.writeByte(array.length);
+        for (UUID user : array) {
             stream.writeUUID(user);
         }
     }

@@ -6,6 +6,7 @@ import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
+import com.jeka8833.tntserver.packet.packets.web.TokenGeneratorPacket;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.java_websocket.WebSocket;
@@ -54,13 +55,12 @@ public class TokenPacket implements Packet {
 
         List<Map.Entry<UUID, BotsManager.BotUser>> bots = BotsManager.getBots("SERVER_TOKEN");
         if (!bots.isEmpty()) {
-            var packet = new TokenPacket(user.uuid, unregister ? nullUUID : UUID.randomUUID());
+            var packet = new TokenGeneratorPacket(user.uuid, unregister);
 
             try {
                 for (Map.Entry<UUID, BotsManager.BotUser> entry : bots)
                     Main.serverSend(entry.getValue().connection(), packet);
 
-                Main.serverSend(socket, packet);
                 return;
             } catch (Exception e) {
                 logger.warn("Fail send to bot", e);

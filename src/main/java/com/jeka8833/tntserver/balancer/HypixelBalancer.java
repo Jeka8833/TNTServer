@@ -110,6 +110,8 @@ public class HypixelBalancer {
                 listener.accept(new PlayersReady(received, true));
             }
         }
+
+        HypixelTNTRequest.sendRequest();
     }
 
     @Range(from = 0, to = Integer.MAX_VALUE)
