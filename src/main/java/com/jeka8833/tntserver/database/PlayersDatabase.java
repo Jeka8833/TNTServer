@@ -1,5 +1,6 @@
 package com.jeka8833.tntserver.database;
 
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,7 +24,10 @@ public class PlayersDatabase {
     }
 
     @Nullable
-    public static Player getUser(@NotNull UUID uuid) {
+    @Contract("null -> null")
+    public static Player getUser(@Nullable UUID uuid) {
+        if (uuid == null) return null;
+
         Player user = uuid2User.get(uuid);
         if (user != null) user.playerCalled();
 

@@ -78,28 +78,20 @@ public class Main extends WebSocketServer {
 
     @Override
     public void onMessage(WebSocket conn, ByteBuffer message) {
-        try (PacketInputStream stream = new PacketInputStream(message)) {
-            UUID playerUUID = conn.getAttachment();
+        UUID userUUID = conn.getAttachment();
+        Player user = PlayersDatabase.getUser(userUUID);
 
-            if (stream.packet instanceof AuthClientPacket || stream.packet instanceof AuthWebPacket ||
-                    stream.packet instanceof AuthClientDeprecatedPacket) {
-                stream.packet.read(stream);
-                stream.packet.serverProcess(conn, null);
-            } else if (playerUUID == null) {
-                conn.close();
-            } else {
-                Player user = PlayersDatabase.getUser(playerUUID);
-                if (user == null && playerUUID.variant() == 2) {
+        try (PacketInputStream stream = new PacketInputStream(message)) {
+            if (!(stream.packet instanceof AuthClientPacket || stream.packet instanceof AuthWebPacket ||
+                    stream.packet instanceof AuthClientDeprecatedPacket)) {
+                if (userUUID == null || (user == null && userUUID.variant() == 2)) {
                     conn.close(); // The player doesn't exist in the cache, disconnecting...
-                } else {
-                    try {
-                        stream.packet.read(stream);
-                        stream.packet.serverProcess(conn, user);
-                    } catch (Exception e) {
-                        logger.error("Fail parse packet", e);
-                    }
+                    return;
                 }
             }
+
+            stream.packet.read(stream);
+            stream.packet.serverProcess(conn, user);
         } catch (Exception e) {
             logger.error("Fail parse packet", e);
         }

@@ -2,6 +2,7 @@ package com.jeka8833.tntserver.packet.packets.authorization;
 
 import com.jeka8833.tntserver.AuthManager;
 import com.jeka8833.tntserver.Main;
+import com.jeka8833.tntserver.ServerType;
 import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.database.PlayersDatabase;
 import com.jeka8833.tntserver.database.managers.TNTClientDBManager;
@@ -10,11 +11,13 @@ import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
 import com.jeka8833.tntserver.packet.packets.BlockModulesPacket;
+import com.jeka8833.tntserver.util.Util;
 import org.java_websocket.WebSocket;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.UUID;
 
@@ -22,6 +25,7 @@ public class AuthClientPacket implements Packet {
     private String playerUsername;
     private String serverKey;
     private String version;
+    private byte[] customParameters;
 
     @Override
     public void write(PacketOutputStream stream) {
@@ -32,10 +36,15 @@ public class AuthClientPacket implements Packet {
         playerUsername = stream.readUTF();
         serverKey = stream.readUTF();
         version = stream.readUTF();
+
+        customParameters = stream.readAllBytes();
     }
 
     @Override
     public void serverProcess(WebSocket socket, Player user) {
+        Parameters parameters = Util.GSON.fromJson(
+                new String(customParameters, StandardCharsets.US_ASCII), Parameters.class);
+
         AuthManager.authMojang(playerUsername, serverKey, new AuthManager.AuthResponse() {
             @Override
             public void good(@NotNull UUID user, @Nullable Set<String> privileges) {
@@ -43,6 +52,7 @@ public class AuthClientPacket implements Packet {
 
                 TNTClientDBManager.readUser(user, ignore -> {
                     Player player = PlayersDatabase.getOrCreate(user);
+                    player.serverType = parameters == null ? ServerType.HYPIXEL : parameters.serverBrand;
 
                     if (player.tntPlayerInfo == null) player.tntPlayerInfo = new TNTPlayerStorage();
 
@@ -61,5 +71,10 @@ public class AuthClientPacket implements Packet {
                 socket.close();
             }
         });
+    }
+
+    private static class Parameters {
+        @SuppressWarnings("FieldMayBeFinal")
+        private ServerType serverBrand = ServerType.HYPIXEL;
     }
 }

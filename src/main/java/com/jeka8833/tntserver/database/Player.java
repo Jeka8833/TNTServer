@@ -1,5 +1,6 @@
 package com.jeka8833.tntserver.database;
 
+import com.jeka8833.tntserver.ServerType;
 import com.jeka8833.tntserver.database.storage.*;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.NotNull;
@@ -16,11 +17,14 @@ public class Player {
     private static final long INACTIVE_TIME = TimeUnit.MINUTES.toMillis(1);
     private static final long HYPIXEL_CACHE = TimeUnit.MINUTES.toMillis(5);
 
+    private final Object HYPIXEL_MUTEX = new Object();
+
     public final @NotNull UUID uuid;
     private long timeDelete;
-    private final Object HYPIXEL_MUTEX = new Object();
     public volatile @Nullable HypixelPlayer hypixelPlayerInfo;
     public @Nullable TNTPlayerStorage tntPlayerInfo;
+
+    public @NotNull ServerType serverType = ServerType.UNKNOWN;
 
     public Player(@NotNull UUID uuid) {
         this.uuid = uuid;
