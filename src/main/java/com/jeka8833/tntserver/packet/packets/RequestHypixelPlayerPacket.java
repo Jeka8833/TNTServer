@@ -19,6 +19,7 @@ public class RequestHypixelPlayerPacket implements Packet {
 
     private @Nullable Collection<UUID> userList;
 
+    @SuppressWarnings("unused")
     public RequestHypixelPlayerPacket() {
     }
 
@@ -61,6 +62,6 @@ public class RequestHypixelPlayerPacket implements Packet {
                 userList.add(new ReceiveHypixelPlayerPacket.ReceivePlayer(player.uuid, player.hypixelPlayerInfo));
             }
             Main.serverSend(socket, new ReceiveHypixelPlayerPacket(userList, playersReady.lastPacket()));
-        }, 5, 3);
+        }, 5, 4);
     }
 }

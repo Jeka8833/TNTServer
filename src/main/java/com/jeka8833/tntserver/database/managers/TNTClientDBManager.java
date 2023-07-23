@@ -16,6 +16,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 public class TNTClientDBManager {
     private static final Logger LOGGER = LogManager.getLogger(TNTClientDBManager.class);
@@ -136,9 +137,9 @@ public class TNTClientDBManager {
     /**
      * @param callback Will return null in callback if the database response has timed out or other circumstances.
      */
-    public static void readUser(@NotNull UUID uuid, @Nullable UserCallback callback) {
+    public static void readUser(@NotNull UUID uuid, @Nullable Consumer<@Nullable Player> callback) {
         if (uuid.version() != 4) {
-            if (callback != null) callback.update(null);
+            if (callback != null) callback.accept(null);
             return;
         }
 
@@ -146,16 +147,17 @@ public class TNTClientDBManager {
         quire.addReadCallback(callback);
     }
 
-    public static void readOrCashUser(@NotNull UUID uuid, final UserCallback callback) {
+    public static void readOrCashUser(@NotNull UUID uuid, Consumer<@Nullable Player> callback) {
         Player user = PlayersDatabase.getUser(uuid);
         if (user == null) {
             readUser(uuid, callback);
         } else {
-            callback.update(user);
+            callback.accept(user);
         }
     }
 
-    public static void readOrCashUsers(@NotNull List<UUID> users, @Nullable UsersCallback callbackList,
+    public static void readOrCashUsers(@NotNull List<UUID> users,
+                                       @Nullable Consumer<@NotNull Player @Nullable []> callbackList,
                                        boolean createConstructor) {
         if (callbackList == null) {
             for (UUID uuid : users) readOrCashUser(uuid, null);
@@ -168,7 +170,7 @@ public class TNTClientDBManager {
                 readOrCashUser(uuid, tntUser -> {
                     returnUsers[finalI] = createConstructor && tntUser == null ? new Player(uuid) : tntUser;
 
-                    if (answerCount.decrementAndGet() <= 0) callbackList.update(returnUsers);
+                    if (answerCount.decrementAndGet() <= 0) callbackList.accept(returnUsers);
                 });
             }
         }
@@ -177,9 +179,9 @@ public class TNTClientDBManager {
     /**
      * @param callback Will return null in callback if the database response has timed out or other circumstances.
      */
-    public static void writeUser(@NotNull UUID uuid, @Nullable UserCallback callback) {
+    public static void writeUser(@NotNull UUID uuid, @Nullable Consumer<@Nullable Player> callback) {
         if (uuid.version() != 4) {
-            if (callback != null) callback.update(null);
+            if (callback != null) callback.accept(null);
             return;
         }
 
@@ -189,8 +191,8 @@ public class TNTClientDBManager {
 
     private static class UserQuire {
         private final @NotNull UUID user;
-        private final Queue<UserCallback> readCallbackList = new ConcurrentLinkedQueue<>();
-        private final Queue<UserCallback> writeCallbackList = new ConcurrentLinkedQueue<>();
+        private final Queue<Consumer<@Nullable Player>> readCallbackList = new ConcurrentLinkedQueue<>();
+        private final Queue<Consumer<@Nullable Player>> writeCallbackList = new ConcurrentLinkedQueue<>();
         private long readWriteTimeout = System.currentTimeMillis() + 20_000; // Wait 20 second
 
         public UserQuire(@NotNull UUID user) {
@@ -230,10 +232,10 @@ public class TNTClientDBManager {
         }
 
         public void callRead() {
-            UserCallback callback;
+            Consumer<@Nullable Player> callback;
             while ((callback = readCallbackList.poll()) != null) {
                 try {
-                    callback.update(PlayersDatabase.getUser(user));
+                    callback.accept(PlayersDatabase.getUser(user));
                 } catch (Exception e) {
                     LOGGER.warn("Read callback throw exception", e);
                 }
@@ -241,10 +243,10 @@ public class TNTClientDBManager {
         }
 
         public void callWrite() {
-            UserCallback callback;
+            Consumer<@Nullable Player> callback;
             while ((callback = writeCallbackList.poll()) != null) {
                 try {
-                    callback.update(PlayersDatabase.getUser(user));
+                    callback.accept(PlayersDatabase.getUser(user));
                 } catch (Exception e) {
                     LOGGER.warn("Read callback throw exception", e);
                 }
@@ -254,7 +256,7 @@ public class TNTClientDBManager {
         /**
          * Throw null in callback when timeout
          */
-        public void addReadCallback(@Nullable UserCallback callback) {
+        public void addReadCallback(@Nullable Consumer<@Nullable Player> callback) {
             if (callback != null) {
                 readCallbackList.offer(callback);
             } else if (readCallbackList.isEmpty()) {
@@ -267,7 +269,7 @@ public class TNTClientDBManager {
         /**
          * Throw null in callback when timeout
          */
-        public void addWriteCallback(@Nullable UserCallback callback) {
+        public void addWriteCallback(@Nullable Consumer<@Nullable Player> callback) {
             if (callback != null) {
                 writeCallbackList.offer(callback);
             } else if (writeCallbackList.isEmpty()) {
@@ -277,13 +279,5 @@ public class TNTClientDBManager {
 
             readWriteTimeout = System.currentTimeMillis() + 20_000;
         }
-    }
-
-    public interface UserCallback {
-        void update(@Nullable Player tntUser);
-    }
-
-    public interface UsersCallback {
-        void update(@NotNull Player @Nullable [] tntUsers);
     }
 }

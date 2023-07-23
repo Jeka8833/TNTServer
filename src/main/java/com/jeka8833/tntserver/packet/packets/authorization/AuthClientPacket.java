@@ -12,6 +12,8 @@ import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
 import com.jeka8833.tntserver.packet.packets.BlockModulesPacket;
 import com.jeka8833.tntserver.util.Util;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.java_websocket.WebSocket;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -22,6 +24,8 @@ import java.util.Set;
 import java.util.UUID;
 
 public class AuthClientPacket implements Packet {
+    private static final Logger logger = LogManager.getLogger(AuthClientPacket.class);
+
     private String playerUsername;
     private String serverKey;
     private String version;
@@ -52,7 +56,8 @@ public class AuthClientPacket implements Packet {
 
                 TNTClientDBManager.readUser(user, ignore -> {
                     Player player = PlayersDatabase.getOrCreate(user);
-                    player.serverType = parameters == null ? ServerType.HYPIXEL : parameters.serverBrand;
+                    player.serverType = parameters == null ?
+                            ServerType.HYPIXEL : ServerType.getServer(parameters.serverBrand);
 
                     if (player.tntPlayerInfo == null) player.tntPlayerInfo = new TNTPlayerStorage();
 
@@ -63,6 +68,9 @@ public class AuthClientPacket implements Packet {
 
                     Main.serverSend(socket,
                             new BlockModulesPacket(player.tntPlayerInfo.forceBlock, player.tntPlayerInfo.forceActive));
+
+                    logger.info("User " + playerUsername + " logged in. Current online: " +
+                            Main.server.getConnections().size());
                 });
             }
 
@@ -75,6 +83,6 @@ public class AuthClientPacket implements Packet {
 
     private static class Parameters {
         @SuppressWarnings("FieldMayBeFinal")
-        private ServerType serverBrand = ServerType.HYPIXEL;
+        private String serverBrand = "";
     }
 }

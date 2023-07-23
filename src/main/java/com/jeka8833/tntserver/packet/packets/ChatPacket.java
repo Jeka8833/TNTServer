@@ -18,8 +18,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ChatPacket implements Packet {
 
-    private static final long DIFFERENT_MESSAGE_TIMING = 3_000;
-    private static final long SAME_MESSAGE_TIMING = 6_000;
+    private static final long DIFFERENT_MESSAGE_TIMING = 500;
+    private static final long SAME_MESSAGE_TIMING = 3_000;
 
     private static final Map<UUID, MessageTiming> MESSAGE_TIMING_MAP = new ConcurrentHashMap<>();
     private static final Logger logger = LogManager.getLogger(ChatPacket.class);

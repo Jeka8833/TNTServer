@@ -62,12 +62,12 @@ public class Main extends WebSocketServer {
 
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
-        logger.info("Current online: " + Main.server.getConnections().size());
     }
 
     @Override
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
-        logger.info("Current online: " + Main.server.getConnections().size());
+        logger.info("User(Bot) " + conn.getAttachment() + "is logged out(Error code: " + code +
+                "; Message: " + reason + "). Current online: " + Main.server.getConnections().size());
 
         BotsManager.clearDisconnectedBots();
     }
@@ -119,26 +119,6 @@ public class Main extends WebSocketServer {
             logger.error("Fail send packet:", e);
         }
         return false;
-    }
-
-    public static void serverBroadcast(final Packet packet) {
-        try (final PacketOutputStream stream = new PacketOutputStream()) {
-            packet.write(stream);
-            ByteBuffer send = stream.getByteBuffer(packet.getClass());
-
-            for (WebSocket client : server.getConnections()) {
-                try {
-                    UUID userID = client.getAttachment();
-                    if (userID == null || userID.version() != 4) continue;
-
-                    if (client.isOpen()) client.send(send);
-                } catch (Exception e) {
-                    logger.error("Fail send packet:", e);
-                }
-            }
-        } catch (Exception e) {
-            logger.error("Fail generate packet:", e);
-        }
     }
 
     public static void main(String[] args) {

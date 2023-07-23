@@ -24,10 +24,11 @@ public class HypixelTNTRequest implements Balancer<UUID, HypixelPlayer> {
     @SuppressWarnings("unchecked")
     private static final Map.Entry<UUID, AvailableCount>[] TO_ARRAY_ENTRY =
             (Map.Entry<UUID, AvailableCount>[]) new Map.Entry[0];
-    private static final Map<UUID, AvailableCount> AVAILABLE_COUNT_MAP = new ConcurrentHashMap<>();
     private static final Packet REQUEST_AVAILABLE_COUNT_PACKET = new UpdateFreeRequestsPacket();
     private static final Map<WebSocket, Queue<UUID>> SEND_QUEUE = new ConcurrentHashMap<>();
-    private static final AtomicInteger TAKE_COUNT = new AtomicInteger();
+
+    private final Map<UUID, AvailableCount> availableCountMap = new ConcurrentHashMap<>();
+    private final AtomicInteger takeCount = new AtomicInteger();
 
     @Override
     public boolean requestInfo(@NotNull UUID key, @NotNull Consumer<HypixelPlayer> data) {
@@ -45,7 +46,7 @@ public class HypixelTNTRequest implements Balancer<UUID, HypixelPlayer> {
         long time = System.currentTimeMillis();
         int count = 0;
 
-        Iterator<AvailableCount> iterator = AVAILABLE_COUNT_MAP.values().iterator();
+        Iterator<AvailableCount> iterator = availableCountMap.values().iterator();
         while (iterator.hasNext()) {
             AvailableCount availableCount = iterator.next();
             int available = availableCount.count().get();
@@ -59,15 +60,41 @@ public class HypixelTNTRequest implements Balancer<UUID, HypixelPlayer> {
         return count;
     }
 
-    public static void setAvailable(@NotNull WebSocket socket, @Range(from = 0, to = Integer.MAX_VALUE) int available) {
+    public void setAvailable(@NotNull WebSocket socket, @Range(from = 0, to = Integer.MAX_VALUE) int available) {
         UUID player = socket.getAttachment();
         if (player == null) return;
 
         if (available == 0) {
-            AVAILABLE_COUNT_MAP.remove(player);
+            availableCountMap.remove(player);
         } else {
-            AVAILABLE_COUNT_MAP.put(player, new AvailableCount(
+            availableCountMap.put(player, new AvailableCount(
                     System.currentTimeMillis() + AVAILABLE_TIMEOUT, socket, new AtomicInteger(available)));
+        }
+    }
+
+    @Nullable
+    private AvailableCount takeClient() {
+        int shift = Math.abs(takeCount.incrementAndGet());
+
+        while (true) {  // If thread collision, or timeout
+            Map.Entry<UUID, AvailableCount>[] array = availableCountMap.entrySet().toArray(TO_ARRAY_ENTRY);
+            if (array.length == 0) return null;
+
+            Map.Entry<UUID, AvailableCount> selected = array[shift % array.length];
+
+            if (selected.getValue().timeout < System.currentTimeMillis()) {
+                availableCountMap.remove(selected.getKey());
+                Main.serverSend(selected.getValue().socket(), REQUEST_AVAILABLE_COUNT_PACKET);
+                continue;
+            }
+
+            int left = selected.getValue().count().decrementAndGet();
+            if (left <= 0) {
+                availableCountMap.remove(selected.getKey());
+                Main.serverSend(selected.getValue().socket(), REQUEST_AVAILABLE_COUNT_PACKET);
+            }
+
+            if (left >= 0) return selected.getValue();
         }
     }
 
@@ -78,32 +105,6 @@ public class HypixelTNTRequest implements Balancer<UUID, HypixelPlayer> {
             iterator.remove();
 
             Main.serverSend(entry.getKey(), new RequestHypixelPlayerPacket(entry.getValue()));
-        }
-    }
-
-    @Nullable
-    private static AvailableCount takeClient() {
-        int shift = Math.abs(TAKE_COUNT.incrementAndGet());
-
-        while (true) {  // If thread collision, or timeout
-            Map.Entry<UUID, AvailableCount>[] array = AVAILABLE_COUNT_MAP.entrySet().toArray(TO_ARRAY_ENTRY);
-            if (array.length == 0) return null;
-
-            Map.Entry<UUID, AvailableCount> selected = array[shift % array.length];
-
-            if (selected.getValue().timeout < System.currentTimeMillis()) {
-                AVAILABLE_COUNT_MAP.remove(selected.getKey());
-                Main.serverSend(selected.getValue().socket(), REQUEST_AVAILABLE_COUNT_PACKET);
-                continue;
-            }
-
-            int left = selected.getValue().count().decrementAndGet();
-            if (left <= 0) {
-                AVAILABLE_COUNT_MAP.remove(selected.getKey());
-                Main.serverSend(selected.getValue().socket(), REQUEST_AVAILABLE_COUNT_PACKET);
-            }
-
-            if (left >= 0) return selected.getValue();
         }
     }
 

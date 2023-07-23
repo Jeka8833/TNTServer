@@ -2,10 +2,13 @@ package com.jeka8833.tntserver.packet.packets.authorization;
 
 import com.jeka8833.tntserver.AuthManager;
 import com.jeka8833.tntserver.BotsManager;
+import com.jeka8833.tntserver.Main;
 import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.java_websocket.WebSocket;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -15,6 +18,8 @@ import java.util.Set;
 import java.util.UUID;
 
 public class AuthWebPacket implements Packet {
+    private static final Logger logger = LogManager.getLogger(AuthWebPacket.class);
+
     private UUID user;
     private UUID key;
 
@@ -41,10 +46,12 @@ public class AuthWebPacket implements Packet {
                 socket.setAttachment(user);
 
                 BotsManager.addBot(user, privileges, socket);
-/*
-                Main.serverSend(socket,
+
+/*                Main.serverSend(socket,
                         new TokenPacket(UUID.fromString("6bd6e833-a80a-430e-9029-4786368811f9"),
                                 UUID.fromString("6bd6e833-a80a-430e-9029-4786368811f9")));*/
+
+                logger.info("Bot " + user + " logged in. Current online: " + Main.server.getConnections().size());
             }
 
             @Override

@@ -107,11 +107,13 @@ public class HypixelAPIRequest implements Balancer<UUID, HypixelPlayer> {
                 if (structure == null || structure.player == null) return null;
 
                 return structure.player;
+            } else if (serverResponse.statusCode() == 403) {
+                logger.warn("Hypixel API request returned 403");
             }
         } catch (InterruptedException interruptedException) {
             throw interruptedException;
-        } catch (Exception ignored) {
-            // Ignore
+        } catch (Exception e) {
+            logger.warn("Hypixel API request", e);
         } finally {
             RATE_LIMITER.receiveAndLock(response);
         }
