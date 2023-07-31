@@ -1,21 +1,29 @@
 package com.jeka8833.tntserver.util;
 
 import com.google.gson.Gson;
+import okhttp3.ConnectionPool;
+import okhttp3.Dispatcher;
+import okhttp3.OkHttpClient;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Range;
 
-import java.net.http.HttpClient;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.util.ArrayList;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 public class Util {
-
-    public static final HttpClient client = HttpClient.newHttpClient();
+    private static final Logger logger = LogManager.getLogger(Util.class);
     public static final Gson GSON = new Gson();
+    public static final OkHttpClient clientOk = createSocket();
 
     public static String getParam(final String[] args, final String key) {
         for (int i = 0; i < args.length - 1; i++)
@@ -54,5 +62,41 @@ public class Util {
             t.setName(name);
             return t;
         };
+    }
+
+    private static OkHttpClient createSocket() {
+        OkHttpClient.Builder newBuilder = new OkHttpClient.Builder();
+        try {
+            TrustManager[] trustAllCerts = new TrustManager[]{
+                    new X509TrustManager() {
+                        @Override
+                        public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) {
+                        }
+
+                        @Override
+                        public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) {
+                        }
+
+                        @Override
+                        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                            return new java.security.cert.X509Certificate[]{};
+                        }
+                    }
+            };
+
+            SSLContext sslContext = SSLContext.getInstance("SSL");
+            sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+
+            newBuilder.sslSocketFactory(sslContext.getSocketFactory(), (X509TrustManager) trustAllCerts[0]);
+            newBuilder.hostnameVerifier((hostname, session) -> true);
+        } catch (Exception e) {
+            logger.error("Fail create noSSL socket", e);
+        }
+
+        Dispatcher dispatcher = new Dispatcher();
+        dispatcher.setMaxRequestsPerHost(20);
+        newBuilder.dispatcher(dispatcher);
+        newBuilder.connectionPool(new ConnectionPool(5, 60, TimeUnit.SECONDS));
+        return newBuilder.build();
     }
 }

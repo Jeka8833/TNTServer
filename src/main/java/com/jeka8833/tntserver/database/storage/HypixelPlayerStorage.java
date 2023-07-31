@@ -1,10 +1,10 @@
 package com.jeka8833.tntserver.database.storage;
 
+import com.google.gson.annotations.SerializedName;
 import com.jeka8833.tntserver.balancer.HypixelCache;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
 import com.jeka8833.tntserver.packet.StreamSerializer;
-import com.google.gson.annotations.SerializedName;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;

@@ -1,7 +1,7 @@
 package com.jeka8833.tntserver;
 
-import com.jeka8833.tntserver.util.Util;
 import com.google.gson.reflect.TypeToken;
+import com.jeka8833.tntserver.util.Util;
 import org.java_websocket.WebSocket;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;

@@ -1,15 +1,16 @@
 package com.jeka8833.tntserver;
 
 import com.jeka8833.tntserver.util.Util;
+import okhttp3.Credentials;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.net.URI;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.util.Base64;
+import java.io.Reader;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.*;
@@ -27,26 +28,26 @@ public class AuthManager {
     public static void authMojang(@NotNull String username, @NotNull String key, @NotNull AuthResponse response) {
         try {
             AUTH_POOL.execute(() -> {
-                try {
-                    HttpRequest request = HttpRequest.newBuilder(
-                            URI.create("https://sessionserver.mojang.com/session/minecraft/hasJoined?serverId=" +
-                                    key + "&username=" + username)).build();
-
-                    HttpResponse<String> serverResponse =
-                            Util.client.send(request, HttpResponse.BodyHandlers.ofString());
-                    if (serverResponse.statusCode() == 200) {
-                        ResponseID responseID = Util.GSON.fromJson(serverResponse.body(), ResponseID.class);
-                        if (responseID == null) {
-                            response.bad(ERROR_INTERNAL_SERVER);
-                        } else {
-                            UUID uuid = responseID.getUuid();
-                            if (uuid != null) {
-                                response.good(uuid, null);
-                            } else {
+                Request request = new Request.Builder()
+                        .url("https://sessionserver.mojang.com/session/minecraft/hasJoined?serverId=" +
+                                key + "&username=" + username)
+                        .build();
+                try (Response serverResponse = Util.clientOk.newCall(request).execute()) {
+                    if (serverResponse.isSuccessful()) {
+                        try (ResponseBody body = serverResponse.body(); Reader reader = body.charStream()) {
+                            ResponseID responseID = Util.GSON.fromJson(reader, ResponseID.class);
+                            if (responseID == null) {
                                 response.bad(ERROR_INTERNAL_SERVER);
+                            } else {
+                                UUID uuid = responseID.getUuid();
+                                if (uuid != null) {
+                                    response.good(uuid, null);
+                                } else {
+                                    response.bad(ERROR_INTERNAL_SERVER);
+                                }
                             }
+                            return;
                         }
-                        return;
                     }
                 } catch (Exception e) {
                     response.bad(ERROR_INTERNAL_SERVER);
@@ -67,16 +68,14 @@ public class AuthManager {
         }
         try {
             AUTH_POOL.execute(() -> {
-                try {
-                    String authorizationHeader = "Basic " +
-                            new String(Base64.getEncoder().encode((user + ":" + key).getBytes()));
-                    HttpRequest request = HttpRequest.newBuilder(URI.create("http://localhost:80/api/tempToken/login"))
-                            .header("Authorization", authorizationHeader).build();
-
-                    HttpResponse<String> serverResponse =
-                            Util.client.send(request, HttpResponse.BodyHandlers.ofString());
-                    if (serverResponse.statusCode() == 200) {
-                        Set<String> privileges = BotsManager.validateBotAndCutPrivilege(serverResponse.body());
+                Request request = new Request.Builder()
+                        .url("http://localhost:80/api/tempToken/login")
+                        .header("Authorization", Credentials.basic(user.toString(), key.toString()))
+                        .build();
+                try (Response serverResponse = Util.clientOk.newCall(request).execute()) {
+                    if (serverResponse.isSuccessful()) {
+                        Set<String> privileges = BotsManager.validateBotAndCutPrivilege(
+                                serverResponse.body().string());
                         if (privileges != null) {
                             response.good(user, privileges);
                         } else {
