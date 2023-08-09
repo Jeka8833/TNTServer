@@ -12,6 +12,7 @@ import com.jeka8833.tntserver.packet.packets.*;
 import com.jeka8833.tntserver.packet.packets.authorization.AuthClientDeprecatedPacket;
 import com.jeka8833.tntserver.packet.packets.authorization.AuthClientPacket;
 import com.jeka8833.tntserver.packet.packets.authorization.AuthWebPacket;
+import com.jeka8833.tntserver.packet.packets.odyssey.CurrentServerPacket;
 import com.jeka8833.tntserver.packet.packets.web.ModulesStatusPacket;
 import com.jeka8833.tntserver.packet.packets.web.TokenGeneratorPacket;
 import com.jeka8833.tntserver.util.BiMap;
@@ -51,6 +52,7 @@ public class Main extends WebSocketServer {
         packetsList.put((byte) 13, ReceiveHypixelPlayerPacket.class);
         packetsList.put((byte) 14, RequestHypixelPlayerPacket.class);
         packetsList.put((byte) 15, UpdateFreeRequestsPacket.class);
+        packetsList.put((byte) 252, CurrentServerPacket.class);
         packetsList.put((byte) 253, TokenGeneratorPacket.class);
         packetsList.put((byte) 254, ModulesStatusPacket.class);
         packetsList.put((byte) 255, AuthWebPacket.class);

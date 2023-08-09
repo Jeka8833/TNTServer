@@ -1,5 +1,6 @@
 package com.jeka8833.tntserver.packet.packets;
 
+import com.jeka8833.tntserver.BotsManager;
 import com.jeka8833.tntserver.Main;
 import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.database.managers.TNTClientDBManager;
@@ -31,14 +32,14 @@ public class RequestTNTClientPlayerPacket implements Packet {
 
     @Override
     public void serverProcess(WebSocket socket, Player user) {
-        if (user == null) {
+        if (user == null && !BotsManager.checkPrivilege(socket, "TNT_PLAYER_REQUEST")){
             socket.close();
             return;
         }
 
         TNTClientDBManager.readOrCashUsers(users,
                 tntUsers -> Main.serverSend(socket, new ReceiveTNTClientPlayerPacket(tntUsers,
-                        user.tntPlayerInfo != null && user.tntPlayerInfo.donate > 50)),
+                        user != null && user.tntPlayerInfo != null && user.tntPlayerInfo.donate > 50)),
                 true);
     }
 }
