@@ -12,8 +12,9 @@ import com.jeka8833.tntserver.packet.packets.*;
 import com.jeka8833.tntserver.packet.packets.authorization.AuthClientDeprecatedPacket;
 import com.jeka8833.tntserver.packet.packets.authorization.AuthClientPacket;
 import com.jeka8833.tntserver.packet.packets.authorization.AuthWebPacket;
-import com.jeka8833.tntserver.packet.packets.odyssey.CurrentServerPacket;
+import com.jeka8833.tntserver.packet.packets.odyssey.DonatePacket;
 import com.jeka8833.tntserver.packet.packets.web.ModulesStatusPacket;
+import com.jeka8833.tntserver.packet.packets.web.RolePacket;
 import com.jeka8833.tntserver.packet.packets.web.TokenGeneratorPacket;
 import com.jeka8833.tntserver.util.BiMap;
 import com.jeka8833.tntserver.util.Util;
@@ -52,7 +53,8 @@ public class Main extends WebSocketServer {
         packetsList.put((byte) 13, ReceiveHypixelPlayerPacket.class);
         packetsList.put((byte) 14, RequestHypixelPlayerPacket.class);
         packetsList.put((byte) 15, UpdateFreeRequestsPacket.class);
-        packetsList.put((byte) 252, CurrentServerPacket.class);
+        packetsList.put((byte) 251, RolePacket.class);
+        packetsList.put((byte) 252, DonatePacket.class);
         packetsList.put((byte) 253, TokenGeneratorPacket.class);
         packetsList.put((byte) 254, ModulesStatusPacket.class);
         packetsList.put((byte) 255, AuthWebPacket.class);
@@ -68,7 +70,7 @@ public class Main extends WebSocketServer {
 
     @Override
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
-        logger.info("User(Bot) " + conn.getAttachment() + "is logged out(Error code: " + code +
+        logger.info("User(Bot) " + conn.getAttachment() + " is logged out(Error code: " + code +
                 "; Message: " + reason + "). Current online: " + Main.server.getConnections().size());
 
         BotsManager.clearDisconnectedBots();
@@ -84,8 +86,7 @@ public class Main extends WebSocketServer {
         Player user = PlayersDatabase.getUser(userUUID);
 
         try (PacketInputStream stream = new PacketInputStream(message)) {
-            if (!(stream.packet instanceof AuthClientPacket || stream.packet instanceof AuthWebPacket ||
-                    stream.packet instanceof AuthClientDeprecatedPacket)) {
+            if (!(stream.packet instanceof AuthClientPacket || stream.packet instanceof AuthWebPacket)) {
                 if (userUUID == null || (user == null && userUUID.variant() == 2)) {
                     conn.close(); // The player doesn't exist in the cache, disconnecting...
                     return;

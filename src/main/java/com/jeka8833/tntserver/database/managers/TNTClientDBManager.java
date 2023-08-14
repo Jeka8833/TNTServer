@@ -3,6 +3,7 @@ package com.jeka8833.tntserver.database.managers;
 import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.database.PlayersDatabase;
 import com.jeka8833.tntserver.database.storage.TNTPlayerStorage;
+import com.jeka8833.tntserver.packet.callback.CallbackManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -43,6 +44,7 @@ public class TNTClientDBManager {
 
                     PlayersDatabase.clearInactivePeople();
                     USER_REQUEST_LIST.values().removeIf(userQuire -> !userQuire.isNeed());
+                    CallbackManager.checkTimeout();
 
                     //noinspection BusyWait
                     Thread.sleep(3000);

@@ -1,4 +1,4 @@
-package com.jeka8833.tntserver.packet.packets.authorization;
+package com.jeka8833.tntserver.packet.callback;
 
 import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.packet.Packet;
@@ -9,16 +9,29 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 
-public class AuthClientDeprecatedPacket implements Packet {
+public class PacketCallback implements Packet {
+    private short uniqueID;
+
     @Override
     public void write(PacketOutputStream stream) throws IOException {
+        stream.writeShort(uniqueID);
     }
 
     @Override
     public void read(PacketInputStream stream) throws IOException {
+        uniqueID = stream.readShort();
     }
 
     @Override
     public void serverProcess(WebSocket socket, @Nullable Player user) {
+        CallbackManager.callPacket(this);
+    }
+
+    public void setUniqueID(short uniqueID) {
+        this.uniqueID = uniqueID;
+    }
+
+    public short getUniqueID() {
+        return uniqueID;
     }
 }
