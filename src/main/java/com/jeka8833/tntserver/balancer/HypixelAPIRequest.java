@@ -6,6 +6,7 @@ import com.jeka8833.tntserver.balancer.ratelimiter.HypixelResponse;
 import com.jeka8833.tntserver.balancer.ratelimiter.ResetManager;
 import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.database.PlayersDatabase;
+import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.database.storage.HypixelPlayer;
 import com.jeka8833.tntserver.database.storage.HypixelPlayerError;
 import com.jeka8833.tntserver.database.storage.HypixelPlayerStorage;
@@ -43,9 +44,11 @@ public class HypixelAPIRequest implements Balancer<UUID, HypixelPlayer> {
 
     @Override
     public boolean requestInfo(@NotNull UUID key, @NotNull Consumer<HypixelPlayer> data) {
-        Player player = PlayersDatabase.getOrCreate(key);
-
-        return player.tryAddToLoadingQueue(loading -> QUEUE.offer(key), data);
+        User user = PlayersDatabase.getOrCreate(key);
+        if (user instanceof Player requestedPlayer) {
+            return requestedPlayer.tryAddToLoadingQueue(loading -> QUEUE.offer(key), data);
+        }
+        return false;
     }
 
     @Override
@@ -67,8 +70,8 @@ public class HypixelAPIRequest implements Balancer<UUID, HypixelPlayer> {
                         HypixelPlayer storage = readPlayer(requestedPlayer, secretKey);
                         if (storage == null) storage = new HypixelPlayerError();
 
-                        Player player = PlayersDatabase.getOrCreate(requestedPlayer);
-                        player.setHypixelStorage(storage);
+                        User user = PlayersDatabase.getOrCreate(requestedPlayer);
+                        if (user instanceof Player player) player.setHypixelStorage(storage);
                     } catch (InterruptedException interruptedException) {
                         logger.warn("Force stop request: " + requestedPlayer);
 

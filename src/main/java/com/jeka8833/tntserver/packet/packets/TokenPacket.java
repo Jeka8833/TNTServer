@@ -1,23 +1,20 @@
 package com.jeka8833.tntserver.packet.packets;
 
-import com.jeka8833.tntserver.BotsManager;
 import com.jeka8833.tntserver.Main;
+import com.jeka8833.tntserver.database.Bot;
 import com.jeka8833.tntserver.database.Player;
+import com.jeka8833.tntserver.database.PlayersDatabase;
+import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
 import com.jeka8833.tntserver.packet.packets.web.TokenGeneratorPacket;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.java_websocket.WebSocket;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 public class TokenPacket implements Packet {
-    private static final Logger logger = LogManager.getLogger(TokenPacket.class);
     private static final UUID nullUUID = new UUID(0, 0);
 
     private final UUID user;
@@ -47,26 +44,23 @@ public class TokenPacket implements Packet {
     }
 
     @Override
-    public void serverProcess(WebSocket socket, Player user) {
-        if (user == null) {
-            socket.close();
-            return;
-        }
-
-        List<Map.Entry<UUID, BotsManager.BotUser>> bots = BotsManager.getBots("SERVER_TOKEN");
-        if (!bots.isEmpty()) {
-            var packet = new TokenGeneratorPacket(user.uuid, unregister);
-
-            try {
-                for (Map.Entry<UUID, BotsManager.BotUser> entry : bots)
-                    Main.serverSend(entry.getValue().connection(), packet);
-
+    public void serverProcess(WebSocket socket, User user) {
+        if (user instanceof Player player) {
+            Bot serverTokenizer = PlayersDatabase.getBotWithPrivilege("SERVER_TOKEN");
+            if (serverTokenizer == null) {
+                Main.serverSend(socket, new TokenPacket(nullUUID, nullUUID));
                 return;
-            } catch (Exception e) {
-                logger.warn("Fail send to bot", e);
             }
-        }
 
-        Main.serverSend(socket, new TokenPacket(nullUUID, nullUUID));
+            WebSocket serverTokenizerSocket = serverTokenizer.getSocket();
+            if (serverTokenizerSocket == null) {
+                Main.serverSend(socket, new TokenPacket(nullUUID, nullUUID));
+                return;
+            }
+
+            Main.serverSend(serverTokenizerSocket, new TokenGeneratorPacket(player.uuid, unregister));
+        } else {
+            socket.close();
+        }
     }
 }

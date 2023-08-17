@@ -1,9 +1,10 @@
 package com.jeka8833.tntserver.packet.packets.authorization;
 
 import com.jeka8833.tntserver.AuthManager;
-import com.jeka8833.tntserver.BotsManager;
 import com.jeka8833.tntserver.Main;
-import com.jeka8833.tntserver.database.Player;
+import com.jeka8833.tntserver.database.Bot;
+import com.jeka8833.tntserver.database.PlayersDatabase;
+import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
@@ -34,7 +35,7 @@ public class AuthWebPacket implements Packet {
     }
 
     @Override
-    public void serverProcess(WebSocket socket, Player user) {
+    public void serverProcess(WebSocket socket, User user) {
         AuthManager.authTNTClient(this.user, key, new AuthManager.AuthResponse() {
             @Override
             public void good(@NotNull UUID user, @Nullable Set<String> privileges) {
@@ -43,16 +44,19 @@ public class AuthWebPacket implements Packet {
                     return;
                 }
 
-                socket.setAttachment(user);
+                User newUser = PlayersDatabase.getOrCreate(user);
+                if (newUser instanceof Bot bot) {
+                    bot.setLoginSuccessful();
+                    bot.addPrivileges(privileges);
 
-                BotsManager.addBot(user, privileges, socket);
-                Main.serverSend(socket, new AuthWebPacket());
+                    socket.setAttachment(user);
 
-/*                Main.serverSend(socket,
-                        new TokenPacket(UUID.fromString("6bd6e833-a80a-430e-9029-4786368811f9"),
-                                UUID.fromString("6bd6e833-a80a-430e-9029-4786368811f9")));*/
+                    Main.serverSend(socket, new AuthWebPacket());
 
-                logger.info("Bot " + user + " logged in. Current online: " + Main.server.getConnections().size());
+                    logger.info("Bot " + user + " logged in. Current online: " + Main.server.getConnections().size());
+                } else {
+                    socket.close();
+                }
             }
 
             @Override

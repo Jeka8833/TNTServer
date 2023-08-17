@@ -13,13 +13,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-public class Player {
+public class Player extends User {
     private static final long INACTIVE_TIME = TimeUnit.MINUTES.toMillis(1);
     private static final long HYPIXEL_CACHE = TimeUnit.MINUTES.toMillis(5);
 
     private final Object HYPIXEL_MUTEX = new Object();
-
-    public final @NotNull UUID uuid;
     private long timeDelete;
     public volatile @Nullable HypixelPlayer hypixelPlayerInfo;
     public @Nullable TNTPlayerStorage tntPlayerInfo;
@@ -27,9 +25,10 @@ public class Player {
     public @NotNull ServerType serverType = ServerType.UNKNOWN;
 
     public Player(@NotNull UUID uuid) {
-        this.uuid = uuid;
+        super(uuid);
     }
 
+    @Override
     public boolean isInactive() {
         return timeDelete < System.currentTimeMillis();
     }
@@ -87,6 +86,11 @@ public class Player {
                 }
             }
         }
+    }
+
+    @Override
+    public void disconnect() {
+        tntPlayerInfo = null;
     }
 
     @Override

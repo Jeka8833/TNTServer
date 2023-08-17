@@ -4,6 +4,7 @@ import com.jeka8833.tntserver.BotsManager;
 import com.jeka8833.tntserver.Main;
 import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.database.PlayersDatabase;
+import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
@@ -37,7 +38,9 @@ public class FightPacket implements Packet {
                     if (user == null) return null;
                     return PlayersDatabase.getUser(user);
                 })
-                .filter(tntUser -> tntUser != null && tntUser.tntPlayerInfo != null && tntUser.tntPlayerInfo.fight != 0)
+                .filter(tntUser -> tntUser instanceof Player player &&
+                        player.tntPlayerInfo != null && player.tntPlayerInfo.fight != 0)
+                .map(tntUser -> (Player) tntUser)
                 .toList();
 
         stream.writeByte(users.size());
@@ -53,13 +56,15 @@ public class FightPacket implements Packet {
     }
 
     @Override
-    public void serverProcess(WebSocket socket, Player user) {
-        if (user == null && !BotsManager.checkPrivilege(socket, "FIGHT_LIST")) {
-            socket.close();
-            return;
-        }
+    public void serverProcess(WebSocket socket, User user) {
+        if(user instanceof Player || !BotsManager.isAbsent(user, "FIGHT_LIST")){
+            if(user instanceof Player player && player.tntPlayerInfo != null){
+                player.tntPlayerInfo.fight = playerFight;
+            }
 
-        if (user != null && user.tntPlayerInfo != null) user.tntPlayerInfo.fight = playerFight;
-        Main.serverSend(socket, new FightPacket(Main.server.getConnections()));
+            Main.serverSend(socket, new FightPacket(Main.server.getConnections()));
+        } else {
+            socket.close();
+        }
     }
 }

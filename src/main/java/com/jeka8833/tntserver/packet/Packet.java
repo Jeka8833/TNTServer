@@ -1,6 +1,7 @@
 package com.jeka8833.tntserver.packet;
 
 import com.jeka8833.tntserver.database.Player;
+import com.jeka8833.tntserver.database.User;
 import org.java_websocket.WebSocket;
 import org.jetbrains.annotations.Nullable;
 
@@ -12,5 +13,5 @@ public interface Packet {
 
     void read(PacketInputStream stream) throws IOException;
 
-    void serverProcess(WebSocket socket, @Nullable Player user);
+    void serverProcess(WebSocket socket, @Nullable User user);
 }

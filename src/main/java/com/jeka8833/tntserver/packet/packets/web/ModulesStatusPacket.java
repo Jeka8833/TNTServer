@@ -2,7 +2,7 @@ package com.jeka8833.tntserver.packet.packets.web;
 
 import com.jeka8833.tntserver.BotsManager;
 import com.jeka8833.tntserver.Main;
-import com.jeka8833.tntserver.database.Player;
+import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.database.managers.TNTClientDBManager;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
@@ -58,8 +58,8 @@ public class ModulesStatusPacket implements Packet {
     }
 
     @Override
-    public void serverProcess(WebSocket socket, Player user) {
-        if (!BotsManager.checkPrivilege(socket, "SERVER_CONTROL_MODULES")) {
+    public void serverProcess(WebSocket socket, User user) {
+        if (BotsManager.isAbsent(user, "SERVER_CONTROL_MODULES")) {
             socket.close();
             return;
         }

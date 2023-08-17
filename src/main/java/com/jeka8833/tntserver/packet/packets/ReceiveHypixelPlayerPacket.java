@@ -2,6 +2,7 @@ package com.jeka8833.tntserver.packet.packets;
 
 import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.database.PlayersDatabase;
+import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.database.storage.HypixelPlayer;
 import com.jeka8833.tntserver.database.storage.HypixelPlayerStorage;
 import com.jeka8833.tntserver.packet.Packet;
@@ -54,18 +55,19 @@ public class ReceiveHypixelPlayerPacket implements Packet {
             int status = stream.readUnsignedByte();
             UUID playerUUID = stream.readUUID();
             if ((status & RECEIVE_GOOD) == RECEIVE_GOOD) {
-                Player player = PlayersDatabase.getOrCreate(playerUUID);
-
                 var storage = new HypixelPlayerStorage();
                 storage.readStream(stream);
-                player.setHypixelStorage(storage);
+
+                User user = PlayersDatabase.getOrCreate(playerUUID);
+                if (user instanceof Player player) {
+                    player.setHypixelStorage(storage);
+                }
             }
         }
     }
 
     @Override
-    public void serverProcess(WebSocket socket, @Nullable Player user) {
-
+    public void serverProcess(WebSocket socket, @Nullable User user) {
     }
 
     public static class ReceivePlayer {

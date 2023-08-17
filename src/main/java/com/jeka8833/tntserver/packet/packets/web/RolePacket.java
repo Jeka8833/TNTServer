@@ -1,7 +1,7 @@
 package com.jeka8833.tntserver.packet.packets.web;
 
 import com.jeka8833.tntserver.BotsManager;
-import com.jeka8833.tntserver.database.Player;
+import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
 import com.jeka8833.tntserver.packet.callback.PacketCallback;
@@ -42,8 +42,8 @@ public class RolePacket extends PacketCallback {
     }
 
     @Override
-    public void serverProcess(WebSocket socket, @Nullable Player user) {
-        if (!BotsManager.checkPrivilege(socket, "SERVER_ROLES")) {
+    public void serverProcess(WebSocket socket, @Nullable User user) {
+        if (BotsManager.isAbsent(user, "SERVER_ROLES")) {
             socket.close();
             return;
         }

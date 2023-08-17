@@ -1,6 +1,7 @@
 package com.jeka8833.tntserver.packet.packets;
 
 import com.jeka8833.tntserver.database.Player;
+import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.database.storage.TNTPlayerStorage;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
@@ -38,11 +39,10 @@ public record ReceiveTNTClientPlayerPacket(Player[] users, boolean isAdmin) impl
 
     @Override
     public void read(PacketInputStream stream) {
-        throw new NullPointerException("Fail read packet");
     }
 
     @Override
-    public void serverProcess(WebSocket socket, Player user) {
-        throw new NullPointerException("Fail process packet");
+    public void serverProcess(WebSocket socket, User user) {
+        socket.close();
     }
 }

@@ -5,6 +5,7 @@ import com.jeka8833.tntserver.Main;
 import com.jeka8833.tntserver.ServerType;
 import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.database.PlayersDatabase;
+import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.database.managers.TNTClientDBManager;
 import com.jeka8833.tntserver.database.storage.TNTPlayerStorage;
 import com.jeka8833.tntserver.packet.Packet;
@@ -45,32 +46,36 @@ public class AuthClientPacket implements Packet {
     }
 
     @Override
-    public void serverProcess(WebSocket socket, Player user) {
-        Parameters parameters = Util.GSON.fromJson(
-                new String(customParameters, StandardCharsets.US_ASCII), Parameters.class);
-
+    public void serverProcess(WebSocket socket, User user) {
         AuthManager.authMojang(playerUsername, serverKey, new AuthManager.AuthResponse() {
             @Override
             public void good(@NotNull UUID user, @Nullable Set<String> privileges) {
-                socket.setAttachment(user);
-
                 TNTClientDBManager.readUser(user, ignore -> {
-                    Player player = PlayersDatabase.getOrCreate(user);
-                    player.serverType = parameters == null ?
-                            ServerType.HYPIXEL : ServerType.getServer(parameters.serverBrand);
+                    User newUser = PlayersDatabase.getOrCreate(user);
+                    if (newUser instanceof Player player) {
+                        socket.setAttachment(user);
 
-                    if (player.tntPlayerInfo == null) player.tntPlayerInfo = new TNTPlayerStorage();
+                        Parameters parameters = Util.GSON.fromJson(
+                                new String(customParameters, StandardCharsets.US_ASCII), Parameters.class);
 
-                    player.tntPlayerInfo.version = version;
-                    player.tntPlayerInfo.status = TNTPlayerStorage.STATUS_ONLINE;
+                        player.serverType = parameters == null ?
+                                ServerType.HYPIXEL : ServerType.getServer(parameters.serverBrand);
 
-                    TNTClientDBManager.writeUser(user, null);
+                        if (player.tntPlayerInfo == null) player.tntPlayerInfo = new TNTPlayerStorage();
 
-                    Main.serverSend(socket,
-                            new BlockModulesPacket(player.tntPlayerInfo.forceBlock, player.tntPlayerInfo.forceActive));
+                        player.tntPlayerInfo.version = version;
+                        player.tntPlayerInfo.status = TNTPlayerStorage.STATUS_ONLINE;
 
-                    logger.info("User " + playerUsername + " logged in. Current online: " +
-                            Main.server.getConnections().size());
+                        TNTClientDBManager.writeUser(user, null);
+
+                        Main.serverSend(socket, new BlockModulesPacket(
+                                player.tntPlayerInfo.forceBlock, player.tntPlayerInfo.forceActive));
+
+                        logger.info("Player " + playerUsername + " logged in. Current online: " +
+                                Main.server.getConnections().size());
+                    } else {
+                        socket.close();
+                    }
                 });
             }
 

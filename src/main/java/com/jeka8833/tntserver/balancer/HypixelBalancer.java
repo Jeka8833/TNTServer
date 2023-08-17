@@ -2,6 +2,7 @@ package com.jeka8833.tntserver.balancer;
 
 import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.database.PlayersDatabase;
+import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.database.storage.HypixelPlayer;
 import com.jeka8833.tntserver.util.Util;
 import org.apache.logging.log4j.LogManager;
@@ -68,13 +69,22 @@ public class HypixelBalancer {
         final int freeAtMoment = getFreeAtMoment();
         final int maxRequests = freeAtMoment == 0 ? 0 : Math.max(1, freeAtMoment / getCountOfRequesters());
         for (UUID player : players) {
-            boolean onCache = tryGetCache(player, hypixelPlayer -> received.add(PlayersDatabase.getOrCreate(player)));
+            boolean onCache = tryGetCache(player, hypixelPlayer -> {
+                User user = PlayersDatabase.getOrCreate(player);
+                if(user instanceof Player send){
+                    received.add(send);
+                }
+            });
+
             if (onCache || expectedRequests.get() >= maxRequests) continue;
 
             boolean isTake = tryGet(player, hypixelPlayer -> {
                 if (sendCount.get() <= 0) return;
 
-                received.add(PlayersDatabase.getOrCreate(player));
+                User user = PlayersDatabase.getOrCreate(player);
+                if(user instanceof Player send){
+                    received.add(send);
+                }
 
                 if (expectedRequests.get() <= receivedCount.incrementAndGet() && !blockSend.get()) {
                     sendCount.set(0);

@@ -2,7 +2,7 @@ package com.jeka8833.tntserver.packet.packets;
 
 import com.jeka8833.tntserver.BotsManager;
 import com.jeka8833.tntserver.balancer.HypixelBalancer;
-import com.jeka8833.tntserver.database.Player;
+import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
@@ -25,12 +25,11 @@ public class UpdateFreeRequestsPacket implements Packet {
     }
 
     @Override
-    public void serverProcess(WebSocket socket, @Nullable Player user) {
-        if (BotsManager.checkPrivilege(socket, "SERVER_HYPIXEL_API")) {
-            HypixelBalancer.TNT_BOT_REQUESTER.setAvailable(socket, count);
-        } else {
+    public void serverProcess(WebSocket socket, @Nullable User user) {
+        if (BotsManager.isAbsent(user, "SERVER_HYPIXEL_API")) {
             HypixelBalancer.TNT_USER_REQUESTER.setAvailable(socket, count);
-
+        } else {
+            HypixelBalancer.TNT_BOT_REQUESTER.setAvailable(socket, count);
         }
     }
 }

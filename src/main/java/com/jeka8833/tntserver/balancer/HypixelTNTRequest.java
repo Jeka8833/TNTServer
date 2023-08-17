@@ -3,6 +3,7 @@ package com.jeka8833.tntserver.balancer;
 import com.jeka8833.tntserver.Main;
 import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.database.PlayersDatabase;
+import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.database.storage.HypixelPlayer;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.packets.RequestHypixelPlayerPacket;
@@ -39,9 +40,12 @@ public class HypixelTNTRequest implements Balancer<UUID, HypixelPlayer> {
         AvailableCount client = takeClient();
         if (client == null) return false;
 
-        Player player = PlayersDatabase.getOrCreate(key);
-        return player.tryAddToLoadingQueue(loading ->
-                SEND_QUEUE.computeIfAbsent(client.socket(), socket -> new ConcurrentLinkedQueue<>()).offer(key), data);
+        User user = PlayersDatabase.getOrCreate(key);
+        if (user instanceof Player player) {
+            return player.tryAddToLoadingQueue(loading -> SEND_QUEUE.computeIfAbsent(client.socket(),
+                    socket -> new ConcurrentLinkedQueue<>()).offer(key), data);
+        }
+        return false;
     }
 
     @Override

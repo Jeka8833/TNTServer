@@ -3,6 +3,7 @@ package com.jeka8833.tntserver.packet.packets;
 import com.jeka8833.tntserver.Main;
 import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.database.PlayersDatabase;
+import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
@@ -49,34 +50,33 @@ public class ChatPacket implements Packet {
     }
 
     @Override
-    public void serverProcess(WebSocket socket, Player user) {
-        if (user == null) {
+    public void serverProcess(WebSocket socket, User user) {
+        if (user instanceof Player player) {
+            // Fixed Log4j exploit
+            String fixedText = text.replaceAll("\\$\\{.+}", "***")
+                    .replaceAll(
+                            "(http|ftp|https)://([\\w_\\-]+(?:\\.[\\w_\\-]+)+)([\\w.,@?^=%&:/~+#\\-]*[\\w@?^=%&/~+#\\-])",
+                            "***");
+
+            int hash = fixedText.hashCode();
+
+            clearMap();
+            MessageTiming messageTiming = MESSAGE_TIMING_MAP.get(player.uuid);
+
+            if (messageTiming != null && (hash == messageTiming.messageHash ||
+                    messageTiming.timeSend + DIFFERENT_MESSAGE_TIMING > System.currentTimeMillis())) {
+                Main.serverSend(socket,
+                        // Color genius...
+                        new ChatPacket(player.uuid, "§cYou §care §csending §cmessages §ctoo §cfast, §cyour §cmessage " +
+                                "§chas §cnot §cbeen §cdelivered. §cOnly §cyou §ccan §csee §cthis §cmessage."));
+                return;
+            }
+
+            MESSAGE_TIMING_MAP.put(player.uuid, new MessageTiming(hash, System.currentTimeMillis()));
+            sendMessage(player, fixedText);
+        } else {
             socket.close();
-            return;
         }
-
-        // Fixed Log4j exploit
-        String fixedText = text.replaceAll("\\$\\{.+}", "***")
-                .replaceAll(
-                        "(http|ftp|https)://([\\w_\\-]+(?:\\.[\\w_\\-]+)+)([\\w.,@?^=%&:/~+#\\-]*[\\w@?^=%&/~+#\\-])",
-                        "***");
-
-        int hash = fixedText.hashCode();
-
-        clearMap();
-        MessageTiming messageTiming = MESSAGE_TIMING_MAP.get(user.uuid);
-
-        if (messageTiming != null && (hash == messageTiming.messageHash ||
-                messageTiming.timeSend + DIFFERENT_MESSAGE_TIMING > System.currentTimeMillis())) {
-            Main.serverSend(socket,
-                    // Color genius...
-                    new ChatPacket(user.uuid, "§cYou §care §csending §cmessages §ctoo §cfast, §cyour §cmessage " +
-                            "§chas §cnot §cbeen §cdelivered. §cOnly §cyou §ccan §csee §cthis §cmessage."));
-            return;
-        }
-
-        MESSAGE_TIMING_MAP.put(user.uuid, new MessageTiming(hash, System.currentTimeMillis()));
-        sendMessage(user, fixedText);
     }
 
     private static void sendMessage(Player player, String message) {
@@ -88,10 +88,10 @@ public class ChatPacket implements Packet {
 
             for (WebSocket client : Main.server.getConnections()) {
                 try {
-                    Player toPlayer = PlayersDatabase.getUser(client.getAttachment());
-                    if (toPlayer == null || !player.serverType.equals(toPlayer.serverType)) continue;
-
-                    if (client.isOpen()) client.send(send);
+                    User user = PlayersDatabase.getUser(client.getAttachment());
+                    if (user instanceof Player toPlayer && player.serverType.equals(toPlayer.serverType)) {
+                        if (client.isOpen()) client.send(send);
+                    }
                 } catch (Exception e) {
                     logger.error("Fail send packet:", e);
                 }

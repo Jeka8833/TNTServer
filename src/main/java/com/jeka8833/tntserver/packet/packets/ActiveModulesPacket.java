@@ -1,6 +1,7 @@
 package com.jeka8833.tntserver.packet.packets;
 
 import com.jeka8833.tntserver.database.Player;
+import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
@@ -23,12 +24,11 @@ public class ActiveModulesPacket implements Packet {
     }
 
     @Override
-    public void serverProcess(WebSocket socket, final Player user) {
-        if (user == null) {
+    public void serverProcess(WebSocket socket, final User user) {
+        if (user instanceof Player player) {
+            if (player.tntPlayerInfo != null) player.tntPlayerInfo.activeModules = activeModules;
+        } else {
             socket.close();
-            return;
         }
-
-        if (user.tntPlayerInfo != null) user.tntPlayerInfo.activeModules = activeModules;
     }
 }

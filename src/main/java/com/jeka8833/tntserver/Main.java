@@ -3,6 +3,7 @@ package com.jeka8833.tntserver;
 import com.jeka8833.tntserver.balancer.HypixelAPIRequest;
 import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.database.PlayersDatabase;
+import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.database.managers.DatabaseManager;
 import com.jeka8833.tntserver.database.managers.TNTClientDBManager;
 import com.jeka8833.tntserver.packet.Packet;
@@ -25,6 +26,7 @@ import org.apache.logging.log4j.io.IoBuilder;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
+import org.jetbrains.annotations.NotNull;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -70,10 +72,19 @@ public class Main extends WebSocketServer {
 
     @Override
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
-        logger.info("User(Bot) " + conn.getAttachment() + " is logged out(Error code: " + code +
-                "; Message: " + reason + "). Current online: " + Main.server.getConnections().size());
+        User user = PlayersDatabase.getUser(conn.getAttachment());
+        if(user != null) user.disconnect();
 
-        BotsManager.clearDisconnectedBots();
+        final String type;
+        if(user == null){
+            type = "Player(Bot) ";
+        } else if(user instanceof Player){
+            type = "Player ";
+        } else {
+            type = "Bot ";
+        }
+        logger.info(type + conn.getAttachment() + " is logged out(Error code: " + code +
+                "; Message: " + reason + "). Current online: " + Main.server.getConnections().size());
     }
 
     @Override
@@ -83,7 +94,7 @@ public class Main extends WebSocketServer {
     @Override
     public void onMessage(WebSocket conn, ByteBuffer message) {
         UUID userUUID = conn.getAttachment();
-        Player user = PlayersDatabase.getUser(userUUID);
+        User user = PlayersDatabase.getUser(userUUID);
 
         try (PacketInputStream stream = new PacketInputStream(message)) {
             if (!(stream.packet instanceof AuthClientPacket || stream.packet instanceof AuthWebPacket)) {
@@ -111,7 +122,7 @@ public class Main extends WebSocketServer {
         setConnectionLostTimeout(15);
     }
 
-    public static boolean serverSend(WebSocket socket, Packet packet) {
+    public static boolean serverSend(@NotNull WebSocket socket, @NotNull Packet packet) {
         try (final PacketOutputStream stream = new PacketOutputStream()) {
             packet.write(stream);
             if (socket.isOpen()) {

@@ -3,6 +3,7 @@ package com.jeka8833.tntserver.packet.packets;
 import com.jeka8833.tntserver.Main;
 import com.jeka8833.tntserver.balancer.HypixelBalancer;
 import com.jeka8833.tntserver.database.Player;
+import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
@@ -48,20 +49,21 @@ public class RequestHypixelPlayerPacket implements Packet {
     }
 
     @Override
-    public void serverProcess(WebSocket socket, @Nullable Player user) {
-        if (user == null) {
-            socket.close();
-            return;
-        }
-
+    public void serverProcess(WebSocket socket, @Nullable User user) {
         if (userList == null || userList.isEmpty()) throw new NullPointerException("User list is empty");
 
-        HypixelBalancer.tryGet(user.uuid, userList, playersReady -> {
-            Collection<ReceiveHypixelPlayerPacket.ReceivePlayer> userList = new ArrayList<>(playersReady.ready().size());
-            for (Player player : playersReady.ready()) {
-                userList.add(new ReceiveHypixelPlayerPacket.ReceivePlayer(player.uuid, player.hypixelPlayerInfo));
-            }
-            Main.serverSend(socket, new ReceiveHypixelPlayerPacket(userList, playersReady.lastPacket()));
-        }, 5, 4);
+        if (user instanceof Player senderPlayer) {
+            HypixelBalancer.tryGet(senderPlayer.uuid, userList, playersReady -> {
+                Collection<ReceiveHypixelPlayerPacket.ReceivePlayer> userList =
+                        new ArrayList<>(playersReady.ready().size());
+
+                for (Player player : playersReady.ready()) {
+                    userList.add(new ReceiveHypixelPlayerPacket.ReceivePlayer(player.uuid, player.hypixelPlayerInfo));
+                }
+                Main.serverSend(socket, new ReceiveHypixelPlayerPacket(userList, playersReady.lastPacket()));
+            }, 5, 4);
+        } else {
+            socket.close();
+        }
     }
 }

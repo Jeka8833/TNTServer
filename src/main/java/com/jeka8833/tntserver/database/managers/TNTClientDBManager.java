@@ -2,6 +2,7 @@ package com.jeka8833.tntserver.database.managers;
 
 import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.database.PlayersDatabase;
+import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.database.storage.TNTPlayerStorage;
 import com.jeka8833.tntserver.packet.callback.CallbackManager;
 import org.apache.logging.log4j.LogManager;
@@ -85,12 +86,13 @@ public class TNTClientDBManager {
         DatabaseManager.db.checkConnect();
         try (ResultSet resultSet = DatabaseManager.db.statement.executeQuery(joiner.toString())) { // Throw force exit
             while (resultSet.next()) {
-                Player player = PlayersDatabase.getOrCreate(resultSet.getObject("user", UUID.class));
-
-                if (player.tntPlayerInfo == null) player.tntPlayerInfo = new TNTPlayerStorage();
-                player.tntPlayerInfo.version = resultSet.getString("version");
-                player.tntPlayerInfo.forceBlock = resultSet.getLong("blockModules");
-                player.tntPlayerInfo.donate = resultSet.getByte("donate");
+                User user = PlayersDatabase.getOrCreate(resultSet.getObject("user", UUID.class));
+                if (user instanceof Player player) {
+                    if (player.tntPlayerInfo == null) player.tntPlayerInfo = new TNTPlayerStorage();
+                    player.tntPlayerInfo.version = resultSet.getString("version");
+                    player.tntPlayerInfo.forceBlock = resultSet.getLong("blockModules");
+                    player.tntPlayerInfo.donate = resultSet.getByte("donate");
+                }
             }
         }
 
@@ -117,14 +119,16 @@ public class TNTClientDBManager {
 
     private static void write(@NotNull Collection<UserQuire> userList) throws Exception {
         for (UserQuire quire : userList) {
-            Player user = PlayersDatabase.getUser(quire.user);
-            if (user == null || user.tntPlayerInfo == null) continue;
+            User user = PlayersDatabase.getUser(quire.user);
+            if (user instanceof Player player) {
+                if (player.tntPlayerInfo == null) continue;
 
-            preparedWrite.setObject(1, user.uuid);
-            preparedWrite.setString(2, user.tntPlayerInfo.version);
-            preparedWrite.setLong(3, user.tntPlayerInfo.forceBlock);
+                preparedWrite.setObject(1, player.uuid);
+                preparedWrite.setString(2, player.tntPlayerInfo.version);
+                preparedWrite.setLong(3, player.tntPlayerInfo.forceBlock);
 
-            preparedWrite.addBatch();
+                preparedWrite.addBatch();
+            }
         }
 
         DatabaseManager.db.checkConnect();
@@ -150,11 +154,11 @@ public class TNTClientDBManager {
     }
 
     public static void readOrCashUser(@NotNull UUID uuid, Consumer<@Nullable Player> callback) {
-        Player user = PlayersDatabase.getUser(uuid);
-        if (user == null) {
-            readUser(uuid, callback);
+        User user = PlayersDatabase.getUser(uuid);
+        if (user instanceof Player player) {
+            callback.accept(player);
         } else {
-            callback.accept(user);
+            readUser(uuid, callback);
         }
     }
 
@@ -237,7 +241,12 @@ public class TNTClientDBManager {
             Consumer<@Nullable Player> callback;
             while ((callback = readCallbackList.poll()) != null) {
                 try {
-                    callback.accept(PlayersDatabase.getUser(user));
+                    User userStorage = PlayersDatabase.getUser(user);
+                    if(userStorage instanceof Player player) {
+                        callback.accept(player);
+                    } else {
+                        callback.accept(null);
+                    }
                 } catch (Exception e) {
                     LOGGER.warn("Read callback throw exception", e);
                 }
@@ -248,7 +257,12 @@ public class TNTClientDBManager {
             Consumer<@Nullable Player> callback;
             while ((callback = writeCallbackList.poll()) != null) {
                 try {
-                    callback.accept(PlayersDatabase.getUser(user));
+                    User userStorage = PlayersDatabase.getUser(user);
+                    if(userStorage instanceof Player player) {
+                        callback.accept(player);
+                    } else {
+                        callback.accept(null);
+                    }
                 } catch (Exception e) {
                     LOGGER.warn("Read callback throw exception", e);
                 }

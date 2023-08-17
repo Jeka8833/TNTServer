@@ -3,6 +3,7 @@ package com.jeka8833.tntserver.packet.packets;
 import com.jeka8833.tntserver.BotsManager;
 import com.jeka8833.tntserver.Main;
 import com.jeka8833.tntserver.database.Player;
+import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.database.managers.TNTClientDBManager;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
@@ -31,15 +32,16 @@ public class RequestTNTClientPlayerPacket implements Packet {
     }
 
     @Override
-    public void serverProcess(WebSocket socket, Player user) {
-        if (user == null && !BotsManager.checkPrivilege(socket, "TNT_PLAYER_REQUEST")){
-            socket.close();
-            return;
-        }
+    public void serverProcess(WebSocket socket, User user) {
+        if (user instanceof Player || !BotsManager.isAbsent(user, "TNT_PLAYER_REQUEST")) {
+            boolean isAdmin = user instanceof Player player &&
+                    player.tntPlayerInfo != null && player.tntPlayerInfo.donate > 50;
 
-        TNTClientDBManager.readOrCashUsers(users,
-                tntUsers -> Main.serverSend(socket, new ReceiveTNTClientPlayerPacket(tntUsers,
-                        user != null && user.tntPlayerInfo != null && user.tntPlayerInfo.donate > 50)),
-                true);
+            TNTClientDBManager.readOrCashUsers(users,
+                    tntUsers -> Main.serverSend(socket, new ReceiveTNTClientPlayerPacket(tntUsers, isAdmin)),
+                    true);
+        } else {
+            socket.close();
+        }
     }
 }

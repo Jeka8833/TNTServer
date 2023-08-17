@@ -4,6 +4,7 @@ import com.jeka8833.tntserver.BotsManager;
 import com.jeka8833.tntserver.Main;
 import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.database.PlayersDatabase;
+import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.database.managers.TNTClientDBManager;
 import com.jeka8833.tntserver.database.storage.TNTPlayerStorage;
 import com.jeka8833.tntserver.packet.Packet;
@@ -15,9 +16,6 @@ import java.io.IOException;
 import java.util.UUID;
 
 public class BlockModulesPacket implements Packet {
-
-    private static final UUID settingUser = UUID.fromString("00000000-0000-4000-0000-000000000000");
-
     private static long globalBlock = 0;
     private static long globalActive = 0;
 
@@ -49,24 +47,25 @@ public class BlockModulesPacket implements Packet {
     }
 
     @Override
-    public void serverProcess(WebSocket socket, Player user) {
-        if (!BotsManager.checkPrivilege(socket, "SERVER_CONTROL_MODULES")) {
+    public void serverProcess(WebSocket socket, User user) {
+        if (BotsManager.isAbsent(user, "SERVER_CONTROL_MODULES")) {
             socket.close();
             return;
         }
 
-        if (editedUser.equals(settingUser)) {
+        if (editedUser.equals(PlayersDatabase.settingUser)) {
             globalActive = active;
             globalBlock = block;
 
-            TNTClientDBManager.readOrCashUser(settingUser, ignore -> {
-                Player player = PlayersDatabase.getOrCreate(settingUser);
+            TNTClientDBManager.readOrCashUser(PlayersDatabase.settingUser, ignore -> {
+                User settingUserStorage = PlayersDatabase.getOrCreate(PlayersDatabase.settingUser);
+                if (settingUserStorage instanceof Player player) {
+                    if (player.tntPlayerInfo == null) player.tntPlayerInfo = new TNTPlayerStorage();
+                    player.tntPlayerInfo.forceActive = active;
+                    player.tntPlayerInfo.forceBlock = block;
 
-                if (player.tntPlayerInfo == null) player.tntPlayerInfo = new TNTPlayerStorage();
-                player.tntPlayerInfo.forceActive = active;
-                player.tntPlayerInfo.forceBlock = block;
-
-                TNTClientDBManager.writeUser(settingUser, null);
+                    TNTClientDBManager.writeUser(PlayersDatabase.settingUser, null);
+                }
             });
 
             for (WebSocket socket1 : Main.server.getConnections()) {
@@ -82,23 +81,25 @@ public class BlockModulesPacket implements Packet {
             }
         } else {
             TNTClientDBManager.readUser(editedUser, ignore -> {
-                Player player = PlayersDatabase.getOrCreate(editedUser);
+                User editedUserStorage = PlayersDatabase.getOrCreate(editedUser);
+                if (editedUserStorage instanceof Player player) {
+                    if (player.tntPlayerInfo == null) player.tntPlayerInfo = new TNTPlayerStorage();
+                    player.tntPlayerInfo.forceActive = active;
+                    player.tntPlayerInfo.forceBlock = block;
 
-                if (player.tntPlayerInfo == null) player.tntPlayerInfo = new TNTPlayerStorage();
-                player.tntPlayerInfo.forceActive = active;
-                player.tntPlayerInfo.forceBlock = block;
+                    TNTClientDBManager.writeUser(editedUser, null);
 
-                TNTClientDBManager.writeUser(editedUser, null);
-
-                Main.server.getConnections().stream()
-                        .filter(socket1 -> player.uuid.equals(socket1.getAttachment()))
-                        .forEach(socket1 -> Main.serverSend(socket1, new BlockModulesPacket(block, active)));
+                    WebSocket editedUserSocket = player.getSocket();
+                    if (editedUserSocket != null) {
+                        Main.serverSend(editedUserSocket, new BlockModulesPacket(block, active));
+                    }
+                }
             });
         }
     }
 
     public static void readAndSetGlobalBlock() {
-        TNTClientDBManager.readOrCashUser(settingUser, tntUser -> {
+        TNTClientDBManager.readOrCashUser(PlayersDatabase.settingUser, tntUser -> {
             if (tntUser == null || tntUser.tntPlayerInfo == null) return;
 
             globalActive = tntUser.tntPlayerInfo.forceActive;

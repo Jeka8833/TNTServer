@@ -3,6 +3,7 @@ package com.jeka8833.tntserver.packet.packets;
 import com.jeka8833.tntserver.Main;
 import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.database.PlayersDatabase;
+import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.database.storage.TNTPlayerPingStorage;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
@@ -24,8 +25,9 @@ public class PlayersPingPacket implements Packet {
     public void write(PacketOutputStream stream) throws IOException {
         Player[] playerPings = requestedPlayers.stream()
                 .map(PlayersDatabase::getUser)
-                .filter(tntUser -> tntUser != null && tntUser.tntPlayerInfo != null &&
-                        tntUser.tntPlayerInfo.playerPing != null)
+                .filter(tntUser -> tntUser instanceof Player player &&
+                        player.tntPlayerInfo != null && player.tntPlayerInfo.playerPing != null)
+                .map(tntUser -> (Player) tntUser)
                 .toArray(Player[]::new);
 
         stream.writeByte(playerPings.length);
@@ -50,13 +52,12 @@ public class PlayersPingPacket implements Packet {
     }
 
     @Override
-    public void serverProcess(WebSocket socket, Player user) {
-        if (user == null) {
+    public void serverProcess(WebSocket socket, User user) {
+        if (user instanceof Player player) {
+            if (player.tntPlayerInfo != null) player.tntPlayerInfo.playerPing = playerPing;
+            if (!requestedPlayers.isEmpty()) Main.serverSend(socket, this);
+        } else {
             socket.close();
-            return;
         }
-
-        if (user.tntPlayerInfo != null) user.tntPlayerInfo.playerPing = playerPing;
-        if (!requestedPlayers.isEmpty()) Main.serverSend(socket, this);
     }
 }

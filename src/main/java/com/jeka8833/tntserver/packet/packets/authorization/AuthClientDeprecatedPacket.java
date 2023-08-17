@@ -1,6 +1,6 @@
 package com.jeka8833.tntserver.packet.packets.authorization;
 
-import com.jeka8833.tntserver.database.Player;
+import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
@@ -19,6 +19,6 @@ public class AuthClientDeprecatedPacket implements Packet {
     }
 
     @Override
-    public void serverProcess(WebSocket socket, @Nullable Player user) {
+    public void serverProcess(WebSocket socket, @Nullable User user) {
     }
 }

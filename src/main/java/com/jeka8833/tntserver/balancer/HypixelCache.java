@@ -2,6 +2,7 @@ package com.jeka8833.tntserver.balancer;
 
 import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.database.PlayersDatabase;
+import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.database.storage.HypixelPlayer;
 import com.jeka8833.tntserver.database.storage.HypixelPlayerError;
 import com.jeka8833.tntserver.database.storage.HypixelPlayerStorage;
@@ -19,21 +20,20 @@ public class HypixelCache implements Balancer<UUID, HypixelPlayer> {
 
     @Override
     public boolean requestInfo(@NotNull UUID key, @NotNull Consumer<HypixelPlayer> data) {
-        Player player = PlayersDatabase.getUser(key);
-        if (player == null) return false;
+        User user = PlayersDatabase.getUser(key);
+        if (user instanceof Player player) {
+            if (player.hypixelPlayerInfo instanceof HypixelPlayerError ||
+                    (player.hypixelPlayerInfo instanceof HypixelPlayerStorage storage &&
+                            storage.invalidateAt > System.currentTimeMillis())) {
+                data.accept(player.hypixelPlayerInfo);
+                return true;
+            }
 
-        if (player.hypixelPlayerInfo instanceof HypixelPlayerError ||
-                (player.hypixelPlayerInfo instanceof HypixelPlayerStorage storage &&
-                        storage.invalidateAt > System.currentTimeMillis())) {
-            data.accept(player.hypixelPlayerInfo);
-            return true;
+            // The information is sent anyway, but if the data is out of date, a more recent version is requested.
+            if (player.hypixelPlayerInfo instanceof HypixelPlayerStorage storage) {
+                data.accept(storage);
+            }
         }
-
-        // The information is sent anyway, but if the data is out of date, a more recent version is requested.
-        if (player.hypixelPlayerInfo instanceof HypixelPlayerStorage storage) {
-            data.accept(storage);
-        }
-
         return false;
     }
 

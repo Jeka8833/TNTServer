@@ -2,7 +2,8 @@ package com.jeka8833.tntserver.packet.packets.web;
 
 import com.jeka8833.tntserver.BotsManager;
 import com.jeka8833.tntserver.Main;
-import com.jeka8833.tntserver.database.Player;
+import com.jeka8833.tntserver.database.PlayersDatabase;
+import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
@@ -44,20 +45,17 @@ public class TokenGeneratorPacket implements Packet {
     }
 
     @Override
-    public void serverProcess(WebSocket socket, @Nullable Player user) {
+    public void serverProcess(WebSocket socket, @Nullable User user) {
         if (this.user == null || this.key == null) throw new NullPointerException("user or key is null");
 
-        if (!BotsManager.checkPrivilege(socket, "SERVER_TOKEN")) {
+        if (BotsManager.isAbsent(user, "SERVER_TOKEN")) {
             socket.close();
             return;
         }
 
-        for (WebSocket playerSocket : Main.server.getConnections()) {
-            if (this.user.equals(playerSocket.getAttachment())) {
-                Main.serverSend(playerSocket, new TokenPacket(this.user, this.key));
+        User foundUser = PlayersDatabase.getOrCreate(this.user);
 
-                return;
-            }
-        }
+        WebSocket foundUserSocket = foundUser.getSocket();
+        if (foundUserSocket != null) Main.serverSend(foundUserSocket, new TokenPacket(this.user, this.key));
     }
 }
