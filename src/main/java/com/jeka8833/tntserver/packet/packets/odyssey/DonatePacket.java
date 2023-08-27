@@ -80,15 +80,15 @@ public class DonatePacket implements Packet {
     }
 
     public enum DonateLevel {
-        NONE(0),
+        NONE(),
         DONATE_SMALL(1, "DONATE_SMALL"),
         DONATE_BIG(2, "DONATE_BIG");
 
         private final int level;
         private final @Nullable String role;
 
-        DonateLevel(int level) {
-            this.level = level;
+        DonateLevel() {
+            this.level = 0;
             this.role = null;
         }
 

@@ -16,7 +16,7 @@ public class UpdateFreeRequestsPacket implements Packet {
     private int count;
 
     @Override
-    public void write(PacketOutputStream stream) throws IOException {
+    public void write(PacketOutputStream stream) {
     }
 
     @Override

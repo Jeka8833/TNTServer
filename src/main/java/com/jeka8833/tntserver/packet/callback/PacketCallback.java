@@ -1,6 +1,5 @@
 package com.jeka8833.tntserver.packet.callback;
 
-import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;

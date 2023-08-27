@@ -11,7 +11,7 @@ import java.io.IOException;
 
 public class HypixelPlayerStorage implements StreamSerializer, HypixelPlayer {
 
-    public transient long invalidateAt = System.currentTimeMillis() + HypixelCache.INVALIDATE_CACHE_AFTER;
+    public final transient long invalidateAt = System.currentTimeMillis() + HypixelCache.INVALIDATE_CACHE_AFTER;
 
     @SerializedName("stats")
     public Stats stats = new Stats();

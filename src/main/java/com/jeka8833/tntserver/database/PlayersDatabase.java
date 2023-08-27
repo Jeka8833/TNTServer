@@ -44,8 +44,8 @@ public class PlayersDatabase {
         return user;
     }
 
-    public static User deleteUser(UUID uuid) {
-        return uuid2User.remove(uuid);
+    public static void deleteUser(UUID uuid) {
+        uuid2User.remove(uuid);
     }
 
     @Nullable

@@ -19,7 +19,7 @@ dependencies {
     implementation group: 'org.postgresql', name: 'postgresql', version: '42.6.0'
 
     // https://mvnrepository.com/artifact/org.java-websocket/Java-WebSocket
-    implementation group: 'org.java-websocket', name: 'Java-WebSocket', version: '1.5.4'
+    implementation group: 'org.java-websocket', name: 'Java-WebSocket', version: '1.5.3'
 
     // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
     implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '3.0.0-alpha1'

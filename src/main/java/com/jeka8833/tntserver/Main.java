@@ -118,21 +118,17 @@ public class Main extends WebSocketServer {
 
     @Override
     public void onStart() {
-        // Ping every 15 second and wait answer 23 second
-        setConnectionLostTimeout(15);
     }
 
-    public static boolean serverSend(@NotNull WebSocket socket, @NotNull Packet packet) {
+    public static void serverSend(@NotNull WebSocket socket, @NotNull Packet packet) {
         try (final PacketOutputStream stream = new PacketOutputStream()) {
             packet.write(stream);
             if (socket.isOpen()) {
                 socket.send(stream.getByteBuffer(packet.getClass()));
-                return true;
             }
         } catch (Exception e) {
             logger.error("Fail send packet:", e);
         }
-        return false;
     }
 
     public static void main(String[] args) {
@@ -147,6 +143,8 @@ public class Main extends WebSocketServer {
                     Util.getParam(args, "-db_password"));
 
             server = new Main(new InetSocketAddress(Integer.parseInt(Util.getParam(args, "-server_port"))));
+            server.setConnectionLostTimeout(15);
+            server.setReuseAddr(true);
             server.start();
             TNTClientDBManager.init();
             BlockModulesPacket.readAndSetGlobalBlock();
