@@ -43,6 +43,7 @@ public class Main extends WebSocketServer {
     static {
         packetsList.put((byte) 1, ActiveModulesPacket.class);
         packetsList.put((byte) 2, AuthClientDeprecatedPacket.class);    // Plug
+        packetsList.put((byte) 3, PingPacket.class);
         packetsList.put((byte) 4, RequestTNTClientPlayerPacket.class);
         packetsList.put((byte) 5, ReceiveTNTClientPlayerPacket.class);
         packetsList.put((byte) 6, ChatPacket.class);
@@ -73,12 +74,12 @@ public class Main extends WebSocketServer {
     @Override
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
         User user = PlayersDatabase.getUser(conn.getAttachment());
-        if(user != null) user.disconnect();
+        if (user != null) user.disconnect();
 
         final String type;
-        if(user == null){
+        if (user == null) {
             type = "Player(Bot) ";
-        } else if(user instanceof Player){
+        } else if (user instanceof Player) {
             type = "Player ";
         } else {
             type = "Bot ";
@@ -97,11 +98,10 @@ public class Main extends WebSocketServer {
         User user = PlayersDatabase.getUser(userUUID);
 
         try (PacketInputStream stream = new PacketInputStream(message)) {
-            if (!(stream.packet instanceof AuthClientPacket || stream.packet instanceof AuthWebPacket)) {
-                if (userUUID == null || (user == null && userUUID.variant() == 2)) {
-                    conn.close(); // The player doesn't exist in the cache, disconnecting...
-                    return;
-                }
+            if ((user == null || user.isInactive()) &&
+                    !(stream.packet instanceof AuthClientPacket || stream.packet instanceof AuthWebPacket)) {
+                conn.close(); // The player doesn't exist in the cache, disconnecting...
+                return;
             }
 
             stream.packet.read(stream);
