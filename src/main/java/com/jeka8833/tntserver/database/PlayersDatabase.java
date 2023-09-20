@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PlayersDatabase {
     public static final UUID settingUser = UUID.fromString("00000000-0000-4000-0000-000000000000");
 
-    private static final Map<UUID, User> uuid2User = new ConcurrentHashMap<>();
+    public static final Map<UUID, User> uuid2User = new ConcurrentHashMap<>();
 
     public static void clearInactivePeople() {
         uuid2User.values().removeIf(User::isInactive);

@@ -3,13 +3,12 @@ package com.jeka8833.tntserver.database;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Bot extends User {
-    private final Set<String> privileges = new HashSet<>();
-    private boolean isAuthorised;
+    private final Set<String> privileges = ConcurrentHashMap.newKeySet();
 
     public Bot(@NotNull UUID botUUID) {
         super(botUUID);
@@ -17,19 +16,13 @@ public class Bot extends User {
 
     @Override
     public boolean isInactive() {
-        return !isAuthorised;
+        return privileges.isEmpty();
     }
 
     @Override
     public void disconnect() {
-        isAuthorised = false;
-
         privileges.clear();
         PlayersDatabase.deleteUser(uuid);
-    }
-
-    public void setLoginSuccessful() {
-        isAuthorised = true;
     }
 
     public void addPrivileges(Collection<String> privileges) {

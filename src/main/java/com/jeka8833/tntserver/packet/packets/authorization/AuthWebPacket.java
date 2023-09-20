@@ -46,7 +46,6 @@ public class AuthWebPacket implements Packet {
 
                 User newUser = PlayersDatabase.getOrCreate(user);
                 if (newUser instanceof Bot bot) {
-                    bot.setLoginSuccessful();
                     bot.addPrivileges(privileges);
 
                     socket.setAttachment(user);

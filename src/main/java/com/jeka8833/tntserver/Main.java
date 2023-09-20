@@ -86,6 +86,7 @@ public class Main extends WebSocketServer {
         }
         logger.info(type + conn.getAttachment() + " is logged out(Error code: " + code +
                 "; Message: " + reason + "). Current online: " + Main.server.getConnections().size());
+        conn.close();
     }
 
     @Override

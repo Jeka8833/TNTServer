@@ -9,6 +9,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.postgresql.util.PSQLException;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -118,26 +119,41 @@ public class TNTClientDBManager {
     }
 
     private static void write(@NotNull Collection<UserQuire> userList) throws Exception {
-        for (UserQuire quire : userList) {
-            User user = PlayersDatabase.getUser(quire.user);
-            if (user instanceof Player player) {
-                if (player.tntPlayerInfo == null) continue;
+        for (int i = 0; i < 2; i++) {
+            for (UserQuire quire : userList) {
+                User user = PlayersDatabase.getUser(quire.user);
+                if (user instanceof Player player) {
+                    if (player.tntPlayerInfo == null) continue;
 
-                preparedWrite.setObject(1, player.uuid);
-                preparedWrite.setString(2, player.tntPlayerInfo.version);
-                preparedWrite.setLong(3, player.tntPlayerInfo.forceBlock);
+                    preparedWrite.setObject(1, player.uuid);
+                    preparedWrite.setString(2, player.tntPlayerInfo.version);
+                    preparedWrite.setLong(3, player.tntPlayerInfo.forceBlock);
 
-                preparedWrite.addBatch();
+                    preparedWrite.addBatch();
+                }
+            }
+
+            DatabaseManager.db.checkConnect();
+            try {
+                int[] results = preparedWrite.executeBatch();
+                for (int result : results) {
+                    if (result == Statement.EXECUTE_FAILED) throw new NullPointerException("Execution failed.");
+                }
+
+                for (UserQuire quire : userList) quire.callWrite();
+
+                return;
+            } catch (PSQLException e) {
+                DatabaseManager.db.close();
+                DatabaseManager.db.connect();
+
+                preparedWrite = DatabaseManager.db.connection.prepareStatement(
+                        "INSERT INTO \"TC_Players\" (\"user\", \"version\", \"timeLogin\", \"blockModules\") " +
+                                "VALUES (?,?,CURRENT_TIMESTAMP,?) ON CONFLICT (\"user\") DO UPDATE SET " +
+                                "\"version\" = EXCLUDED.\"version\", \"timeLogin\" = EXCLUDED.\"timeLogin\"," +
+                                " \"blockModules\" = EXCLUDED.\"blockModules\"");
             }
         }
-
-        DatabaseManager.db.checkConnect();
-        int[] results = preparedWrite.executeBatch();
-        for (int result : results) {
-            if (result == Statement.EXECUTE_FAILED) throw new NullPointerException("Execution failed.");
-        }
-
-        for (UserQuire quire : userList) quire.callWrite();
     }
 
     /**
@@ -242,7 +258,7 @@ public class TNTClientDBManager {
             while ((callback = readCallbackList.poll()) != null) {
                 try {
                     User userStorage = PlayersDatabase.getUser(user);
-                    if(userStorage instanceof Player player) {
+                    if (userStorage instanceof Player player) {
                         callback.accept(player);
                     } else {
                         callback.accept(null);
@@ -258,7 +274,7 @@ public class TNTClientDBManager {
             while ((callback = writeCallbackList.poll()) != null) {
                 try {
                     User userStorage = PlayersDatabase.getUser(user);
-                    if(userStorage instanceof Player player) {
+                    if (userStorage instanceof Player player) {
                         callback.accept(player);
                     } else {
                         callback.accept(null);

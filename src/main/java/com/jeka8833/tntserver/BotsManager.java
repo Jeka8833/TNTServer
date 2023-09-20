@@ -24,7 +24,7 @@ public class BotsManager {
         if (privileges == null) return null;
 
         Set<String> privilegesArray = Util.GSON.fromJson(privileges, setType);
-        if (!privilegesArray.remove(BOT_LABEL)) return null;
+        if (!privilegesArray.contains(BOT_LABEL)) return null;
 
         return Collections.unmodifiableSet(privilegesArray);
     }
