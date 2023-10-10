@@ -7,24 +7,17 @@ import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
+import com.jeka8833.tntserver.util.ChatFilter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.java_websocket.WebSocket;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class ChatPacket implements Packet {
-
-    private static final long DIFFERENT_MESSAGE_TIMING = 500;
-    private static final long SAME_MESSAGE_TIMING = 3_000;
-
-    private static final Map<UUID, MessageTiming> MESSAGE_TIMING_MAP = new ConcurrentHashMap<>();
     private static final Logger logger = LogManager.getLogger(ChatPacket.class);
-
 
     private UUID user;
     private String text;
@@ -51,29 +44,20 @@ public class ChatPacket implements Packet {
 
     @Override
     public void serverProcess(WebSocket socket, User user) {
+        ChatFilter.clearOld();
+
         if (user instanceof Player player) {
-            // Fixed Log4j exploit
-            String fixedText = text.replaceAll("\\$\\{.+}", "***")
-                    .replaceAll(
-                            "(http|ftp|https)://([\\w_\\-]+(?:\\.[\\w_\\-]+)+)([\\w.,@?^=%&:/~+#\\-]*[\\w@?^=%&/~+#\\-])",
-                            "***");
-
-            int hash = fixedText.hashCode();
-
-            clearMap();
-            MessageTiming messageTiming = MESSAGE_TIMING_MAP.get(player.uuid);
-
-            if (messageTiming != null && (hash == messageTiming.messageHash ||
-                    messageTiming.timeSend + DIFFERENT_MESSAGE_TIMING > System.currentTimeMillis())) {
+            String filteredText = ChatFilter.filter(player.uuid, text);
+            if (filteredText == null) {
                 Main.serverSend(socket,
                         // Color genius...
-                        new ChatPacket(player.uuid, "§cYou §care §csending §cmessages §ctoo §cfast, §cyour §cmessage " +
-                                "§chas §cnot §cbeen §cdelivered. §cOnly §cyou §ccan §csee §cthis §cmessage."));
+                        new ChatPacket(player.uuid, "§cYou §care §csending §cmessages §ctoo §cfast, " +
+                                "§cyour §cmessage §chas §cnot §cbeen §cdelivered. §cOnly §cyou §ccan §csee " +
+                                "§cthis §cmessage."));
                 return;
             }
 
-            MESSAGE_TIMING_MAP.put(player.uuid, new MessageTiming(hash, System.currentTimeMillis()));
-            sendMessage(player, fixedText);
+            sendMessage(player, filteredText);
         } else {
             socket.close();
         }
@@ -99,15 +83,5 @@ public class ChatPacket implements Packet {
         } catch (Exception e) {
             logger.error("Fail generate packet:", e);
         }
-    }
-
-    private static void clearMap() {
-        long currentTime = System.currentTimeMillis();
-
-        MESSAGE_TIMING_MAP.values().removeIf(messageTiming ->
-                messageTiming.timeSend() + SAME_MESSAGE_TIMING < currentTime);
-    }
-
-    private record MessageTiming(int messageHash, long timeSend) {
     }
 }

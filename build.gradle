@@ -34,6 +34,8 @@ dependencies {
     implementation group: 'com.squareup.okhttp3', name: 'okhttp', version: '4.11.0'
 }
 
+compileJava.options.encoding = 'UTF-8'
+
 jar {
     archivesBaseName="TNTServer"
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE

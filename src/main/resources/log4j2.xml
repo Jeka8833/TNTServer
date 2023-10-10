@@ -5,7 +5,7 @@
     </Properties>
     <Appenders>
         <Console name="console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d{HH:mm:ss dd.MM.yyyy} [%t] %c{1}:%L %-5p - %m%n"/>
+            <PatternLayout pattern="%d{HH:mm:ss} [%t] %c{2}:%M:%L: %highlight{%msg%n%throwable}" />
         </Console>
         <RollingFile name="File" fileName="${baseDir}/TNTServer-latest.log"
                      filePattern="${baseDir}/TNTServer-%d{yyyy-MM-dd}.log.gz" ignoreExceptions="false">

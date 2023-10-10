@@ -18,6 +18,7 @@ import com.jeka8833.tntserver.packet.packets.web.ModulesStatusPacket;
 import com.jeka8833.tntserver.packet.packets.web.RolePacket;
 import com.jeka8833.tntserver.packet.packets.web.TokenGeneratorPacket;
 import com.jeka8833.tntserver.util.BiMap;
+import com.jeka8833.tntserver.util.ChatFilter;
 import com.jeka8833.tntserver.util.Util;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -137,6 +138,12 @@ public class Main extends WebSocketServer {
                 IoBuilder.forLogger(LogManager.getLogger("system.out")).setLevel(Level.INFO).buildPrintStream());
         System.setErr(
                 IoBuilder.forLogger(LogManager.getLogger("system.err")).setLevel(Level.ERROR).buildPrintStream());
+
+        try {
+            ChatFilter.loadDictionaries(Util.getParam(args, "-dictionary_path"));
+        } catch (Exception e) {
+            logger.error("Fail load dictionary", e);
+        }
 
         try {
             HypixelAPIRequest.init(Util.getParam(args, "-hypixel_key"));
