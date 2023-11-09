@@ -9,15 +9,12 @@ import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
 import com.jeka8833.tntserver.packet.packets.web.TokenGeneratorPacket;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.java_websocket.WebSocket;
 
 import java.io.IOException;
 import java.util.UUID;
 
 public class TokenPacket implements Packet {
-    private static final Logger LOGGER = LogManager.getLogger(TokenPacket.class);
     private static final UUID nullUUID = new UUID(0, 0);
 
     private final UUID user;
@@ -48,11 +45,6 @@ public class TokenPacket implements Packet {
 
     @Override
     public void serverProcess(WebSocket socket, User user) {
-        for (User userInDB : PlayersDatabase.uuid2User.values()) {
-            LOGGER.info("Test: " + userInDB.uuid + " " + userInDB.isInactive() + " " + (userInDB instanceof Bot) + " " +
-                    ((userInDB instanceof Bot) ? ((Bot) userInDB).hasPrivilege("SERVER_TOKEN") : "null"));
-        }
-
         if (user instanceof Player player) {
             Bot serverTokenizer = PlayersDatabase.getBotWithPrivilege("SERVER_TOKEN");
             if (serverTokenizer == null) {

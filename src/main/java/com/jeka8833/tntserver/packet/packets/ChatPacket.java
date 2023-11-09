@@ -1,19 +1,24 @@
 package com.jeka8833.tntserver.packet.packets;
 
 import com.jeka8833.tntserver.Main;
+import com.jeka8833.tntserver.database.Bot;
 import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.database.PlayersDatabase;
 import com.jeka8833.tntserver.database.User;
+import com.jeka8833.tntserver.gamechat.ChatFilter;
+import com.jeka8833.tntserver.gamechat.PlayerMute;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
-import com.jeka8833.tntserver.util.ChatFilter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.java_websocket.WebSocket;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.time.Duration;
+import java.time.ZonedDateTime;
+import java.util.Collection;
 import java.util.UUID;
 
 public class ChatPacket implements Packet {
@@ -47,17 +52,43 @@ public class ChatPacket implements Packet {
         ChatFilter.clearOld();
 
         if (user instanceof Player player) {
+            PlayerMute playerMute = PlayerMute.getPlayer(player.uuid);
+            if (playerMute != null && playerMute.isMuted()) {
+                logger.info("Player " + player.uuid + " tried to send message, but he is banned. Unban after: " +
+                        playerMute.unbanAt());
+
+                Duration period = Duration.between(ZonedDateTime.now(), playerMute.unbanAt());
+
+                String muteText = ("§cYou have been muted for: " + playerMute.reason() +
+                        ". You will be able to write in " + period.toDaysPart() + " days " + period.toHoursPart() +
+                        ":" + period.toMinutesPart() + ":" + period.toSecondsPart() + ".")
+                        .replaceAll(" ", " §c");
+
+                Main.serverSend(socket, new ChatPacket(player.uuid, muteText));
+                return;
+            }
+
             String filteredText = ChatFilter.filter(player.uuid, text);
             if (filteredText == null) {
-                Main.serverSend(socket,
-                        // Color genius...
-                        new ChatPacket(player.uuid, "§cYou §care §csending §cmessages §ctoo §cfast, " +
-                                "§cyour §cmessage §chas §cnot §cbeen §cdelivered. §cOnly §cyou §ccan §csee " +
-                                "§cthis §cmessage."));
+                String message = ("§cYou are sending messages too fast, your message has not been delivered. " +
+                        "Only you can see this message.").replaceAll(" ", " §c");
+
+                Main.serverSend(socket, new ChatPacket(player.uuid, message));
                 return;
             }
 
             sendMessage(player, filteredText);
+
+            Collection<Bot> bots = PlayersDatabase.getBotsWithPrivilege("SERVER_CHAT");
+
+            var packet = new ChatPacket(player.uuid, filteredText);
+
+            for (Bot bot : bots) {
+                WebSocket webSocket = bot.getSocket();
+                if (webSocket == null) continue;
+
+                Main.serverSend(webSocket, packet);
+            }
         } else {
             socket.close();
         }

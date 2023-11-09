@@ -63,7 +63,7 @@ public class DatabaseManager {
     public static void initConnect(final String ipAndPort, final String user, final String password) {
         if (db != null) return; // Re-init protection
 
-        db = new DatabaseManager("jdbc:postgresql://" + ipAndPort + "/", user, password);
+        db = new DatabaseManager("jdbc:postgresql://" + ipAndPort, user, password);
         db.connect();
     }
 }

@@ -1,4 +1,4 @@
-package com.jeka8833.tntserver.util;
+package com.jeka8833.tntserver.gamechat;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

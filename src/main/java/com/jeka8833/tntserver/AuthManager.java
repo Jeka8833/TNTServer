@@ -20,6 +20,8 @@ public class AuthManager {
     public static final int ERROR_INTERNAL_SERVER = 3;
     public static final int ERROR_LOGIN_FAIL = 1;
 
+    public static String authURLTNTClient;
+
     private static final Executor AUTH_POOL = new ThreadPoolExecutor(0, 5,
             10, TimeUnit.SECONDS, new SynchronousQueue<>(),
             Util.getThreadFactory("Auth Thread", Thread.MIN_PRIORITY, true));
@@ -62,14 +64,14 @@ public class AuthManager {
     }
 
     public static void authTNTClient(@NotNull UUID user, @NotNull UUID key, @NotNull AuthResponse response) {
-        if (user.version() != 4 || user.variant() != 0) {
+        if (authURLTNTClient == null || user.version() != 4 || user.variant() != 0) {
             response.bad(ERROR_LOGIN_FAIL);
             return;
         }
         try {
             AUTH_POOL.execute(() -> {
                 Request request = new Request.Builder()
-                        .url("http://localhost:80/api/tempToken/login")
+                        .url(authURLTNTClient)
                         .header("Authorization", Credentials.basic(user.toString(), key.toString()))
                         .build();
                 try (Response serverResponse = Util.clientOk.newCall(request).execute()) {

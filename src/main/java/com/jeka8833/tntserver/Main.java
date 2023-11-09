@@ -6,6 +6,7 @@ import com.jeka8833.tntserver.database.PlayersDatabase;
 import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.database.managers.DatabaseManager;
 import com.jeka8833.tntserver.database.managers.TNTClientDBManager;
+import com.jeka8833.tntserver.gamechat.ChatFilter;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
@@ -13,12 +14,13 @@ import com.jeka8833.tntserver.packet.packets.*;
 import com.jeka8833.tntserver.packet.packets.authorization.AuthClientDeprecatedPacket;
 import com.jeka8833.tntserver.packet.packets.authorization.AuthClientPacket;
 import com.jeka8833.tntserver.packet.packets.authorization.AuthWebPacket;
+import com.jeka8833.tntserver.packet.packets.discordbot.LinkCodePacket;
+import com.jeka8833.tntserver.packet.packets.discordbot.MutePacket;
 import com.jeka8833.tntserver.packet.packets.odyssey.DonatePacket;
 import com.jeka8833.tntserver.packet.packets.web.ModulesStatusPacket;
 import com.jeka8833.tntserver.packet.packets.web.RolePacket;
 import com.jeka8833.tntserver.packet.packets.web.TokenGeneratorPacket;
 import com.jeka8833.tntserver.util.BiMap;
-import com.jeka8833.tntserver.util.ChatFilter;
 import com.jeka8833.tntserver.util.Util;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -57,6 +59,8 @@ public class Main extends WebSocketServer {
         packetsList.put((byte) 13, ReceiveHypixelPlayerPacket.class);
         packetsList.put((byte) 14, RequestHypixelPlayerPacket.class);
         packetsList.put((byte) 15, UpdateFreeRequestsPacket.class);
+        packetsList.put((byte) 249, MutePacket.class);
+        packetsList.put((byte) 250, LinkCodePacket.class);
         packetsList.put((byte) 251, RolePacket.class);
         packetsList.put((byte) 252, DonatePacket.class);
         packetsList.put((byte) 253, TokenGeneratorPacket.class);
@@ -146,6 +150,7 @@ public class Main extends WebSocketServer {
         }
 
         try {
+            AuthManager.authURLTNTClient = Util.getParam(args, "-auth_url_tntclient");
             HypixelAPIRequest.init(Util.getParam(args, "-hypixel_key"));
             DatabaseManager.initConnect(Util.getParam(args, "-db_ip"), Util.getParam(args, "-db_user"),
                     Util.getParam(args, "-db_password"));

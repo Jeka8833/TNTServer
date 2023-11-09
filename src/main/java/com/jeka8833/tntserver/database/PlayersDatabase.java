@@ -4,8 +4,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class PlayersDatabase {
@@ -56,5 +55,16 @@ public class PlayersDatabase {
             }
         }
         return null;
+    }
+
+    @NotNull
+    public static Collection<Bot> getBotsWithPrivilege(@NotNull String privilege) {
+        List<Bot> bots = new ArrayList<>();
+        for (User user : uuid2User.values()) {
+            if (!user.isInactive() && user instanceof Bot bot && bot.hasPrivilege(privilege)) {
+                bots.add(bot);
+            }
+        }
+        return bots;
     }
 }
