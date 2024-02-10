@@ -24,7 +24,7 @@ public class HypixelCache implements Balancer<UUID, HypixelPlayer> {
         if (user instanceof Player player) {
             if (player.hypixelPlayerInfo instanceof HypixelPlayerError ||
                     (player.hypixelPlayerInfo instanceof HypixelPlayerStorage storage &&
-                            storage.invalidateAt > System.currentTimeMillis())) {
+                            System.nanoTime() - storage.createdTime < INVALIDATE_CACHE_AFTER)) {
                 data.accept(player.hypixelPlayerInfo);
                 return true;
             }

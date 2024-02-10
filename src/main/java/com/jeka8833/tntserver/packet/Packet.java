@@ -7,7 +7,6 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 
 public interface Packet {
-
     void write(PacketOutputStream stream) throws IOException;
 
     void read(PacketInputStream stream) throws IOException;

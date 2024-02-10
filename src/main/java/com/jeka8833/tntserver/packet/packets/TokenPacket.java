@@ -15,7 +15,7 @@ import java.io.IOException;
 import java.util.UUID;
 
 public class TokenPacket implements Packet {
-    private static final UUID nullUUID = new UUID(0, 0);
+    private static final UUID NULL_UUID = new UUID(0, 0);
 
     private final UUID user;
     private final UUID key;
@@ -48,13 +48,13 @@ public class TokenPacket implements Packet {
         if (user instanceof Player player) {
             Bot serverTokenizer = PlayersDatabase.getBotWithPrivilege("SERVER_TOKEN");
             if (serverTokenizer == null) {
-                Main.serverSend(socket, new TokenPacket(nullUUID, nullUUID));
+                Main.serverSend(socket, new TokenPacket(NULL_UUID, NULL_UUID));
                 return;
             }
 
             WebSocket serverTokenizerSocket = serverTokenizer.getSocket();
             if (serverTokenizerSocket == null) {
-                Main.serverSend(socket, new TokenPacket(nullUUID, nullUUID));
+                Main.serverSend(socket, new TokenPacket(NULL_UUID, NULL_UUID));
                 return;
             }
 

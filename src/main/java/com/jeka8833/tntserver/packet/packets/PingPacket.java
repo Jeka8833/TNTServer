@@ -10,7 +10,6 @@ import org.java_websocket.WebSocket;
 import java.io.IOException;
 
 public class PingPacket implements Packet {
-
     private long time;
 
     @SuppressWarnings("unused")

@@ -15,34 +15,41 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public class ChatFilter {
-    private static final long DIFFERENT_MESSAGE_TIMING = 500;
-    private static final long SAME_MESSAGE_TIMING = 10_000;
-    private static final long TIME_TO_CLEAR = 60_000;
+    private static final long DIFFERENT_MESSAGE_TIMING = TimeUnit.MILLISECONDS.toNanos(750);
+    private static final long SAME_MESSAGE_TIMING = TimeUnit.SECONDS.toNanos(10);
+    private static final long TIME_TO_CLEAR = TimeUnit.MINUTES.toNanos(1);
     private static final String REPLACEMENT_TEXT = "***";
     private static final Pattern LOG4J_EXPLOIT_PATTERN = Pattern.compile("\\$\\{.+}");
     private static final Pattern URL_PATTERN = Pattern.compile(
             "(http|ftp|https)://([\\w_\\-]+(?:\\.[\\w_\\-]+)+)([\\w.,@?^=%&:/~+#\\-]*[\\w@?^=%&/~+#\\-])");
 
+    private static final Pattern PATTERN_COLOR_CODE = Pattern.compile("(?i)\\u00A7[0-9A-FK-OR]");
 
-    private static final Set<String> dictionary = new HashSet<>();
-    private static final Logger logger = LogManager.getLogger(ChatFilter.class);
-    private static final Map<UUID, Deque<MessageTiming>> minuteTimingList = new ConcurrentHashMap<>();
+    private static final Set<String> DICTIONARY = new HashSet<>();
+    private static final Logger LOGGER = LogManager.getLogger(ChatFilter.class);
+    private static final Map<UUID, Deque<MessageTiming>> MINUTE_TIMING_LIST = new ConcurrentHashMap<>();
 
     public static void loadDictionaries(String folderPath) {
-        new Thread(() -> {
+        Thread thread = new Thread(() -> {
             try (Stream<Path> paths = Files.walk(Paths.get(folderPath))) {
                 paths
                         .filter(Files::isRegularFile)
                         .forEach(ChatFilter::readFile);
             } catch (IOException e) {
-                logger.warn("Error load dictionary: " + folderPath, e);
+                LOGGER.warn("Error load dictionary: " + folderPath, e);
             }
-            logger.info("Dictionary loaded: " + dictionary.size() + " words");
-        }, "Dictionary loader").start();
+
+            LOGGER.info("Dictionary loaded: " + DICTIONARY.size() + " words");
+        }, "Dictionary loader");
+
+        thread.setPriority(Thread.MIN_PRIORITY);
+        thread.setDaemon(true);
+        thread.start();
     }
 
     @Nullable
@@ -54,20 +61,18 @@ public class ChatFilter {
 
         if (isUserFlood(sender, filtered)) return null;
 
-        logger.info(sender + ": " + filtered);
-
         return filtered;
     }
 
     public static void clearOld() {
-        long currentTime = System.currentTimeMillis();
+        long currentTime = System.nanoTime();
 
-        Iterator<Deque<MessageTiming>> iterator = minuteTimingList.values().iterator();
+        Iterator<Deque<MessageTiming>> iterator = MINUTE_TIMING_LIST.values().iterator();
         while (iterator.hasNext()) {
             Deque<MessageTiming> messageTimings = iterator.next();
 
             MessageTiming message;
-            while ((message = messageTimings.peek()) != null && message.messageTime + TIME_TO_CLEAR < currentTime) {
+            while ((message = messageTimings.peek()) != null && currentTime - message.messageTime > TIME_TO_CLEAR) {
                 messageTimings.remove();
             }
 
@@ -82,31 +87,31 @@ public class ChatFilter {
             List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
             for (String word : lines) {
                 String formattedWord = word.strip().toLowerCase();
-                if (formattedWord.isEmpty() || formattedWord.contains(" ")) continue;
+                if (formattedWord.isBlank() || formattedWord.contains(" ")) continue;
 
-                if (dictionary.add(formattedWord)) loaded++;
+                if (DICTIONARY.add(formattedWord)) loaded++;
             }
-            logger.info("Dictionary loaded: " + file + " (" + loaded + "/" + lines.size() + ")");
+            LOGGER.info("Dictionary loaded: " + file + " (" + loaded + "/" + lines.size() + ")");
         } catch (MalformedInputException e) {
-            logger.warn("Fail load dictionary: " + file + " (Incorrect encoding, need UTF-8)", e);
+            LOGGER.warn("Fail load dictionary: " + file + " (Incorrect encoding, need UTF-8)", e);
         } catch (IOException e) {
-            logger.warn("Error load dictionary: " + file, e);
+            LOGGER.warn("Error load dictionary: " + file, e);
         }
     }
 
     private static boolean isUserFlood(UUID sender, String text) {
-        long currentTime = System.currentTimeMillis();
+        long currentTime = System.nanoTime();
         int textHash = getHash(text);
 
         Deque<MessageTiming> messages =
-                minuteTimingList.computeIfAbsent(sender, uuid -> new ConcurrentLinkedDeque<>());
+                MINUTE_TIMING_LIST.computeIfAbsent(sender, uuid -> new ConcurrentLinkedDeque<>());
 
         MessageTiming lastMessage = messages.peekLast();
 
         if (lastMessage != null) {
-            if (lastMessage.messageTime + DIFFERENT_MESSAGE_TIMING > currentTime) return true;
+            if (currentTime - lastMessage.messageTime < DIFFERENT_MESSAGE_TIMING) return true;
 
-            if (lastMessage.messageTime + SAME_MESSAGE_TIMING > currentTime) {
+            if (currentTime - lastMessage.messageTime < SAME_MESSAGE_TIMING) {
                 for (MessageTiming messageTiming : messages) {
                     if (messageTiming.messageHash == textHash) return true;
                 }
@@ -135,11 +140,15 @@ public class ChatFilter {
         String[] word = text.split(" ");
 
         for (int i = 0; i < word.length; i++) {
-            if (dictionary.contains(word[i].toLowerCase())) {
+            if (DICTIONARY.contains(stripControlCodes(word[i]).toLowerCase())) {
                 word[i] = REPLACEMENT_TEXT;
             }
         }
         return String.join(" ", word);
+    }
+
+    public static String stripControlCodes(String text) {
+        return PATTERN_COLOR_CODE.matcher(text).replaceAll("");
     }
 
     @Contract(pure = true)

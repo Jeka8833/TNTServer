@@ -25,7 +25,7 @@ public class PacketInputStream extends DataInputStream {
         if (class_ == null) throw new NullPointerException("The received packet has an unknown ID: " + ID);
 
         packet = class_.getDeclaredConstructor().newInstance();
-        logger.debug("Packet ready to be read: " + packet);
+        logger.debug("Packet ready to be read: " + packet.getClass().getSimpleName());
     }
 
     public final UUID readUUID() throws IOException {

@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.UUID;
 
 public class PlayersPingPacket implements Packet {
-
     private @Nullable TNTPlayerPingStorage playerPing;
     private final List<UUID> requestedPlayers = new ArrayList<>();
 

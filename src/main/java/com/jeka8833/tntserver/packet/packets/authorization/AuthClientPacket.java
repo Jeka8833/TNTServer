@@ -25,7 +25,7 @@ import java.util.Set;
 import java.util.UUID;
 
 public class AuthClientPacket implements Packet {
-    private static final Logger logger = LogManager.getLogger(AuthClientPacket.class);
+    private static final Logger LOGGER = LogManager.getLogger(AuthClientPacket.class);
 
     private String playerUsername;
     private String serverKey;
@@ -71,7 +71,7 @@ public class AuthClientPacket implements Packet {
                         Main.serverSend(socket, new BlockModulesPacket(
                                 player.tntPlayerInfo.forceBlock, player.tntPlayerInfo.forceActive));
 
-                        logger.info("Player " + playerUsername + " logged in. Current online: " +
+                        LOGGER.info("Player " + playerUsername + " logged in. Current online: " +
                                 Main.server.getConnections().size());
                     } else {
                         socket.close();

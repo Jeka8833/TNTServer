@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.UUID;
 
 public class RequestTNTClientPlayerPacket implements Packet {
-
     private final List<UUID> users = new ArrayList<>();
 
     @Override

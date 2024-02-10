@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.UUID;
 
 public class FightPacket implements Packet {
-
     private int playerFight = 0;
 
     private final Collection<WebSocket> activeConnection;
@@ -57,8 +56,8 @@ public class FightPacket implements Packet {
 
     @Override
     public void serverProcess(WebSocket socket, User user) {
-        if(user instanceof Player || !BotsManager.isAbsent(user, "FIGHT_LIST")){
-            if(user instanceof Player player && player.tntPlayerInfo != null){
+        if (user instanceof Player || !BotsManager.isAbsent(user, "FIGHT_LIST")) {
+            if (user instanceof Player player && player.tntPlayerInfo != null) {
                 player.tntPlayerInfo.fight = playerFight;
             }
 

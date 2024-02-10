@@ -8,7 +8,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
 
 public abstract class User {
-
     public final @NotNull UUID uuid;
 
     protected User(@NotNull UUID uuid) {

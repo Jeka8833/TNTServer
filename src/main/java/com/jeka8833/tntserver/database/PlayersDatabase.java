@@ -1,5 +1,7 @@
 package com.jeka8833.tntserver.database;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -8,16 +10,20 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class PlayersDatabase {
-    public static final UUID settingUser = UUID.fromString("00000000-0000-4000-0000-000000000000");
+    private static final Logger LOGGER = LogManager.getLogger(PlayersDatabase.class);
+
+    public static final UUID SETTING_USER = UUID.fromString("00000000-0000-4000-0000-000000000000");
 
     public static final Map<UUID, User> uuid2User = new ConcurrentHashMap<>();
 
     public static void clearInactivePeople() {
-        uuid2User.values().removeIf(User::isInactive);
+        boolean isSomethingDeleted = uuid2User.values().removeIf(User::isInactive);
+        if (isSomethingDeleted)
+            LOGGER.debug("Clear inactive people, size: {}", uuid2User.size());
     }
 
     public static boolean isUser(@NotNull UUID uuid) {
-        if (settingUser.equals(uuid)) return true;
+        if (SETTING_USER.equals(uuid)) return true;
 
         return uuid.version() == 4 && uuid.variant() == 2;
     }

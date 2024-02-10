@@ -98,7 +98,7 @@ public class HypixelAPIRequest implements Balancer<UUID, HypixelPlayer> {
                     .url("https://api.hypixel.net/player?uuid=" + playerUUID)
                     .header("API-Key", key.toString())
                     .build();
-            try (Response response = Util.clientOk.newCall(request).execute()) {
+            try (Response response = Util.HTTP_CLIENT.newCall(request).execute()) {
                 serverStatus.setHeaders(response.code(),
                         response.header("RateLimit-Reset"),
                         response.header("RateLimit-Limit"),

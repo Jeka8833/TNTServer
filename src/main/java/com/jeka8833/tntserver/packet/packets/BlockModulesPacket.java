@@ -53,18 +53,18 @@ public class BlockModulesPacket implements Packet {
             return;
         }
 
-        if (editedUser.equals(PlayersDatabase.settingUser)) {
+        if (editedUser.equals(PlayersDatabase.SETTING_USER)) {
             globalActive = active;
             globalBlock = block;
 
-            TNTClientDBManager.readOrCashUser(PlayersDatabase.settingUser, ignore -> {
-                User settingUserStorage = PlayersDatabase.getOrCreate(PlayersDatabase.settingUser);
+            TNTClientDBManager.readOrCashUser(PlayersDatabase.SETTING_USER, ignore -> {
+                User settingUserStorage = PlayersDatabase.getOrCreate(PlayersDatabase.SETTING_USER);
                 if (settingUserStorage instanceof Player player) {
                     if (player.tntPlayerInfo == null) player.tntPlayerInfo = new TNTPlayerStorage();
                     player.tntPlayerInfo.forceActive = active;
                     player.tntPlayerInfo.forceBlock = block;
 
-                    TNTClientDBManager.writeUser(PlayersDatabase.settingUser, null);
+                    TNTClientDBManager.writeUser(PlayersDatabase.SETTING_USER, null);
                 }
             });
 
@@ -99,7 +99,7 @@ public class BlockModulesPacket implements Packet {
     }
 
     public static void readAndSetGlobalBlock() {
-        TNTClientDBManager.readOrCashUser(PlayersDatabase.settingUser, tntUser -> {
+        TNTClientDBManager.readOrCashUser(PlayersDatabase.SETTING_USER, tntUser -> {
             if (tntUser == null || tntUser.tntPlayerInfo == null) return;
 
             globalActive = tntUser.tntPlayerInfo.forceActive;

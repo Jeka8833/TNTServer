@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.util.UUID;
 
 public class RolePacket extends PacketCallback {
-
     private @Nullable UUID playerUUID;
     private @Nullable String roles;
 

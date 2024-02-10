@@ -14,7 +14,6 @@ import java.time.ZonedDateTime;
 import java.util.UUID;
 
 public class MutePacket implements Packet {
-
     private PlayerMute[] players;
 
     @SuppressWarnings("unused")

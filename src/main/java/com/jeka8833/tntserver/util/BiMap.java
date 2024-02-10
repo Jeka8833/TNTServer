@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class BiMap<K, V> {
-
     private final Map<K, V> keyToValueMap = new HashMap<>();
     private final Map<V, K> valueToKeyMap = new HashMap<>();
 

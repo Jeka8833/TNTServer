@@ -6,18 +6,17 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public record PlayerMute(UUID criminal, ZonedDateTime unbanAt, String reason) {
-
-    private static final Map<UUID, PlayerMute> muteList = new ConcurrentHashMap<>();
+    private static final Map<UUID, PlayerMute> MUTE_LIST = new ConcurrentHashMap<>();
 
     public static void setMuteList(PlayerMute[] players) {
-        muteList.clear();
+        MUTE_LIST.clear();
         for (PlayerMute player : players) {
-            muteList.put(player.criminal(), player);
+            MUTE_LIST.put(player.criminal(), player);
         }
     }
 
     public static PlayerMute getPlayer(UUID player) {
-        return muteList.get(player);
+        return MUTE_LIST.get(player);
     }
 
     public boolean isMuted() {

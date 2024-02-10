@@ -18,6 +18,7 @@ import java.sql.Statement;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -49,7 +50,7 @@ public class TNTClientDBManager {
                     CallbackManager.checkTimeout();
 
                     //noinspection BusyWait
-                    Thread.sleep(3000);
+                    Thread.sleep(1000);
                 } catch (Exception e) {
                     LOGGER.warn("DB Tick error:", e);
                 }
@@ -60,7 +61,8 @@ public class TNTClientDBManager {
     }
 
     private static void forceRead() {
-        final List<UserQuire> needRead = USER_REQUEST_LIST.values().stream().filter(UserQuire::isRead).toList();
+        List<UserQuire> needRead = USER_REQUEST_LIST.values().stream().filter(UserQuire::isRead).toList();
+
         if (!needRead.isEmpty()) {
             try {
                 read(needRead);
@@ -101,7 +103,8 @@ public class TNTClientDBManager {
     }
 
     public static void forceWrite() {
-        final List<UserQuire> needWrite = USER_REQUEST_LIST.values().stream().filter(UserQuire::isWrite).toList();
+        List<UserQuire> needWrite = USER_REQUEST_LIST.values().stream().filter(UserQuire::isWrite).toList();
+
         if (!needWrite.isEmpty()) {
             try {
                 write(needWrite);
@@ -212,10 +215,12 @@ public class TNTClientDBManager {
     }
 
     private static class UserQuire {
+        private static final long TIME_TO_CANCEL_ALL_OPERATIONS = TimeUnit.SECONDS.toNanos(20);
+
         private final @NotNull UUID user;
         private final Queue<Consumer<@Nullable Player>> readCallbackList = new ConcurrentLinkedQueue<>();
         private final Queue<Consumer<@Nullable Player>> writeCallbackList = new ConcurrentLinkedQueue<>();
-        private long readWriteTimeout = System.currentTimeMillis() + 20_000; // Wait 20 second
+        private long startTime = System.nanoTime();
 
         public UserQuire(@NotNull UUID user) {
             this.user = user;
@@ -224,7 +229,7 @@ public class TNTClientDBManager {
         public boolean isNeed() {
             if (readCallbackList.isEmpty() && writeCallbackList.isEmpty()) return false;
 
-            if (readWriteTimeout < System.currentTimeMillis()) {
+            if (System.nanoTime() - startTime > TIME_TO_CANCEL_ALL_OPERATIONS) {
                 if (readCallbackList.isEmpty()) {
                     LOGGER.warn("Timeout read information, user: " + user + " user in query: " + isRead());
                 }
@@ -295,7 +300,8 @@ public class TNTClientDBManager {
                 readCallbackList.offer(tntUser -> {
                 });
             }
-            readWriteTimeout = System.currentTimeMillis() + 20_000;
+
+            startTime = System.nanoTime();
         }
 
         /**
@@ -309,7 +315,7 @@ public class TNTClientDBManager {
                 });
             }
 
-            readWriteTimeout = System.currentTimeMillis() + 20_000;
+            startTime = System.nanoTime();
         }
     }
 }

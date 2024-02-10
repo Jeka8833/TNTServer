@@ -17,7 +17,6 @@ import java.util.Collection;
 import java.util.UUID;
 
 public class RequestHypixelPlayerPacket implements Packet {
-
     private @Nullable Collection<UUID> userList;
 
     @SuppressWarnings("unused")

@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.util.UUID;
 
 public class ModulesStatusPacket implements Packet {
-
     private UUID requestedPlayer;
 
     private short callBackID = 0;

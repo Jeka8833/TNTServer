@@ -3,11 +3,14 @@ package com.jeka8833.tntserver.database.storage;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 public final class HypixelPlayerLoading implements HypixelPlayer {
+    private static final long TIMEOUT_TIME = TimeUnit.SECONDS.toNanos(30);
+
     private final @NotNull Collection<Consumer<HypixelPlayer>> listeners;
-    private long timeout;
+    private long startTime;
 
     public HypixelPlayerLoading(@NotNull Collection<Consumer<HypixelPlayer>> listeners) {
         this.listeners = listeners;
@@ -19,10 +22,10 @@ public final class HypixelPlayerLoading implements HypixelPlayer {
     }
 
     public boolean isTimeout() {
-        return System.currentTimeMillis() > timeout;
+        return System.nanoTime() - startTime > TIMEOUT_TIME;
     }
 
-    public void setTimeout(int timeout) {
-        this.timeout = System.currentTimeMillis() + timeout * 1_000L;
+    public void updateTimeout() {
+        startTime = System.nanoTime();
     }
 }

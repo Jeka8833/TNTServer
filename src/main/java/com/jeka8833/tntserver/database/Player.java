@@ -14,11 +14,11 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 public class Player extends User {
-    private static final long INACTIVE_TIME = TimeUnit.MINUTES.toMillis(1);
-    private static final long HYPIXEL_CACHE = TimeUnit.MINUTES.toMillis(5);
+    private static final long INACTIVE_TIME = TimeUnit.MINUTES.toNanos(1);
+    private static final long HYPIXEL_CACHE = TimeUnit.MINUTES.toNanos(5);
 
     private final Object HYPIXEL_MUTEX = new Object();
-    private long timeDelete;
+    private long lastCallTime = System.nanoTime();
     public volatile @Nullable HypixelPlayer hypixelPlayerInfo;
     public @Nullable TNTPlayerStorage tntPlayerInfo;
 
@@ -30,14 +30,14 @@ public class Player extends User {
 
     @Override
     public boolean isInactive() {
-        return timeDelete < System.currentTimeMillis();
+        if (hypixelPlayerInfo instanceof HypixelPlayerLoading)
+            return System.nanoTime() - lastCallTime > HYPIXEL_CACHE;
+        else
+            return System.nanoTime() - lastCallTime > INACTIVE_TIME;
     }
 
     public void playerCalled() {
-        if (hypixelPlayerInfo instanceof HypixelPlayerStorage)
-            timeDelete = System.currentTimeMillis() + HYPIXEL_CACHE;
-        else
-            timeDelete = System.currentTimeMillis() + INACTIVE_TIME;
+        lastCallTime = System.nanoTime();
     }
 
     @Blocking
@@ -47,7 +47,7 @@ public class Player extends User {
             if (hypixelPlayerInfo instanceof HypixelPlayerLoading loading) {
                 if (loading.isTimeout()) {
                     if (!addToQueueAndCheck.test(loading)) return false;
-                    loading.setTimeout(30);
+                    loading.updateTimeout();
                 }
 
                 loading.listeners().add(listener);
@@ -56,7 +56,7 @@ public class Player extends User {
 
                 if (!addToQueueAndCheck.test(loading)) return false;
 
-                loading.setTimeout(30);
+                loading.updateTimeout();
                 loading.listeners().add(listener);
 
                 hypixelPlayerInfo = loading;

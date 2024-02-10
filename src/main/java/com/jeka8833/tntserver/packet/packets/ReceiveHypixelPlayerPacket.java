@@ -17,7 +17,6 @@ import java.util.Collection;
 import java.util.UUID;
 
 public class ReceiveHypixelPlayerPacket implements Packet {
-
     public static final int RECEIVE_FAIL = 0;
     public static final int RECEIVE_GOOD = 1;
     public static final int RECEIVE_GOOD_NOTHING = 2;

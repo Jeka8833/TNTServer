@@ -21,7 +21,7 @@ public class HypixelBalancer {
     public static final HypixelTNTRequest TNT_USER_REQUESTER = new HypixelTNTRequest();
     public static final HypixelTNTRequest TNT_BOT_REQUESTER = new HypixelTNTRequest();
 
-    private static final long TIME_TO_LEAVE_FROM_QUEUE = TimeUnit.MINUTES.toMillis(1);
+    private static final long TIME_TO_LEAVE_FROM_QUEUE = TimeUnit.MINUTES.toNanos(1);
     @SuppressWarnings("unchecked")
     private static final Balancer<UUID, HypixelPlayer>[] SOURCES =
             new Balancer[]{new HypixelAPIRequest(), TNT_BOT_REQUESTER, TNT_USER_REQUESTER};
@@ -57,7 +57,7 @@ public class HypixelBalancer {
 
     public static void tryGet(@NotNull UUID sender, @NotNull Collection<@NotNull UUID> players,
                               @NotNull Consumer<PlayersReady> listener, long timeSend, int maxSendCount) {
-        PLAYER_TIMEOUTS.put(sender, System.currentTimeMillis() + TIME_TO_LEAVE_FROM_QUEUE);
+        PLAYER_TIMEOUTS.put(sender, System.nanoTime());
 
         Queue<Player> received = new ConcurrentLinkedQueue<>();
 
@@ -71,7 +71,7 @@ public class HypixelBalancer {
         for (UUID player : players) {
             boolean onCache = tryGetCache(player, hypixelPlayer -> {
                 User user = PlayersDatabase.getOrCreate(player);
-                if(user instanceof Player send){
+                if (user instanceof Player send) {
                     received.add(send);
                 }
             });
@@ -82,7 +82,7 @@ public class HypixelBalancer {
                 if (sendCount.get() <= 0) return;
 
                 User user = PlayersDatabase.getOrCreate(player);
-                if(user instanceof Player send){
+                if (user instanceof Player send) {
                     received.add(send);
                 }
 
@@ -122,7 +122,7 @@ public class HypixelBalancer {
 
         Iterator<Long> iterator = PLAYER_TIMEOUTS.values().iterator();
         while (iterator.hasNext()) {
-            if (System.currentTimeMillis() < iterator.next()) {
+            if (System.nanoTime() - iterator.next() < TIME_TO_LEAVE_FROM_QUEUE) {
                 count++;
             } else {
                 iterator.remove();

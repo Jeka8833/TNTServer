@@ -1,14 +1,31 @@
 package com.jeka8833.tntserver;
 
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+
 public enum ServerType {
-    HYPIXEL("Hypixel"),
-    TNT_COMMUNITY("Odyssey"),
-    UNKNOWN("Unknown");
+    HYPIXEL("Hypixel", "Hypixel"),
+    TNT_COMMUNITY("TNT Server", "Odyssey"),
+    UNKNOWN("Unknown", "Unknown");
 
     private final String[] serverBrands;
+    private final String displayName;
 
-    ServerType(String... serverBrands) {
+    ServerType(String displayName, String... serverBrands) {
+        this.displayName = displayName;
         this.serverBrands = serverBrands;
+    }
+
+    @NotNull
+    @Contract(pure = true)
+    public String getActualServerBrand() {
+        return serverBrands[0];
+    }
+
+    @NotNull
+    @Contract(pure = true)
+    public String getDisplayName() {
+        return displayName;
     }
 
     public static ServerType getServer(String serverBrand) {

@@ -19,12 +19,13 @@ import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 public class HypixelTNTRequest implements Balancer<UUID, HypixelPlayer> {
 
-    private static final long AVAILABLE_TIMEOUT = 60_000L;
+    private static final long AVAILABLE_TIMEOUT = TimeUnit.MINUTES.toNanos(1);
 
     @SuppressWarnings("unchecked")
     private static final Map.Entry<UUID, AvailableCount>[] TO_ARRAY_ENTRY =
@@ -51,14 +52,14 @@ public class HypixelTNTRequest implements Balancer<UUID, HypixelPlayer> {
     @Override
     @Range(from = 0, to = Integer.MAX_VALUE)
     public int getFree() {
-        long time = System.currentTimeMillis();
         int count = 0;
 
         Iterator<AvailableCount> iterator = availableCountMap.values().iterator();
         while (iterator.hasNext()) {
             AvailableCount availableCount = iterator.next();
             int available = availableCount.count().get();
-            if (available > 0 && availableCount.timeout > time && availableCount.socket().isOpen()) {
+            if (available > 0 && System.nanoTime() - availableCount.timeout < AVAILABLE_TIMEOUT &&
+                    availableCount.socket().isOpen()) {
                 count += available;
             } else {
                 iterator.remove();
@@ -75,8 +76,7 @@ public class HypixelTNTRequest implements Balancer<UUID, HypixelPlayer> {
         if (available == 0) {
             availableCountMap.remove(player);
         } else {
-            availableCountMap.put(player, new AvailableCount(
-                    System.currentTimeMillis() + AVAILABLE_TIMEOUT, socket, new AtomicInteger(available)));
+            availableCountMap.put(player, new AvailableCount(System.nanoTime(), socket, new AtomicInteger(available)));
         }
     }
 
@@ -90,7 +90,7 @@ public class HypixelTNTRequest implements Balancer<UUID, HypixelPlayer> {
 
             Map.Entry<UUID, AvailableCount> selected = array[shift % array.length];
 
-            if (selected.getValue().timeout < System.currentTimeMillis()) {
+            if (System.nanoTime() - selected.getValue().timeout > AVAILABLE_TIMEOUT) {
                 availableCountMap.remove(selected.getKey());
                 Main.serverSend(selected.getValue().socket(), REQUEST_AVAILABLE_COUNT_PACKET);
                 continue;

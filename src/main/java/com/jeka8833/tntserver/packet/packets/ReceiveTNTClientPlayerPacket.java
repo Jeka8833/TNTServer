@@ -11,7 +11,6 @@ import org.java_websocket.WebSocket;
 import java.io.IOException;
 
 public record ReceiveTNTClientPlayerPacket(Player[] users, boolean isAdmin) implements Packet {
-
     @Override
     public void write(PacketOutputStream stream) throws IOException {
         stream.writeByte(users.length);

@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 public class CallbackManager {
-    private static final Map<Short, PacketListener> packetsListeners = new ConcurrentHashMap<>();
+    private static final Map<Short, PacketListener> PACKETS_LISTENERS = new ConcurrentHashMap<>();
     private static final AtomicInteger COUNTER = new AtomicInteger();
 
     public static <T extends PacketCallback> void sendAndGetResult(@NotNull WebSocket socket, @NotNull T packet,
@@ -21,26 +21,26 @@ public class CallbackManager {
         packet.setUniqueID(id);
 
         //noinspection unchecked
-        packetsListeners.put(id, new PacketListener((Consumer<PacketCallback>) callback));
+        PACKETS_LISTENERS.put(id, new PacketListener((Consumer<PacketCallback>) callback));
 
         Main.serverSend(socket, packet);
     }
 
     public static void callPacket(@NotNull PacketCallback packet) {
-        PacketListener queue = packetsListeners.remove(packet.getUniqueID());
+        PacketListener queue = PACKETS_LISTENERS.remove(packet.getUniqueID());
         if (queue == null) return;
 
         queue.call(packet);
     }
 
     public static void checkTimeout() {
-        packetsListeners.values().removeIf(PacketListener::checkAndRemoveTimeout);
+        PACKETS_LISTENERS.values().removeIf(PacketListener::checkAndRemoveTimeout);
     }
 
     private static class PacketListener {
-        private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(10);
-        private final long timeoutAt = System.currentTimeMillis() + TIMEOUT;
+        private static final long TIMEOUT = TimeUnit.SECONDS.toNanos(10);
 
+        private final long START_TIME = System.nanoTime();
         private Consumer<PacketCallback> listener;
 
         private PacketListener(Consumer<PacketCallback> listener) {
@@ -48,7 +48,7 @@ public class CallbackManager {
         }
 
         private boolean checkAndRemoveTimeout() {
-            boolean isTimeout = System.currentTimeMillis() > timeoutAt;
+            boolean isTimeout = System.nanoTime() - START_TIME > TIMEOUT;
             if (isTimeout) call(null);
 
             return isTimeout;

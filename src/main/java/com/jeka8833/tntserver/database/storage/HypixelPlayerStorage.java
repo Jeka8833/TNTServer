@@ -1,7 +1,6 @@
 package com.jeka8833.tntserver.database.storage;
 
 import com.google.gson.annotations.SerializedName;
-import com.jeka8833.tntserver.balancer.HypixelCache;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
 import com.jeka8833.tntserver.packet.StreamSerializer;
@@ -11,7 +10,7 @@ import java.io.IOException;
 
 public class HypixelPlayerStorage implements StreamSerializer, HypixelPlayer {
 
-    public final transient long invalidateAt = System.currentTimeMillis() + HypixelCache.INVALIDATE_CACHE_AFTER;
+    public final transient long createdTime = System.nanoTime();
 
     @SerializedName("stats")
     public Stats stats = new Stats();

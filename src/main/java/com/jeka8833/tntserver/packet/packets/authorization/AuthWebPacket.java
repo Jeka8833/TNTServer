@@ -19,7 +19,7 @@ import java.util.Set;
 import java.util.UUID;
 
 public class AuthWebPacket implements Packet {
-    private static final Logger logger = LogManager.getLogger(AuthWebPacket.class);
+    private static final Logger LOGGER = LogManager.getLogger(AuthWebPacket.class);
 
     private UUID user;
     private UUID key;
@@ -52,7 +52,7 @@ public class AuthWebPacket implements Packet {
 
                     Main.serverSend(socket, new AuthWebPacket());
 
-                    logger.info("Bot " + user + " logged in. Current online: " + Main.server.getConnections().size());
+                    LOGGER.info("Bot " + user + " logged in. Current online: " + Main.server.getConnections().size());
                 } else {
                     socket.close();
                 }

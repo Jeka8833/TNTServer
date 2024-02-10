@@ -12,7 +12,6 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 
 public class UpdateFreeRequestsPacket implements Packet {
-
     private int count;
 
     @Override

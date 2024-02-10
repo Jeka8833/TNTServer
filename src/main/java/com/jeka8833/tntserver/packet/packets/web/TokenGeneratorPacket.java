@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.util.UUID;
 
 public class TokenGeneratorPacket implements Packet {
-
     private @Nullable UUID user;
     private UUID key;
     private boolean unregister;

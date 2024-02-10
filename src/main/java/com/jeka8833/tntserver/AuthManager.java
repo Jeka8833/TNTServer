@@ -34,7 +34,7 @@ public class AuthManager {
                         .url("https://sessionserver.mojang.com/session/minecraft/hasJoined?serverId=" +
                                 key + "&username=" + username)
                         .build();
-                try (Response serverResponse = Util.clientOk.newCall(request).execute()) {
+                try (Response serverResponse = Util.HTTP_CLIENT.newCall(request).execute()) {
                     if (serverResponse.isSuccessful()) {
                         try (ResponseBody body = serverResponse.body(); Reader reader = body.charStream()) {
                             ResponseID responseID = Util.GSON.fromJson(reader, ResponseID.class);
@@ -74,7 +74,7 @@ public class AuthManager {
                         .url(authURLTNTClient)
                         .header("Authorization", Credentials.basic(user.toString(), key.toString()))
                         .build();
-                try (Response serverResponse = Util.clientOk.newCall(request).execute()) {
+                try (Response serverResponse = Util.HTTP_CLIENT.newCall(request).execute()) {
                     if (serverResponse.isSuccessful()) {
                         Set<String> privileges = BotsManager.validateBotAndCutPrivilege(
                                 serverResponse.body().string());

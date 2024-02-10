@@ -10,7 +10,6 @@ import org.java_websocket.WebSocket;
 import java.io.IOException;
 
 public class GameInfoPacket implements Packet {
-
     private String gameInfo;
 
     @Override

@@ -13,17 +13,17 @@ import org.jetbrains.annotations.Range;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Queue;
 import java.util.UUID;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 public class Util {
-    private static final Logger logger = LogManager.getLogger(Util.class);
+    private static final Logger LOGGER = LogManager.getLogger(Util.class);
     public static final Gson GSON = new Gson();
-    public static final OkHttpClient clientOk = createSocket();
+    public static final OkHttpClient HTTP_CLIENT = createSocket();
 
     public static String getParam(final String[] args, final String key) {
         for (int i = 0; i < args.length - 1; i++)
@@ -56,10 +56,9 @@ public class Util {
                                                  @Range(from = Thread.MIN_PRIORITY, to = Thread.MAX_PRIORITY)
                                                  int priority, boolean daemon) {
         return r -> {
-            Thread t = Executors.defaultThreadFactory().newThread(r);
+            Thread t = new Thread(r, name);
             t.setPriority(priority);
             t.setDaemon(daemon);
-            t.setName(name);
             return t;
         };
     }
@@ -85,13 +84,15 @@ public class Util {
             };
 
             SSLContext sslContext = SSLContext.getInstance("SSL");
-            sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+            sslContext.init(null, trustAllCerts, new SecureRandom());
 
             newBuilder.sslSocketFactory(sslContext.getSocketFactory(), (X509TrustManager) trustAllCerts[0]);
             newBuilder.hostnameVerifier((hostname, session) -> true);
         } catch (Exception e) {
-            logger.error("Fail create noSSL socket", e);
+            LOGGER.error("Fail create noSSL socket", e);
         }
+
+        newBuilder.fastFallback(true);
 
         Dispatcher dispatcher = new Dispatcher();
         dispatcher.setMaxRequestsPerHost(20);

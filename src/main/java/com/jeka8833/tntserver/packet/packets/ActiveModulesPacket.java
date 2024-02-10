@@ -10,7 +10,6 @@ import org.java_websocket.WebSocket;
 import java.io.IOException;
 
 public class ActiveModulesPacket implements Packet {
-
     private long activeModules = 0;
 
     @Override
