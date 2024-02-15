@@ -9,7 +9,7 @@ import java.util.UUID;
 public interface AnalyticGroup {
     void addManager(AnalyticManager analyticManager);
 
-    void addToProcess(UUID sessionID, AnalyticPacket packet);
+    void addToProcess(String clientVersion, UUID sessionID, AnalyticPacket packet);
 
     void process(@NotNull Path basePath) throws IOException, InterruptedException;
 

@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class JumpAnalyticGroup implements AnalyticGroup {
     private static final byte[] HEADER = {'T', 'C', '_', 'J', 'I'};
-    private static final String FOLDER_NAME = "jumpInfo";
+    private static final String FOLDER_NAME = "jumpInfoV2";
 
     private final Map<UUID, Queue<AnalyticPacket>> packets = new ConcurrentHashMap<>();
     private AnalyticManager analyticManager;
@@ -30,7 +30,7 @@ public class JumpAnalyticGroup implements AnalyticGroup {
     }
 
     @Override
-    public void addToProcess(UUID sessionID, AnalyticPacket packet) {
+    public void addToProcess(String version, UUID sessionID, AnalyticPacket packet) {
         if (analyticManager == null || analyticManager.isDirectoryOverflow()) return;
 
         packets.computeIfAbsent(sessionID, uuid -> new ConcurrentLinkedQueue<>())

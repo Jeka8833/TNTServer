@@ -1,8 +1,11 @@
 package com.jeka8833.tntserver.packet.packets;
 
 import com.jeka8833.tntserver.Main;
+import com.jeka8833.tntserver.VersionUtil;
+import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.database.User;
-import com.jeka8833.tntserver.database.analytics.*;
+import com.jeka8833.tntserver.database.analytics.AnalyticGroup;
+import com.jeka8833.tntserver.database.analytics.AnalyticPacketLink;
 import com.jeka8833.tntserver.database.analytics.jumpPakets.*;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
@@ -11,12 +14,12 @@ import org.java_websocket.WebSocket;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class AnalyticPacket implements Packet {
     private static final Map<Integer, AnalyticPacketLink> PACKETS_MAP = generatePacketsMap();
+
+    private final List<AnalyticTempStorage> TEMP_STORAGE_LIST = new ArrayList<>();
 
     @Override
     public void write(PacketOutputStream stream) throws IOException {
@@ -41,7 +44,7 @@ public class AnalyticPacket implements Packet {
                         analyticPacketLink.packetClass().getDeclaredConstructor().newInstance();
                 packet.read(stream);
 
-                analyticPacketLink.group().addToProcess(randomID, packet);
+                TEMP_STORAGE_LIST.add(new AnalyticTempStorage(analyticPacketLink.group(), randomID, packet));
             }
         } catch (ReflectiveOperationException e) {
             throw new IOException(e);
@@ -50,6 +53,21 @@ public class AnalyticPacket implements Packet {
 
     @Override
     public void serverProcess(WebSocket socket, @Nullable User user) {
+        if (user instanceof Player player) {
+            if (player.tntPlayerInfo == null || player.tntPlayerInfo.version == null) return;
+
+            if (VersionUtil.compareVersions(player.tntPlayerInfo.version, "v1.3.15.7") < 0) {
+                return;
+            }
+
+            for (AnalyticTempStorage storage : TEMP_STORAGE_LIST) {
+                storage.group.addToProcess(player.tntPlayerInfo.version, storage.sessionID, storage.packet);
+            }
+        }
+    }
+
+    private record AnalyticTempStorage(AnalyticGroup group, UUID sessionID,
+                                       com.jeka8833.tntserver.database.analytics.AnalyticPacket packet) {
     }
 
     private static Map<Integer, AnalyticPacketLink> generatePacketsMap() {
