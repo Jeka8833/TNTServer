@@ -82,13 +82,13 @@ public class HypixelTNTRequest implements Balancer<UUID, HypixelPlayer> {
 
     @Nullable
     private AvailableCount takeClient() {
-        int shift = Math.abs(takeCount.incrementAndGet());
+        int shift = takeCount.incrementAndGet();
 
         while (true) {  // If thread collision, or timeout
             Map.Entry<UUID, AvailableCount>[] array = availableCountMap.entrySet().toArray(TO_ARRAY_ENTRY);
             if (array.length == 0) return null;
 
-            Map.Entry<UUID, AvailableCount> selected = array[shift % array.length];
+            Map.Entry<UUID, AvailableCount> selected = array[Math.floorMod(shift, array.length)];
 
             if (System.nanoTime() - selected.getValue().timeout > AVAILABLE_TIMEOUT) {
                 availableCountMap.remove(selected.getKey());

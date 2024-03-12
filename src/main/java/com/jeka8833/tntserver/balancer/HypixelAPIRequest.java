@@ -95,7 +95,7 @@ public class HypixelAPIRequest implements Balancer<UUID, HypixelPlayer> {
             throws InterruptedException {
         try (HypixelResponse serverStatus = new HypixelResponse(RATE_LIMITER)) {
             Request request = new Request.Builder()
-                    .url("https://api.hypixel.net/player?uuid=" + playerUUID)
+                    .url("https://api.hypixel.net/v2/player?uuid=" + playerUUID)
                     .header("API-Key", key.toString())
                     .build();
             try (Response response = Util.HTTP_CLIENT.newCall(request).execute()) {
@@ -105,7 +105,6 @@ public class HypixelAPIRequest implements Balancer<UUID, HypixelPlayer> {
                         response.header("RateLimit-Remaining"));
 
                 if (response.isSuccessful()) {
-                    //noinspection DataFlowIssue
                     try (ResponseBody body = response.body(); InputStream reader = body.byteStream()) {
                         HypixelAPIRequest structure = Util.GSON.fromJson(
                                 new BufferedReader(new InputStreamReader(reader, StandardCharsets.UTF_8), 64 * 1024),

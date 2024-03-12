@@ -26,16 +26,16 @@ public class HypixelPlayerStorage implements StreamSerializer, HypixelPlayer {
 
         stats.TNTGames.wins_tntrun = stream.readInt();
         stats.TNTGames.deaths_tntrun = stream.readInt();
-        stats.TNTGames.new_tntrun_double_jumps = stream.readInt();
+        stream.skipNBytes(4);       // new_tntrun_double_jumps
 
         stats.TNTGames.wins_pvprun = stream.readInt();
         stats.TNTGames.deaths_pvprun = stream.readInt();
-        stats.TNTGames.new_pvprun_double_jumps = stream.readInt();
+        stream.skipNBytes(4);       // new_pvprun_double_jumps
         stats.TNTGames.kills_pvprun = stream.readInt();
 
         stats.TNTGames.wins_bowspleef = stream.readInt();
         stats.TNTGames.deaths_bowspleef = stream.readInt();
-        stats.TNTGames.new_spleef_double_jumps = stream.readInt();
+        stream.skipNBytes(4);       // new_spleef_double_jumps
 
         stats.TNTGames.wins_tntag = stream.readInt();
         stats.TNTGames.deaths_tntag = stream.readInt();
@@ -57,16 +57,16 @@ public class HypixelPlayerStorage implements StreamSerializer, HypixelPlayer {
 
         stream.writeInt(stats.TNTGames.wins_tntrun);
         stream.writeInt(stats.TNTGames.deaths_tntrun);
-        stream.writeInt(stats.TNTGames.new_tntrun_double_jumps);
+        stream.writeInt(7);     // new_tntrun_double_jumps
 
         stream.writeInt(stats.TNTGames.wins_pvprun);
         stream.writeInt(stats.TNTGames.deaths_pvprun);
-        stream.writeInt(stats.TNTGames.new_pvprun_double_jumps);
+        stream.writeInt(7);     // new_pvprun_double_jumps
         stream.writeInt(stats.TNTGames.kills_pvprun);
 
         stream.writeInt(stats.TNTGames.wins_bowspleef);
         stream.writeInt(stats.TNTGames.deaths_bowspleef);
-        stream.writeInt(stats.TNTGames.new_spleef_double_jumps);
+        stream.writeInt(7);     // new_spleef_double_jumps
 
         stream.writeInt(stats.TNTGames.wins_tntag);
         stream.writeInt(stats.TNTGames.deaths_tntag);
@@ -97,18 +97,12 @@ public class HypixelPlayerStorage implements StreamSerializer, HypixelPlayer {
         @SerializedName("deaths_tntrun")
         public int deaths_tntrun = -1;
 
-        @SerializedName("new_tntrun_double_jumps")
-        public int new_tntrun_double_jumps = -1;
-
         // For PVPRun game
         @SerializedName("wins_pvprun")
         public int wins_pvprun = -1;
 
         @SerializedName("deaths_pvprun")
         public int deaths_pvprun = -1;
-
-        @SerializedName("new_pvprun_double_jumps")
-        public int new_pvprun_double_jumps = -1;
 
         @SerializedName("kills_pvprun")
         public int kills_pvprun = -1;
@@ -119,9 +113,6 @@ public class HypixelPlayerStorage implements StreamSerializer, HypixelPlayer {
 
         @SerializedName("deaths_bowspleef")
         public int deaths_bowspleef = -1;
-
-        @SerializedName("new_spleef_double_jumps")
-        public int new_spleef_double_jumps = -1;
 
         // For TNTTag game
         @SerializedName("wins_tntag")
