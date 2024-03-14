@@ -125,10 +125,12 @@ public class AsyncHypixelRateLimiter {
     }
 
     void fatalError() {
-        firstTryAt = System.nanoTime() + sleepAfterFail;
+        firstTryAt = Math.max(System.nanoTime() + sleepAfterFail, resetManager.getResetAtNanos());
 
         requestLock.lock();
         try {
+            freeRequests = 0;
+
             requestCondition.signalAll();
 
             Iterator<Thread> threadIterator = threadList.iterator();
