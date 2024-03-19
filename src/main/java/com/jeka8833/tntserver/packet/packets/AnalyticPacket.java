@@ -56,7 +56,7 @@ public class AnalyticPacket implements Packet {
         if (user instanceof Player player) {
             if (player.tntPlayerInfo == null || player.tntPlayerInfo.version == null) return;
 
-            if (VersionUtil.compareVersions(player.tntPlayerInfo.version, "v1.3.15.7") < 0) {
+            if (VersionUtil.compareVersions(player.tntPlayerInfo.version, "v1.3.16") < 0) {
                 return;
             }
 

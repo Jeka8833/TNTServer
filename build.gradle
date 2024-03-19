@@ -17,7 +17,7 @@ dependencies {
     implementation group: 'org.slf4j', name: 'slf4j-reload4j', version: '2.0.12'
 
     // https://mvnrepository.com/artifact/org.postgresql/postgresql
-    implementation group: 'org.postgresql', name: 'postgresql', version: '42.7.2'
+    implementation group: 'org.postgresql', name: 'postgresql', version: '42.7.3'
 
     // https://mvnrepository.com/artifact/org.java-websocket/Java-WebSocket
     implementation group: 'org.java-websocket', name: 'Java-WebSocket', version: '1.5.6'
