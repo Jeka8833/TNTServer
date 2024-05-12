@@ -24,13 +24,13 @@ public class ChatFilter {
     private static final long SAME_MESSAGE_TIMING = TimeUnit.SECONDS.toNanos(10);
     private static final long TIME_TO_CLEAR = TimeUnit.MINUTES.toNanos(1);
     private static final String REPLACEMENT_TEXT = "***";
+
     private static final Pattern LOG4J_EXPLOIT_PATTERN = Pattern.compile("\\$\\{.+}");
     private static final Pattern URL_PATTERN = Pattern.compile(
             "(http|ftp|https)://([\\w_\\-]+(?:\\.[\\w_\\-]+)+)([\\w.,@?^=%&:/~+#\\-]*[\\w@?^=%&/~+#\\-])");
+    private static final Pattern PATTERN_COLOR_CODE = Pattern.compile("(?i)[\\u00A7&][0-9A-FK-OR]");
 
-    private static final Pattern PATTERN_COLOR_CODE = Pattern.compile("(?i)\\u00A7[0-9A-FK-OR]");
-
-    private static final Set<String> DICTIONARY = new HashSet<>();
+    private static final Collection<String> DICTIONARY = new HashSet<>();
     private static final Logger LOGGER = LogManager.getLogger(ChatFilter.class);
     private static final Map<UUID, Deque<MessageTiming>> MINUTE_TIMING_LIST = new ConcurrentHashMap<>();
 

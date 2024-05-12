@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class JumpAnalyticGroup implements AnalyticGroup {
     private static final byte[] HEADER = {'T', 'C', '_', 'J', 'I'};
-    private static final String FOLDER_NAME = "jumpInfoV3";
+    private static final String FOLDER_NAME = "jumpInfoV4";
 
     private final Map<UUID, Queue<AnalyticPacket>> packets = new ConcurrentHashMap<>();
     private AnalyticManager analyticManager;
