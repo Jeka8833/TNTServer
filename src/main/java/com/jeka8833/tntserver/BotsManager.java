@@ -6,6 +6,7 @@ import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.util.Util;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.UnmodifiableView;
 
 import java.lang.reflect.Type;
 import java.util.Collections;
@@ -19,6 +20,7 @@ public class BotsManager {
     }.getType();
 
     @Nullable
+    @UnmodifiableView
     @Contract("null->null")
     public static Set<String> validateBotAndCutPrivilege(@Nullable String privileges) {
         if (privileges == null) return null;
@@ -29,7 +31,7 @@ public class BotsManager {
         return Collections.unmodifiableSet(privilegesArray);
     }
 
-    @Contract(value = "null,_->true;_,null->true", pure = true)
+    @Contract(value = "null, _ -> true; _, null -> true", pure = true)
     public static boolean isAbsent(@Nullable User user, @Nullable String privilege) {
         if (user instanceof Bot bot) {
             return !bot.hasPrivilege(privilege);

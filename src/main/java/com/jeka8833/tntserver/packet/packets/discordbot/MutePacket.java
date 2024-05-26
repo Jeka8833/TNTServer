@@ -21,7 +21,7 @@ public class MutePacket implements Packet {
     }
 
     @Override
-    public void write(PacketOutputStream stream) throws IOException {
+    public void write(PacketOutputStream stream) {
 
     }
 

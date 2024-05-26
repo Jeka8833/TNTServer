@@ -30,7 +30,6 @@ public class TNTClientDBManager {
 
     public static void init() {
         try {
-            //noinspection SqlNoDataSourceInspection,SqlResolve
             preparedWrite = DatabaseManager.db.connection.prepareStatement(
                     "INSERT INTO \"TC_Players\" (\"user\", \"version\", \"timeLogin\", \"blockModules\") " +
                             "VALUES (?,?,CURRENT_TIMESTAMP,?) ON CONFLICT (\"user\") DO UPDATE SET " +
@@ -39,8 +38,13 @@ public class TNTClientDBManager {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+        var infinityThread = watchDogThread();
+        infinityThread.start();
+    }
+
+    private static @NotNull Thread watchDogThread() {
         var infinityThread = new Thread(() -> {
-            while (true) {
+            while (!Thread.interrupted()) {
                 try {
                     forceWrite();
                     forceRead();
@@ -51,13 +55,15 @@ public class TNTClientDBManager {
 
                     //noinspection BusyWait
                     Thread.sleep(1000);
+                } catch (InterruptedException interruptedException) {
+                    return;
                 } catch (Exception e) {
                     LOGGER.warn("DB Tick error:", e);
                 }
             }
         });
         infinityThread.setDaemon(true);
-        infinityThread.start();
+        return infinityThread;
     }
 
     private static void forceRead() {
@@ -79,7 +85,7 @@ public class TNTClientDBManager {
         }
     }
 
-    private static void read(@NotNull Collection<UserQuire> userList) throws Exception {
+    private static void read(@NotNull Iterable<UserQuire> userList) throws Exception {
         var joiner = new StringJoiner("','",
                 "SELECT\"user\",\"version\",\"blockModules\",\"donate\"FROM\"TC_Players\"WHERE\"user\"IN('",
                 "')");
@@ -121,7 +127,7 @@ public class TNTClientDBManager {
         }
     }
 
-    private static void write(@NotNull Collection<UserQuire> userList) throws Exception {
+    private static void write(@NotNull Iterable<UserQuire> userList) throws Exception {
         for (int i = 0; i < 2; i++) {
             for (UserQuire quire : userList) {
                 User user = PlayersDatabase.getUser(quire.user);
@@ -259,24 +265,16 @@ public class TNTClientDBManager {
         }
 
         public void callRead() {
-            Consumer<@Nullable Player> callback;
-            while ((callback = readCallbackList.poll()) != null) {
-                try {
-                    User userStorage = PlayersDatabase.getUser(user);
-                    if (userStorage instanceof Player player) {
-                        callback.accept(player);
-                    } else {
-                        callback.accept(null);
-                    }
-                } catch (Exception e) {
-                    LOGGER.warn("Read callback throw exception", e);
-                }
-            }
+            call(readCallbackList);
         }
 
         public void callWrite() {
+            call(writeCallbackList);
+        }
+
+        private void call(@NotNull Queue<@NotNull Consumer<@Nullable Player>> queue) {
             Consumer<@Nullable Player> callback;
-            while ((callback = writeCallbackList.poll()) != null) {
+            while ((callback = queue.poll()) != null) {
                 try {
                     User userStorage = PlayersDatabase.getUser(user);
                     if (userStorage instanceof Player player) {
@@ -285,7 +283,7 @@ public class TNTClientDBManager {
                         callback.accept(null);
                     }
                 } catch (Exception e) {
-                    LOGGER.warn("Read callback throw exception", e);
+                    LOGGER.warn("Call callback throw exception", e);
                 }
             }
         }

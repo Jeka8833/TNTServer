@@ -22,7 +22,7 @@ public class AnalyticPacket implements Packet {
     private final List<AnalyticTempStorage> TEMP_STORAGE_LIST = new ArrayList<>();
 
     @Override
-    public void write(PacketOutputStream stream) throws IOException {
+    public void write(PacketOutputStream stream) {
     }
 
     @Override
@@ -74,16 +74,20 @@ public class AnalyticPacket implements Packet {
         AnalyticGroup jumpGroup = new JumpAnalyticGroup();
 
         com.jeka8833.tntserver.database.analytics.AnalyticPacket callJump = new CallJump();
+        com.jeka8833.tntserver.database.analytics.AnalyticPacket callJumpV2 = new CallJumpV2();
         com.jeka8833.tntserver.database.analytics.AnalyticPacket gameInfo = new GameInfo();
         com.jeka8833.tntserver.database.analytics.AnalyticPacket playerCamera = new PlayerCamera();
         com.jeka8833.tntserver.database.analytics.AnalyticPacket receivedJump = new ReceivedJump();
+        com.jeka8833.tntserver.database.analytics.AnalyticPacket receivedJumpV2 = new ReceivedJumpV2();
 
         Map<Integer, AnalyticPacketLink> map = new HashMap<>();
 
         map.put(callJump.getPacketID(), new AnalyticPacketLink(jumpGroup, callJump.getClass()));
+        map.put(callJumpV2.getPacketID(), new AnalyticPacketLink(jumpGroup, callJumpV2.getClass()));
         map.put(gameInfo.getPacketID(), new AnalyticPacketLink(jumpGroup, gameInfo.getClass()));
         map.put(playerCamera.getPacketID(), new AnalyticPacketLink(jumpGroup, playerCamera.getClass()));
         map.put(receivedJump.getPacketID(), new AnalyticPacketLink(jumpGroup, receivedJump.getClass()));
+        map.put(receivedJumpV2.getPacketID(), new AnalyticPacketLink(jumpGroup, receivedJumpV2.getClass()));
 
         Main.analyticManager.addGroup(jumpGroup);
 

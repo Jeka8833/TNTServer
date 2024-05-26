@@ -57,6 +57,7 @@ public final class AnalyticManager {
                         analyticGroup.process(basePath);
                     }
 
+                    //noinspection BusyWait
                     Thread.sleep(SLEEP_TIME);
                 } catch (InterruptedException e) {
                     return;
@@ -64,6 +65,7 @@ public final class AnalyticManager {
                     LOGGER.error("Failed to write analytic", e);
 
                     try {
+                        //noinspection BusyWait
                         Thread.sleep(SLEEP_TIME);
                     } catch (InterruptedException ex) {
                         return;

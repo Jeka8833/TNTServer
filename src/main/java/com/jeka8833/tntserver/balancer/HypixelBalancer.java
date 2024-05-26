@@ -55,7 +55,7 @@ public class HypixelBalancer {
         return false;
     }
 
-    public static void tryGet(@NotNull UUID sender, @NotNull Collection<@NotNull UUID> players,
+    public static void tryGet(@NotNull UUID sender, @NotNull Iterable<@NotNull UUID> players,
                               @NotNull Consumer<PlayersReady> listener, long timeSend, int maxSendCount) {
         PLAYER_TIMEOUTS.put(sender, System.nanoTime());
 

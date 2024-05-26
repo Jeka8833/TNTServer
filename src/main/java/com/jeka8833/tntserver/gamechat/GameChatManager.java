@@ -16,7 +16,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteBuffer;
-import java.util.Collection;
 import java.util.UUID;
 
 public class GameChatManager {
@@ -68,7 +67,7 @@ public class GameChatManager {
                                    @NotNull ServerType server, @NotNull String text) {
         LOGGER.info("Chat: " + sender + " -> " + receiver + " " + server + ": " + text);
 
-        Collection<Bot> bots = PlayersDatabase.getBotsWithPrivilege("SERVER_CHAT");
+        Iterable<Bot> bots = PlayersDatabase.getBotsWithPrivilege("SERVER_CHAT");
 
         var packet = new ChatHookPacket(sender, receiver, server, text);
 

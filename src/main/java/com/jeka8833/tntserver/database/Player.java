@@ -7,7 +7,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -73,7 +72,7 @@ public class Player extends User {
                 return;
             }
 
-            Collection<Consumer<HypixelPlayer>> list = null;
+            Iterable<Consumer<HypixelPlayer>> list = null;
             if (hypixelPlayerInfo instanceof HypixelPlayerLoading loading) {
                 list = loading.listeners();
             }
