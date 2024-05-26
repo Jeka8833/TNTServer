@@ -35,7 +35,7 @@ dependencies {
     implementation group: 'com.squareup.okhttp3', name: 'okhttp', version: '5.0.0-alpha.14'
 
     // https://mvnrepository.com/artifact/org.junit/junit-bom
-    testImplementation platform('org.junit:junit-bom:5.11.0-M1')
+    testImplementation platform('org.junit:junit-bom:5.11.0-M2')
     testImplementation 'org.junit.jupiter:junit-jupiter'
 }
 

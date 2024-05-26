@@ -13,6 +13,8 @@ public class CallJumpV2 implements AnalyticPacket {
     private double posX;
     private double posY;
     private double posZ;
+    private float lastReportedPitch;
+    private float lastReportedYaw;
 
     @Override
     public int getPacketID() {
@@ -26,6 +28,8 @@ public class CallJumpV2 implements AnalyticPacket {
         this.posX = stream.readDouble();
         this.posY = stream.readDouble();
         this.posZ = stream.readDouble();
+        this.lastReportedPitch = stream.readFloat();
+        this.lastReportedYaw = stream.readFloat();
     }
 
     @Override
@@ -42,5 +46,7 @@ public class CallJumpV2 implements AnalyticPacket {
         writer.writeDouble(posX);
         writer.writeDouble(posY);
         writer.writeDouble(posZ);
+        writer.writeFloat(lastReportedPitch);
+        writer.writeFloat(lastReportedYaw);
     }
 }
