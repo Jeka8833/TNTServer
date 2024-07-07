@@ -1,9 +1,12 @@
 package com.jeka8833.tntserver.packet.packets;
 
 import com.jeka8833.tntserver.Main;
+import com.jeka8833.tntserver.MojangAPI;
 import com.jeka8833.tntserver.database.Player;
+import com.jeka8833.tntserver.database.PlayersDatabase;
 import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.gamechat.ChatFilter;
+import com.jeka8833.tntserver.gamechat.CommandManager;
 import com.jeka8833.tntserver.gamechat.GameChatManager;
 import com.jeka8833.tntserver.gamechat.PlayerMute;
 import com.jeka8833.tntserver.packet.Packet;
@@ -49,6 +52,10 @@ public class ChatPacket implements Packet {
         ChatFilter.clearOld();
 
         if (user instanceof Player player) {
+            if (CommandManager.executeCommand(player, text)) {
+                return;
+            }
+
             PlayerMute playerMute = PlayerMute.getPlayer(player.uuid);
             if (playerMute != null && playerMute.isMuted()) {
                 LOGGER.info("Player " + player.uuid + " tried to send message, but he is banned. Unban after: " +

@@ -31,6 +31,7 @@ import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -41,6 +42,7 @@ public class Main extends WebSocketServer {
     private static final Logger LOGGER = LogManager.getLogger(Main.class);
 
     public static final BiMap<Byte, Class<? extends Packet>> packetsList = new BiMap<>();
+    @Nullable
     public static AnalyticManager analyticManager;
 
     public static Main server;

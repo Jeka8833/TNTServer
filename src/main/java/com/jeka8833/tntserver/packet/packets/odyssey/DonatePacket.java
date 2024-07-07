@@ -2,20 +2,17 @@ package com.jeka8833.tntserver.packet.packets.odyssey;
 
 import com.jeka8833.tntserver.BotsManager;
 import com.jeka8833.tntserver.Main;
-import com.jeka8833.tntserver.database.Bot;
-import com.jeka8833.tntserver.database.PlayersDatabase;
 import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
-import com.jeka8833.tntserver.packet.callback.CallbackManager;
-import com.jeka8833.tntserver.packet.packets.web.RolePacket;
 import org.java_websocket.WebSocket;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.UUID;
 
 public class DonatePacket implements Packet {
@@ -56,26 +53,14 @@ public class DonatePacket implements Packet {
             return;
         }
 
-        Bot roleServer = PlayersDatabase.getBotWithPrivilege("SERVER_ROLES");
-        if (roleServer == null) {
-            Main.serverSend(socket, new DonatePacket(playerUUID, 1, 0));
-            return;
-        }
-
-        WebSocket roleServerSocket = roleServer.getSocket();
-        if (roleServerSocket == null) {
-            Main.serverSend(socket, new DonatePacket(playerUUID, 3, 0));
-            return;
-        }
-
-        CallbackManager.sendAndGetResult(roleServerSocket, new RolePacket(playerUUID), packet -> {
-            if (packet == null) {
-                Main.serverSend(socket, new DonatePacket(playerUUID, 2, 0));
-            } else {
-                DonateLevel donateLevel = DonateLevel.getDonateLevel(packet.getRoles());
-
-                Main.serverSend(socket, new DonatePacket(playerUUID, 0, donateLevel.getLevel()));
+        BotsManager.requestUserPrivileges(playerUUID, privileges -> {
+            if (privileges.isEmpty()) {
+                Main.serverSend(socket, new DonatePacket(playerUUID, 1, 0));
+                return;
             }
+
+            DonateLevel donateLevel = DonateLevel.getDonateLevel(privileges.get());
+            Main.serverSend(socket, new DonatePacket(playerUUID, 0, donateLevel.getLevel()));
         });
     }
 
@@ -103,14 +88,11 @@ public class DonatePacket implements Packet {
 
         @NotNull
         @Contract(pure = true)
-        public static DonateLevel getDonateLevel(@Nullable String roles) {
+        public static DonateLevel getDonateLevel(@Nullable Collection<@NotNull String> roles) {
             if (roles == null) return NONE;
 
-            String[] rolesArray = roles.split(",");
-            for (String role : rolesArray) {
-                for (DonateLevel donateLevel : values()) {
-                    if (donateLevel.role != null && donateLevel.role.equals(role)) return donateLevel;
-                }
+            for (DonateLevel donateLevel : values()) {
+                if (donateLevel.role != null && roles.contains(donateLevel.role)) return donateLevel;
             }
 
             return NONE;

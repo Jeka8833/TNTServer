@@ -27,7 +27,7 @@ public class AnalyticPacket implements Packet {
 
     @Override
     public void read(PacketInputStream stream) throws IOException {
-        if (Main.analyticManager.isDirectoryOverflow()) return;
+        if (Main.analyticManager == null || Main.analyticManager.isDirectoryOverflow()) return;
 
         UUID randomID = stream.readUUID();
 
@@ -89,7 +89,9 @@ public class AnalyticPacket implements Packet {
         map.put(receivedJump.getPacketID(), new AnalyticPacketLink(jumpGroup, receivedJump.getClass()));
         map.put(receivedJumpV2.getPacketID(), new AnalyticPacketLink(jumpGroup, receivedJumpV2.getClass()));
 
-        Main.analyticManager.addGroup(jumpGroup);
+        if (Main.analyticManager != null) {
+            Main.analyticManager.addGroup(jumpGroup);
+        }
 
         return map;
     }

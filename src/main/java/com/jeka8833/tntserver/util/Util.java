@@ -38,6 +38,10 @@ public class Util {
                 input.replaceFirst("(\\w{8})(\\w{4})(\\w{4})(\\w{4})(\\w{12})", "$1-$2-$3-$4-$5"));
     }
 
+    public static boolean isDJFix(long moduleList) {
+        return (moduleList & (1L << 6L)) == (1L << 6L);
+    }
+
     @NotNull
     @Contract("_ -> new")
     public static <V> ArrayList<V> pollAll(@NotNull Queue<V> queue) {

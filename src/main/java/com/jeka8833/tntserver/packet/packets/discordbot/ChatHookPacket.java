@@ -3,6 +3,7 @@ package com.jeka8833.tntserver.packet.packets.discordbot;
 import com.jeka8833.tntserver.ServerType;
 import com.jeka8833.tntserver.database.Bot;
 import com.jeka8833.tntserver.database.User;
+import com.jeka8833.tntserver.gamechat.CommandManager;
 import com.jeka8833.tntserver.gamechat.GameChatManager;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
@@ -53,6 +54,7 @@ public class ChatHookPacket implements Packet {
     @Nullable
     public UUID getReceiver() {
         if (receiver.equals(EMPTY_UUID)) return null;
+
         return receiver;
     }
 
@@ -64,6 +66,8 @@ public class ChatHookPacket implements Packet {
     @Override
     public void serverProcess(WebSocket socket, @Nullable User user) {
         if (user instanceof Bot bot && bot.hasPrivilege("SERVER_CHAT")) {
+            if (CommandManager.executeCommand(bot, text)) return;
+
             UUID receiver = getReceiver();
             if (receiver == null) {
                 GameChatManager.sendGlobalMessage(sender, getServer(), text);
