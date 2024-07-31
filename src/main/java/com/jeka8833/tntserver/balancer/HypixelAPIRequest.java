@@ -36,7 +36,7 @@ public class HypixelAPIRequest implements Balancer<UUID, HypixelPlayer> {
             new ResetManager(Duration.ofMinutes(5)),
             4, Duration.ofMillis(100), Duration.ofSeconds(2), Duration.ofSeconds(10));
 
-    private static final Logger logger = LogManager.getLogger(HypixelAPIRequest.class);
+    private static final Logger LOGGER = LogManager.getLogger(HypixelAPIRequest.class);
     private static final BlockingQueue<UUID> QUEUE = new LinkedBlockingQueue<>();
 
     @SerializedName("player")
@@ -73,14 +73,14 @@ public class HypixelAPIRequest implements Balancer<UUID, HypixelPlayer> {
                         User user = PlayersDatabase.getOrCreate(requestedPlayer);
                         if (user instanceof Player player) player.setHypixelStorage(storage);
                     } catch (InterruptedException interruptedException) {
-                        logger.warn("Force stop request: " + requestedPlayer);
+                        LOGGER.warn("Force stop request: " + requestedPlayer);
 
                         if (requestedPlayer != null) {
                             //noinspection ResultOfMethodCallIgnored
                             QUEUE.offer(requestedPlayer);
                         }
                     } catch (Exception e) {
-                        logger.error("Hypixel Requester", e);
+                        LOGGER.error("Hypixel Requester", e);
                     }
                 }
             }, "Hypixel Requester " + i);
@@ -114,11 +114,11 @@ public class HypixelAPIRequest implements Balancer<UUID, HypixelPlayer> {
                         return structure.player;
                     }
                 } else {
-                    logger.warn("Hypixel API request returned: " + response.code());
+                    LOGGER.warn("Hypixel API request returned: " + response.code());
                 }
             }
         } catch (Exception e) {
-            logger.warn("Hypixel API request", e);
+            LOGGER.warn("Hypixel API request", e);
         }
         return null;
     }

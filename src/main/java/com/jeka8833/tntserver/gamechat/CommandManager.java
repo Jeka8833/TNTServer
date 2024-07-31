@@ -1,6 +1,7 @@
 package com.jeka8833.tntserver.gamechat;
 
 import com.jeka8833.tntserver.Main;
+import com.jeka8833.tntserver.ServerType;
 import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.gamechat.commands.Command;
 import com.jeka8833.tntserver.gamechat.commands.ForceModuleCommand;
@@ -27,7 +28,7 @@ public class CommandManager {
                 WebSocket userWebsocket = user.getSocket();
                 if (userWebsocket == null) return false;
 
-                LOGGER.info("Player {} executed command: {}", user.uuid, text);
+                GameChatManager.sendToHook(user.uuid, null, ServerType.UNKNOWN, text);
 
                 int commandEndIndex = text.indexOf(" ");
                 if (commandEndIndex == -1) commandEndIndex = text.length();

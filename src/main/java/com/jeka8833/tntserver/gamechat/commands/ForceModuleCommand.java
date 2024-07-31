@@ -29,6 +29,7 @@ public class ForceModuleCommand implements Command {
     private static final int OPERATION_ON = 0;
     private static final int OPERATION_RESET = 1;
     private static final int OPERATION_OFF = 2;
+    private static final int OPERATION_STATUS = 3;
 
     @NotNull
     @Override
@@ -62,16 +63,26 @@ public class ForceModuleCommand implements Command {
             step1(userWebsocket, args, OPERATION_OFF);
         } else if (args.length > 0 && args[0].equals("reset")) {
             step1(userWebsocket, args, OPERATION_RESET);
+        } else if (args.length > 0 && args[0].equals("status")) {
+            step1(userWebsocket, args, OPERATION_STATUS);
         } else {
             CommandManager.sendError(userWebsocket, """
                     Force module help:
-                    @c @fm on|off|reset <module> <player>
+                    Usage: @fm <operation> <module> <player>
+                    Operations:
+                      - on: Enable a module for a player.
+                      - off: Disable a module for a player.
+                      - reset: Reset the module status for a player.
+                      - status: Check the module status for a player.
+                    
+                    Available modules: djfix
+                    
                     Example: @fm on djfix jeka8833""");
         }
     }
 
     private static void step1(@NotNull WebSocket userWebsocket, @NotNull String[] args,
-                              @MagicConstant(intValues = {OPERATION_ON, OPERATION_RESET, OPERATION_OFF})
+                              @MagicConstant(intValues = {OPERATION_ON, OPERATION_RESET, OPERATION_OFF, OPERATION_STATUS})
                               int operation) {
         StringBuffer buffer = new StringBuffer();
         if (args.length > 1) {
@@ -91,12 +102,18 @@ public class ForceModuleCommand implements Command {
     }
 
     private static void step2(@NotNull WebSocket userWebsocket, @NotNull String[] args,
-                              @MagicConstant(intValues = {OPERATION_ON, OPERATION_RESET, OPERATION_OFF})
+                              @MagicConstant(intValues = {OPERATION_ON, OPERATION_RESET, OPERATION_OFF, OPERATION_STATUS})
                               int operation, int module) {
         if (args.length > 2) {
             getPlayerByName(args[2], optionalPlayer -> {
                 if (optionalPlayer.isPresent()) {
-                    if (setStatus(operation, module, optionalPlayer.get())) {
+                    Player player = optionalPlayer.get();
+                    if (operation == OPERATION_STATUS && player.tntPlayerInfo != null) {
+                        CommandManager.sendGood(userWebsocket, args[2] + "'s status:\n" +
+                                "Force block: " + ((player.tntPlayerInfo.forceBlock & (1L << module)) != 0) + "\n" +
+                                "Force active: " + ((player.tntPlayerInfo.forceActive & (1L << module)) != 0) + "\n" +
+                                "Current module state: " + ((player.tntPlayerInfo.activeModules & (1L << module)) != 0));
+                    } else if (setStatus(operation, module, player)) {
                         CommandManager.sendGood(userWebsocket, "Success");
                     } else {
                         CommandManager.sendError(userWebsocket,

@@ -63,7 +63,7 @@ public class GameChatManager {
         sendToHook(sender, null, destination, message);
     }
 
-    private static void sendToHook(@NotNull UUID sender, @Nullable UUID receiver,
+    public static void sendToHook(@NotNull UUID sender, @Nullable UUID receiver,
                                    @NotNull ServerType server, @NotNull String text) {
         LOGGER.info("Chat: " + sender + " -> " + receiver + " " + server + ": " + text);
 
