@@ -1,7 +1,7 @@
 package com.jeka8833.tntserver.packet.packets;
 
 import com.jeka8833.tntserver.BotsManager;
-import com.jeka8833.tntserver.Main;
+import com.jeka8833.tntserver.TNTServer;
 import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.database.PlayersDatabase;
 import com.jeka8833.tntserver.database.User;
@@ -31,6 +31,15 @@ public class BlockModulesPacket implements Packet {
     public BlockModulesPacket(final long block, long active) {
         this.block = block;
         this.active = active;
+    }
+
+    public static void readAndSetGlobalBlock() {
+        TNTClientDBManager.readOrCashUser(PlayersDatabase.SETTING_USER, tntUser -> {
+            if (tntUser == null || tntUser.tntPlayerInfo == null) return;
+
+            globalActive = tntUser.tntPlayerInfo.forceActive;
+            globalBlock = tntUser.tntPlayerInfo.forceBlock;
+        });
     }
 
     @Override
@@ -68,13 +77,13 @@ public class BlockModulesPacket implements Packet {
                 }
             });
 
-            for (WebSocket socket1 : Main.server.getConnections()) {
+            for (WebSocket socket1 : TNTServer.server.getConnections()) {
                 UUID id = socket1.getAttachment();
                 if (id != null && id.version() == 4) {
                     TNTClientDBManager.readUser(id, tntUser -> {
                         if (tntUser == null || tntUser.tntPlayerInfo == null) return;
 
-                        Main.serverSend(socket1, new BlockModulesPacket(
+                        TNTServer.serverSend(socket1, new BlockModulesPacket(
                                 tntUser.tntPlayerInfo.forceBlock, tntUser.tntPlayerInfo.forceActive));
                     });
                 }
@@ -91,19 +100,10 @@ public class BlockModulesPacket implements Packet {
 
                     WebSocket editedUserSocket = player.getSocket();
                     if (editedUserSocket != null) {
-                        Main.serverSend(editedUserSocket, new BlockModulesPacket(block, active));
+                        TNTServer.serverSend(editedUserSocket, new BlockModulesPacket(block, active));
                     }
                 }
             });
         }
-    }
-
-    public static void readAndSetGlobalBlock() {
-        TNTClientDBManager.readOrCashUser(PlayersDatabase.SETTING_USER, tntUser -> {
-            if (tntUser == null || tntUser.tntPlayerInfo == null) return;
-
-            globalActive = tntUser.tntPlayerInfo.forceActive;
-            globalBlock = tntUser.tntPlayerInfo.forceBlock;
-        });
     }
 }

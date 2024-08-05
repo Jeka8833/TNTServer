@@ -1,6 +1,6 @@
 package com.jeka8833.tntserver.packet.packets;
 
-import com.jeka8833.tntserver.Main;
+import com.jeka8833.tntserver.TNTServer;
 import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
@@ -33,6 +33,6 @@ public class PingPacket implements Packet {
 
     @Override
     public void serverProcess(WebSocket socket, final User user) {
-        Main.serverSend(socket, new PingPacket(time));
+        TNTServer.serverSend(socket, new PingPacket(time));
     }
 }

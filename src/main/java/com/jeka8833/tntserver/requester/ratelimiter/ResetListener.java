@@ -1,4 +1,4 @@
-package com.jeka8833.tntserver.balancer.ratelimiter;
+package com.jeka8833.tntserver.requester.ratelimiter;
 
 import org.jetbrains.annotations.NotNull;
 

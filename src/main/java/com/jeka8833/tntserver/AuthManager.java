@@ -1,14 +1,14 @@
 package com.jeka8833.tntserver;
 
+import com.jeka8833.tntserver.mojang.MojangAPI;
 import com.jeka8833.tntserver.util.Util;
 import okhttp3.*;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.Set;
 import java.util.UUID;
 
@@ -16,40 +16,15 @@ public class AuthManager {
     public static final int ERROR_INTERNAL_SERVER = 3;
     public static final int ERROR_LOGIN_FAIL = 1;
 
-    public static String authURLTNTClient;
-    private static final Logger logger = LogManager.getLogger(AuthManager.class);
+    private static final @Nullable String authURLTNTClient = Main.INSTANCE.tntClientWebApiUrl.orElse(null);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthManager.class);
 
     public static void authMojang(@NotNull String username, @NotNull String key, @NotNull AuthResponse response) {
-        Request request = new Request.Builder()
-                .url("https://sessionserver.mojang.com/session/minecraft/hasJoined?serverId=" + key +
-                        "&username=" + username)
-                .build();
-        Util.HTTP_CLIENT.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(@NotNull Call call, @NotNull IOException e) {
-                response.bad(ERROR_INTERNAL_SERVER);
-                logger.warn("Mojang API is down", e);
-            }
-
-            @Override
-            public void onResponse(@NotNull Call call, @NotNull Response res) throws IOException {
-                try (ResponseBody body = res.body(); Reader reader = body.charStream()) {
-                    if (res.isSuccessful()) {
-                        ResponseID responseID = Util.GSON.fromJson(reader, ResponseID.class);
-                        if (responseID == null) {
-                            response.bad(ERROR_INTERNAL_SERVER);
-                        } else {
-                            UUID uuid = responseID.getUuid();
-                            if (uuid == null) {
-                                response.bad(ERROR_INTERNAL_SERVER);
-                            } else {
-                                response.good(uuid, null);
-                            }
-                        }
-                    } else {
-                        response.bad(ERROR_LOGIN_FAIL);
-                    }
-                }
+        MojangAPI.checkSession(username, key, mojangProfile -> {
+            if (mojangProfile.getUUID().isPresent()) {
+                response.good(mojangProfile.getUUID().get(), null);
+            } else {
+                response.bad(ERROR_LOGIN_FAIL);
             }
         });
     }
@@ -69,7 +44,7 @@ public class AuthManager {
             @Override
             public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 response.bad(ERROR_INTERNAL_SERVER);
-                logger.warn("TNTClient API is down", e);
+                LOGGER.warn("TNTClient API is down", e);
             }
 
             @Override
@@ -89,18 +64,6 @@ public class AuthManager {
                 }
             }
         });
-    }
-
-    private static class ResponseID {
-        @SuppressWarnings("unused")
-        private @Nullable String id;
-
-        @Nullable
-        public UUID getUuid() {
-            if (id == null) return null;
-
-            return Util.fromString(id);
-        }
     }
 
     public interface AuthResponse {

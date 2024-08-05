@@ -1,8 +1,8 @@
 package com.jeka8833.tntserver.packet;
 
-import com.jeka8833.tntserver.Main;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.jeka8833.tntserver.TNTServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -11,7 +11,7 @@ import java.nio.ByteBuffer;
 import java.util.UUID;
 
 public class PacketInputStream extends DataInputStream {
-    private static final Logger logger = LogManager.getLogger(PacketInputStream.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(PacketInputStream.class);
 
     public final Packet packet;
 
@@ -21,11 +21,11 @@ public class PacketInputStream extends DataInputStream {
             throw new RuntimeException("Very big data");
 
         byte ID = readByte();
-        Class<? extends Packet> class_ = Main.packetsList.get(ID);
+        Class<? extends Packet> class_ = TNTServer.packetsList.get(ID);
         if (class_ == null) throw new NullPointerException("The received packet has an unknown ID: " + ID);
 
         packet = class_.getDeclaredConstructor().newInstance();
-        logger.debug("Packet ready to be read: " + packet.getClass().getSimpleName());
+        LOGGER.debug("Packet ready to be read: {}", packet.getClass().getSimpleName());
     }
 
     public final UUID readUUID() throws IOException {

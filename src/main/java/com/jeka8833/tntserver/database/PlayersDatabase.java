@@ -1,10 +1,11 @@
 package com.jeka8833.tntserver.database;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.jeka8833.tntserver.mojang.MojangAPI;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -12,11 +13,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class PlayersDatabase {
-    private static final Logger LOGGER = LogManager.getLogger(PlayersDatabase.class);
-
     public static final UUID SETTING_USER = UUID.fromString("00000000-0000-4000-0000-000000000000");
-
     public static final Map<UUID, User> uuid2User = new ConcurrentHashMap<>();
+    private static final Logger LOGGER = LoggerFactory.getLogger(PlayersDatabase.class);
 
     public static void clearInactivePeople() {
         boolean isSomethingDeleted = uuid2User.values().removeIf(User::isInactive);
@@ -27,7 +26,7 @@ public class PlayersDatabase {
     public static boolean isUser(@NotNull UUID uuid) {
         if (SETTING_USER.equals(uuid)) return true;
 
-        return uuid.version() == 4 && uuid.variant() == 2;
+        return MojangAPI.isPlayer(uuid);
     }
 
     @NotNull

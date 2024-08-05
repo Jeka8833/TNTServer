@@ -1,12 +1,12 @@
 package com.jeka8833.tntserver.packet.packets;
 
-import com.jeka8833.tntserver.Main;
-import com.jeka8833.tntserver.balancer.HypixelBalancer;
+import com.jeka8833.tntserver.TNTServer;
 import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
+import com.jeka8833.tntserver.requester.HypixelCache;
 import org.java_websocket.WebSocket;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -14,6 +14,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.UUID;
 
 public class RequestHypixelPlayerPacket implements Packet {
@@ -49,18 +50,15 @@ public class RequestHypixelPlayerPacket implements Packet {
 
     @Override
     public void serverProcess(WebSocket socket, @Nullable User user) {
-        if (userList == null || userList.isEmpty()) throw new NullPointerException("User list is empty");
-
         if (user instanceof Player senderPlayer) {
-            HypixelBalancer.tryGet(senderPlayer.uuid, userList, playersReady -> {
-                Collection<ReceiveHypixelPlayerPacket.ReceivePlayer> userList =
-                        new ArrayList<>(playersReady.ready().size());
+            if (userList == null || userList.isEmpty()) throw new NullPointerException("User list is empty");
 
-                for (Player player : playersReady.ready()) {
-                    userList.add(new ReceiveHypixelPlayerPacket.ReceivePlayer(player.uuid, player.hypixelPlayerInfo));
-                }
-                Main.serverSend(socket, new ReceiveHypixelPlayerPacket(userList, playersReady.lastPacket()));
-            }, 5, 4);
+            HypixelCache.cancelLoadFor(senderPlayer.uuid, false);
+            HypixelCache.get(senderPlayer.uuid, userList.toArray(new UUID[0]), true,
+                    playersReady -> TNTServer.serverSend(socket,
+                            new ReceiveHypixelPlayerPacket(playersReady, false)),
+                    () -> TNTServer.serverSend(socket,
+                            new ReceiveHypixelPlayerPacket(Collections.emptyMap(), true)));
         } else {
             socket.close();
         }

@@ -1,7 +1,7 @@
 package com.jeka8833.tntserver.database.managers;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -9,20 +9,25 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 public class DatabaseManager {
-
-    private static final Logger LOGGER = LogManager.getLogger(DatabaseManager.class);
-
-    public Connection connection;
-    public Statement statement;
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseManager.class);
+    public static DatabaseManager db;
     private final String host;
     private final String userName;
     private final String password;
+    public Connection connection;
+    public Statement statement;
 
     public DatabaseManager(String host, String userName, String password) {
         this.host = host;
         this.userName = userName;
         this.password = password;
+    }
+
+    public static void initConnect(final String ipAndPort, final String user, final String password) {
+        if (db != null) return; // Re-init protection
+
+        db = new DatabaseManager("jdbc:postgresql://" + ipAndPort, user, password);
+        db.connect();
     }
 
     public void connect() {
@@ -56,14 +61,5 @@ public class DatabaseManager {
             LOGGER.warn("Fail close to DB:", e);
 
         }
-    }
-
-    public static DatabaseManager db;
-
-    public static void initConnect(final String ipAndPort, final String user, final String password) {
-        if (db != null) return; // Re-init protection
-
-        db = new DatabaseManager("jdbc:postgresql://" + ipAndPort, user, password);
-        db.connect();
     }
 }

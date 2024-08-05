@@ -1,7 +1,7 @@
 package com.jeka8833.tntserver.packet.packets.web;
 
 import com.jeka8833.tntserver.BotsManager;
-import com.jeka8833.tntserver.Main;
+import com.jeka8833.tntserver.TNTServer;
 import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.database.managers.TNTClientDBManager;
 import com.jeka8833.tntserver.packet.Packet;
@@ -65,9 +65,9 @@ public class ModulesStatusPacket implements Packet {
 
         TNTClientDBManager.readOrCashUser(requestedPlayer, tntUser -> {
             if (tntUser == null || tntUser.tntPlayerInfo == null) {
-                Main.serverSend(socket, new ModulesStatusPacket(callBackID));
+                TNTServer.serverSend(socket, new ModulesStatusPacket(callBackID));
             } else {
-                Main.serverSend(socket, new ModulesStatusPacket(
+                TNTServer.serverSend(socket, new ModulesStatusPacket(
                         callBackID, tntUser.tntPlayerInfo.activeModules,
                         tntUser.tntPlayerInfo.forceBlock, tntUser.tntPlayerInfo.forceActive));
             }

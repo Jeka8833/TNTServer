@@ -1,7 +1,6 @@
 package com.jeka8833.tntserver.packet.packets;
 
-import com.jeka8833.tntserver.Main;
-import com.jeka8833.tntserver.VersionUtil;
+import com.jeka8833.tntserver.TNTServer;
 import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.database.analytics.AnalyticGroup;
@@ -10,6 +9,7 @@ import com.jeka8833.tntserver.database.analytics.jumpPakets.*;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
+import com.jeka8833.tntserver.util.VersionUtil;
 import org.java_websocket.WebSocket;
 import org.jetbrains.annotations.Nullable;
 
@@ -21,13 +21,39 @@ public class AnalyticPacket implements Packet {
 
     private final List<AnalyticTempStorage> TEMP_STORAGE_LIST = new ArrayList<>();
 
+    private static Map<Integer, AnalyticPacketLink> generatePacketsMap() {
+        AnalyticGroup jumpGroup = new JumpAnalyticGroup();
+
+        com.jeka8833.tntserver.database.analytics.AnalyticPacket callJump = new CallJump();
+        com.jeka8833.tntserver.database.analytics.AnalyticPacket callJumpV2 = new CallJumpV2();
+        com.jeka8833.tntserver.database.analytics.AnalyticPacket gameInfo = new GameInfo();
+        com.jeka8833.tntserver.database.analytics.AnalyticPacket playerCamera = new PlayerCamera();
+        com.jeka8833.tntserver.database.analytics.AnalyticPacket receivedJump = new ReceivedJump();
+        com.jeka8833.tntserver.database.analytics.AnalyticPacket receivedJumpV2 = new ReceivedJumpV2();
+
+        Map<Integer, AnalyticPacketLink> map = new HashMap<>();
+
+        map.put(callJump.getPacketID(), new AnalyticPacketLink(jumpGroup, callJump.getClass()));
+        map.put(callJumpV2.getPacketID(), new AnalyticPacketLink(jumpGroup, callJumpV2.getClass()));
+        map.put(gameInfo.getPacketID(), new AnalyticPacketLink(jumpGroup, gameInfo.getClass()));
+        map.put(playerCamera.getPacketID(), new AnalyticPacketLink(jumpGroup, playerCamera.getClass()));
+        map.put(receivedJump.getPacketID(), new AnalyticPacketLink(jumpGroup, receivedJump.getClass()));
+        map.put(receivedJumpV2.getPacketID(), new AnalyticPacketLink(jumpGroup, receivedJumpV2.getClass()));
+
+        if (TNTServer.analyticManager != null) {
+            TNTServer.analyticManager.addGroup(jumpGroup);
+        }
+
+        return map;
+    }
+
     @Override
     public void write(PacketOutputStream stream) {
     }
 
     @Override
     public void read(PacketInputStream stream) throws IOException {
-        if (Main.analyticManager == null || Main.analyticManager.isDirectoryOverflow()) return;
+        if (TNTServer.analyticManager == null || TNTServer.analyticManager.isDirectoryOverflow()) return;
 
         UUID randomID = stream.readUUID();
 
@@ -68,31 +94,5 @@ public class AnalyticPacket implements Packet {
 
     private record AnalyticTempStorage(AnalyticGroup group, UUID sessionID,
                                        com.jeka8833.tntserver.database.analytics.AnalyticPacket packet) {
-    }
-
-    private static Map<Integer, AnalyticPacketLink> generatePacketsMap() {
-        AnalyticGroup jumpGroup = new JumpAnalyticGroup();
-
-        com.jeka8833.tntserver.database.analytics.AnalyticPacket callJump = new CallJump();
-        com.jeka8833.tntserver.database.analytics.AnalyticPacket callJumpV2 = new CallJumpV2();
-        com.jeka8833.tntserver.database.analytics.AnalyticPacket gameInfo = new GameInfo();
-        com.jeka8833.tntserver.database.analytics.AnalyticPacket playerCamera = new PlayerCamera();
-        com.jeka8833.tntserver.database.analytics.AnalyticPacket receivedJump = new ReceivedJump();
-        com.jeka8833.tntserver.database.analytics.AnalyticPacket receivedJumpV2 = new ReceivedJumpV2();
-
-        Map<Integer, AnalyticPacketLink> map = new HashMap<>();
-
-        map.put(callJump.getPacketID(), new AnalyticPacketLink(jumpGroup, callJump.getClass()));
-        map.put(callJumpV2.getPacketID(), new AnalyticPacketLink(jumpGroup, callJumpV2.getClass()));
-        map.put(gameInfo.getPacketID(), new AnalyticPacketLink(jumpGroup, gameInfo.getClass()));
-        map.put(playerCamera.getPacketID(), new AnalyticPacketLink(jumpGroup, playerCamera.getClass()));
-        map.put(receivedJump.getPacketID(), new AnalyticPacketLink(jumpGroup, receivedJump.getClass()));
-        map.put(receivedJumpV2.getPacketID(), new AnalyticPacketLink(jumpGroup, receivedJumpV2.getClass()));
-
-        if (Main.analyticManager != null) {
-            Main.analyticManager.addGroup(jumpGroup);
-        }
-
-        return map;
     }
 }

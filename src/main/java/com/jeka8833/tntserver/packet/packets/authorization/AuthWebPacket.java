@@ -1,25 +1,25 @@
 package com.jeka8833.tntserver.packet.packets.authorization;
 
 import com.jeka8833.tntserver.AuthManager;
-import com.jeka8833.tntserver.Main;
+import com.jeka8833.tntserver.TNTServer;
 import com.jeka8833.tntserver.database.Bot;
 import com.jeka8833.tntserver.database.PlayersDatabase;
 import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.java_websocket.WebSocket;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Set;
 import java.util.UUID;
 
 public class AuthWebPacket implements Packet {
-    private static final Logger LOGGER = LogManager.getLogger(AuthWebPacket.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthWebPacket.class);
 
     private UUID user;
     private UUID key;
@@ -50,9 +50,9 @@ public class AuthWebPacket implements Packet {
 
                     socket.setAttachment(user);
 
-                    Main.serverSend(socket, new AuthWebPacket());
+                    TNTServer.serverSend(socket, new AuthWebPacket());
 
-                    LOGGER.info("Bot " + user + " logged in. Current online: " + Main.server.getConnections().size());
+                    LOGGER.info("Bot {} logged in.", user);
                 } else {
                     socket.close();
                 }

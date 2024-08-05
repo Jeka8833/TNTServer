@@ -1,7 +1,7 @@
 package com.jeka8833.tntserver.packet.packets.web;
 
 import com.jeka8833.tntserver.BotsManager;
-import com.jeka8833.tntserver.Main;
+import com.jeka8833.tntserver.TNTServer;
 import com.jeka8833.tntserver.database.PlayersDatabase;
 import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.packet.Packet;
@@ -55,6 +55,6 @@ public class TokenGeneratorPacket implements Packet {
         User foundUser = PlayersDatabase.getOrCreate(this.user);
 
         WebSocket foundUserSocket = foundUser.getSocket();
-        if (foundUserSocket != null) Main.serverSend(foundUserSocket, new TokenPacket(this.user, this.key));
+        if (foundUserSocket != null) TNTServer.serverSend(foundUserSocket, new TokenPacket(this.user, this.key));
     }
 }

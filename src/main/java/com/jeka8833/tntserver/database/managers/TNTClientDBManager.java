@@ -5,11 +5,11 @@ import com.jeka8833.tntserver.database.PlayersDatabase;
 import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.database.storage.TNTPlayerStorage;
 import com.jeka8833.tntserver.packet.callback.CallbackManager;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.postgresql.util.PSQLException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -23,10 +23,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 public class TNTClientDBManager {
-    private static final Logger LOGGER = LogManager.getLogger(TNTClientDBManager.class);
-    private static PreparedStatement preparedWrite;
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(TNTClientDBManager.class);
     private static final Map<UUID, UserQuire> USER_REQUEST_LIST = new ConcurrentHashMap<>();
+    private static PreparedStatement preparedWrite;
 
     public static void init() {
         try {
@@ -73,12 +72,11 @@ public class TNTClientDBManager {
             try {
                 read(needRead);
             } catch (Exception e) {
-                LOGGER.warn("Block read error, transition to single read method");
                 for (UserQuire quire : needRead) {
                     try {
                         read(Collections.singletonList(quire));
                     } catch (Exception ex) {
-                        LOGGER.warn("User Read Error: " + quire.user + ", error: ", ex);
+                        LOGGER.warn("Read DB error for {}", quire.user, ex);
                     }
                 }
             }
@@ -115,12 +113,11 @@ public class TNTClientDBManager {
             try {
                 write(needWrite);
             } catch (Exception e) {
-                LOGGER.warn("Block write error, transition to single write method");
                 for (UserQuire quire : needWrite) {
                     try {
                         write(Collections.singletonList(quire));
                     } catch (Exception ex) {
-                        LOGGER.warn("User Write Error: " + quire.user + ", error: ", ex);
+                        LOGGER.warn("Write DB error for {}", quire.user, ex);
                     }
                 }
             }
@@ -237,10 +234,10 @@ public class TNTClientDBManager {
 
             if (System.nanoTime() - startTime > TIME_TO_CANCEL_ALL_OPERATIONS) {
                 if (readCallbackList.isEmpty()) {
-                    LOGGER.warn("Timeout read information, user: " + user + " user in query: " + isRead());
+                    LOGGER.warn("Timeout read information, user: {} user in query: {}", user, isRead());
                 }
                 if (writeCallbackList.isEmpty()) {
-                    LOGGER.warn("Timeout write information, user: " + user + " user in query: " + isWrite());
+                    LOGGER.warn("Timeout write information, user: {} user in query: {}", user, isWrite());
                 }
 
                 callRead();

@@ -4,28 +4,14 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 public enum ServerType {
-    HYPIXEL("Hypixel", "Hypixel"),
-    TNT_COMMUNITY("TNT Server", "Odyssey"),
-    UNKNOWN("Unknown", "Unknown");
+    HYPIXEL("Hypixel"),
+    TNT_COMMUNITY("Odyssey"),
+    UNKNOWN("Unknown");
 
     private final String[] serverBrands;
-    private final String displayName;
 
-    ServerType(String displayName, String... serverBrands) {
-        this.displayName = displayName;
+    ServerType(String... serverBrands) {
         this.serverBrands = serverBrands;
-    }
-
-    @NotNull
-    @Contract(pure = true)
-    public String getActualServerBrand() {
-        return serverBrands[0];
-    }
-
-    @NotNull
-    @Contract(pure = true)
-    public String getDisplayName() {
-        return displayName;
     }
 
     public static ServerType getServer(String serverBrand) {
@@ -38,5 +24,11 @@ public enum ServerType {
         }
 
         return UNKNOWN;
+    }
+
+    @NotNull
+    @Contract(pure = true)
+    public String getActualServerBrand() {
+        return serverBrands[0];
     }
 }

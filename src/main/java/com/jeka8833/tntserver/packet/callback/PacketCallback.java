@@ -27,11 +27,11 @@ public class PacketCallback implements Packet {
         CallbackManager.callPacket(this);
     }
 
-    public void setUniqueID(short uniqueID) {
-        this.uniqueID = uniqueID;
-    }
-
     public short getUniqueID() {
         return uniqueID;
+    }
+
+    public void setUniqueID(short uniqueID) {
+        this.uniqueID = uniqueID;
     }
 }

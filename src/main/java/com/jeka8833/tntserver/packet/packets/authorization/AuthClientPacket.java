@@ -1,8 +1,10 @@
 package com.jeka8833.tntserver.packet.packets.authorization;
 
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.annotation.JSONField;
 import com.jeka8833.tntserver.AuthManager;
-import com.jeka8833.tntserver.Main;
 import com.jeka8833.tntserver.ServerType;
+import com.jeka8833.tntserver.TNTServer;
 import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.database.PlayersDatabase;
 import com.jeka8833.tntserver.database.User;
@@ -12,20 +14,20 @@ import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
 import com.jeka8833.tntserver.packet.packets.BlockModulesPacket;
-import com.jeka8833.tntserver.util.Util;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.java_websocket.WebSocket;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
 public class AuthClientPacket implements Packet {
-    private static final Logger LOGGER = LogManager.getLogger(AuthClientPacket.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthClientPacket.class);
 
     private String playerUsername;
     private String serverKey;
@@ -55,11 +57,19 @@ public class AuthClientPacket implements Packet {
                     if (newUser instanceof Player player) {
                         socket.setAttachment(user);
 
-                        Parameters parameters = Util.GSON.fromJson(
-                                new String(customParameters, StandardCharsets.US_ASCII), Parameters.class);
+                        Parameters parameters = null;
+                        try {
+                            String fixed = new String(customParameters, StandardCharsets.US_ASCII)
+                                    .replace("{\"serverBrand\":Hypixel}", "{\"serverBrand\":\"Hypixel\"}")
+                                    .replace("{\"serverBrand\":Odyssey}", "{\"serverBrand\":\"Odyssey\"}");
 
-                        player.serverType = parameters == null ?
-                                ServerType.HYPIXEL : ServerType.getServer(parameters.serverBrand);
+                            parameters = JSON.parseObject(fixed, Parameters.class);
+                        } catch (Exception e) {
+                            LOGGER.warn("Failed to parse custom parameters", e);
+                        }
+
+                        player.serverType = parameters != null && parameters.serverBrand.isPresent() ?
+                                ServerType.getServer(parameters.serverBrand.get()) : ServerType.HYPIXEL;
 
                         if (player.tntPlayerInfo == null) player.tntPlayerInfo = new TNTPlayerStorage();
 
@@ -68,11 +78,10 @@ public class AuthClientPacket implements Packet {
 
                         TNTClientDBManager.writeUser(user, null);
 
-                        Main.serverSend(socket, new BlockModulesPacket(
+                        TNTServer.serverSend(socket, new BlockModulesPacket(
                                 player.tntPlayerInfo.forceBlock, player.tntPlayerInfo.forceActive));
 
-                        LOGGER.info("Player " + playerUsername + " logged in. Current online: " +
-                                Main.server.getConnections().size());
+                        LOGGER.info("Player {} logged in.", playerUsername);
                     } else {
                         socket.close();
                     }
@@ -86,8 +95,8 @@ public class AuthClientPacket implements Packet {
         });
     }
 
-    private static class Parameters {
-        @SuppressWarnings("FieldMayBeFinal")
-        private String serverBrand = "";
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    public static class Parameters {
+        public @JSONField(name = "serverBrand") Optional<String> serverBrand = Optional.empty();
     }
 }

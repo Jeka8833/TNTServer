@@ -1,7 +1,7 @@
 package com.jeka8833.tntserver.packet.packets;
 
 import com.jeka8833.tntserver.BotsManager;
-import com.jeka8833.tntserver.Main;
+import com.jeka8833.tntserver.TNTServer;
 import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.database.managers.TNTClientDBManager;
@@ -37,7 +37,7 @@ public class RequestTNTClientPlayerPacket implements Packet {
                     player.tntPlayerInfo != null && player.tntPlayerInfo.donate > 50;
 
             TNTClientDBManager.readOrCashUsers(users,
-                    tntUsers -> Main.serverSend(socket, new ReceiveTNTClientPlayerPacket(tntUsers, isAdmin)),
+                    tntUsers -> TNTServer.serverSend(socket, new ReceiveTNTClientPlayerPacket(tntUsers, isAdmin)),
                     true);
         } else {
             socket.close();

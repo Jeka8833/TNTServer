@@ -1,4 +1,4 @@
-package com.jeka8833.tntserver.balancer.ratelimiter;
+package com.jeka8833.tntserver.requester.ratelimiter;
 
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.Contract;
@@ -19,6 +19,18 @@ public class HypixelResponse implements Closeable {
         this.rateLimiter = rateLimiter;
 
         rateLimiter.block();
+    }
+
+    @NotNull
+    @Contract(pure = true, value = "_ -> new")
+    private static OptionalInt parseInt(@Nullable String value) {
+        if (value == null) return OptionalInt.empty();
+
+        try {
+            return OptionalInt.of(Integer.parseInt(value));
+        } catch (NumberFormatException e) {
+            return OptionalInt.empty();
+        }
     }
 
     public void setHeaders(int statusCode, @Nullable String reset, @Nullable String limit, @Nullable String remaining)
@@ -60,17 +72,5 @@ public class HypixelResponse implements Closeable {
         rateLimiter.threadList.remove(Thread.currentThread());
 
         if (isInternalError) rateLimiter.fatalError();
-    }
-
-    @NotNull
-    @Contract(pure = true, value = "_ -> new")
-    private static OptionalInt parseInt(@Nullable String value) {
-        if (value == null) return OptionalInt.empty();
-
-        try {
-            return OptionalInt.of(Integer.parseInt(value));
-        } catch (NumberFormatException e) {
-            return OptionalInt.empty();
-        }
     }
 }

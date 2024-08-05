@@ -1,6 +1,6 @@
 package com.jeka8833.tntserver.packet.packets.discordbot;
 
-import com.jeka8833.tntserver.Main;
+import com.jeka8833.tntserver.TNTServer;
 import com.jeka8833.tntserver.database.Bot;
 import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.database.PlayersDatabase;
@@ -58,17 +58,17 @@ public class LinkCodePacket implements Packet {
         if (user instanceof Player player) {
             Bot serverTokenizer = PlayersDatabase.getBotWithPrivilege("SERVER_DISCORD_LINK");
             if (serverTokenizer == null) {
-                Main.serverSend(socket, new LinkCodePacket(player.uuid, code, CONNECTION_ERROR));
+                TNTServer.serverSend(socket, new LinkCodePacket(player.uuid, code, CONNECTION_ERROR));
                 return;
             }
 
             WebSocket serverTokenizerSocket = serverTokenizer.getSocket();
             if (serverTokenizerSocket == null) {
-                Main.serverSend(socket, new LinkCodePacket(player.uuid, code, CONNECTION_ERROR));
+                TNTServer.serverSend(socket, new LinkCodePacket(player.uuid, code, CONNECTION_ERROR));
                 return;
             }
 
-            Main.serverSend(serverTokenizerSocket, new LinkCodePacket(player.uuid, code, statusCode));
+            TNTServer.serverSend(serverTokenizerSocket, new LinkCodePacket(player.uuid, code, statusCode));
         } else if (user instanceof Bot bot && bot.hasPrivilege("SERVER_DISCORD_LINK")) {
             User toUser = PlayersDatabase.getUser(this.user);
             if (toUser == null) return;
@@ -76,7 +76,7 @@ public class LinkCodePacket implements Packet {
             WebSocket toUserSocket = toUser.getSocket();
             if (toUserSocket == null) return;
 
-            Main.serverSend(toUserSocket, new LinkCodePacket(this.user, code, statusCode));
+            TNTServer.serverSend(toUserSocket, new LinkCodePacket(this.user, code, statusCode));
         } else {
             socket.close();
         }

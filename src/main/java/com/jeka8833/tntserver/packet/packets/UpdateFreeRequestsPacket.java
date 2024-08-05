@@ -1,11 +1,10 @@
 package com.jeka8833.tntserver.packet.packets;
 
-import com.jeka8833.tntserver.BotsManager;
-import com.jeka8833.tntserver.balancer.HypixelBalancer;
 import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
+import com.jeka8833.tntserver.requester.NodeRegisterManager;
 import org.java_websocket.WebSocket;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,10 +24,8 @@ public class UpdateFreeRequestsPacket implements Packet {
 
     @Override
     public void serverProcess(WebSocket socket, @Nullable User user) {
-        if (BotsManager.isAbsent(user, "SERVER_HYPIXEL_API")) {
-            HypixelBalancer.TNT_USER_REQUESTER.setAvailable(socket, count);
-        } else {
-            HypixelBalancer.TNT_BOT_REQUESTER.setAvailable(socket, count);
-        }
+        // TODO: Remove SERVER_HYPIXEL_API
+        NodeRegisterManager.connect(socket);
+        NodeRegisterManager.setAvailableCount(socket, count);
     }
 }

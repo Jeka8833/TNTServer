@@ -1,6 +1,6 @@
 package com.jeka8833.tntserver.database;
 
-import com.jeka8833.tntserver.Main;
+import com.jeka8833.tntserver.TNTServer;
 import org.java_websocket.WebSocket;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -20,7 +20,7 @@ public abstract class User {
 
     @Nullable
     public WebSocket getSocket() {
-        for (WebSocket socket : Main.server.getConnections()) {
+        for (WebSocket socket : TNTServer.server.getConnections()) {
             if (uuid.equals(socket.getAttachment())) return socket;
         }
 

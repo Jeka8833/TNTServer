@@ -1,20 +1,18 @@
 package com.jeka8833.tntserver;
 
-import com.google.gson.reflect.TypeToken;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.TypeReference;
 import com.jeka8833.tntserver.database.Bot;
 import com.jeka8833.tntserver.database.PlayersDatabase;
 import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.packet.callback.CallbackManager;
-import com.jeka8833.tntserver.packet.packets.odyssey.DonatePacket;
 import com.jeka8833.tntserver.packet.packets.web.RolePacket;
-import com.jeka8833.tntserver.util.Util;
 import org.java_websocket.WebSocket;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
 
-import java.lang.reflect.Type;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -22,8 +20,8 @@ import java.util.stream.Collectors;
 public class BotsManager {
     private static final String BOT_LABEL = "TNTCLIENT_SERVER";
 
-    private static final Type setType = new TypeToken<HashSet<String>>() {
-    }.getType();
+    private static final TypeReference<HashSet<String>> HASH_SET_TYPE = new TypeReference<>() {
+    };
 
     @Nullable
     @UnmodifiableView
@@ -31,7 +29,7 @@ public class BotsManager {
     public static Set<String> validateBotAndCutPrivilege(@Nullable String privileges) {
         if (privileges == null) return null;
 
-        Set<String> privilegesArray = Util.GSON.fromJson(privileges, setType);
+        Set<String> privilegesArray = JSON.parseObject(privileges, HASH_SET_TYPE);
         if (!privilegesArray.contains(BOT_LABEL)) return null;
 
         return Collections.unmodifiableSet(privilegesArray);

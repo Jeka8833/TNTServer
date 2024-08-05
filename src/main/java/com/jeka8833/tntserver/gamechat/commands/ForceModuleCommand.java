@@ -1,14 +1,14 @@
 package com.jeka8833.tntserver.gamechat.commands;
 
 import com.jeka8833.tntserver.BotsManager;
-import com.jeka8833.tntserver.Main;
-import com.jeka8833.tntserver.MojangAPI;
+import com.jeka8833.tntserver.TNTServer;
 import com.jeka8833.tntserver.database.Bot;
 import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.database.PlayersDatabase;
 import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.database.storage.TNTPlayerStorage;
 import com.jeka8833.tntserver.gamechat.CommandManager;
+import com.jeka8833.tntserver.mojang.MojangAPI;
 import com.jeka8833.tntserver.packet.packets.BlockModulesPacket;
 import org.intellij.lang.annotations.MagicConstant;
 import org.java_websocket.WebSocket;
@@ -30,31 +30,6 @@ public class ForceModuleCommand implements Command {
     private static final int OPERATION_RESET = 1;
     private static final int OPERATION_OFF = 2;
     private static final int OPERATION_STATUS = 3;
-
-    @NotNull
-    @Override
-    public String @NotNull [] getNames() {
-        return new String[]{"fm", "forcemodule"};
-    }
-
-    @Override
-    public void execute(@NotNull User user, @NotNull WebSocket userWebsocket, @NotNull String text) {
-        if (user instanceof Player) {
-            BotsManager.requestUserPrivileges(user.uuid, privileges -> {
-                if (privileges.isEmpty()) {
-                    CommandManager.sendError(userWebsocket, "Privilege server is not available");
-                } else if (privileges.get().contains(PRIVILEGE)) {
-                    step0(userWebsocket, text.strip().toLowerCase().split(" "));
-                } else {
-                    CommandManager.sendError(userWebsocket, "You don't have permission");
-                }
-            });
-        } else if (user instanceof Bot bot) {
-            if (bot.hasPrivilege(PRIVILEGE)) {
-                step0(userWebsocket, text.strip().toLowerCase().split(" "));
-            }
-        }
-    }
 
     private static void step0(@NotNull WebSocket userWebsocket, @NotNull String[] args) {
         if (args.length > 0 && args[0].equals("on")) {
@@ -130,9 +105,9 @@ public class ForceModuleCommand implements Command {
 
     private static void getPlayerByName(@NotNull String name,
                                         @NotNull Consumer<@NotNull Optional<@NotNull Player>> listener) {
-        MojangAPI.getPlayerUUID(name, optionalUUID -> {
-            if (optionalUUID.isPresent()) {
-                User user = PlayersDatabase.getUser(optionalUUID.get());
+        MojangAPI.getUUID(name, mojangProfile -> {
+            if (mojangProfile.getUUID().isPresent()) {
+                User user = PlayersDatabase.getUser(mojangProfile.getUUID().get());
                 if (user instanceof Player player) {
                     listener.accept(Optional.of(player));
 
@@ -156,7 +131,7 @@ public class ForceModuleCommand implements Command {
             tntPlayerStorage.forceBlock &= ~(1L << module);
             tntPlayerStorage.forceActive |= (1L << module);
 
-            Main.serverSend(webSocket, new BlockModulesPacket(
+            TNTServer.serverSend(webSocket, new BlockModulesPacket(
                     tntPlayerStorage.forceBlock, tntPlayerStorage.forceActive));
 
             return true;
@@ -164,7 +139,7 @@ public class ForceModuleCommand implements Command {
             tntPlayerStorage.forceActive &= ~(1L << module);
             tntPlayerStorage.forceBlock &= ~(1L << module);
 
-            Main.serverSend(webSocket, new BlockModulesPacket(
+            TNTServer.serverSend(webSocket, new BlockModulesPacket(
                     tntPlayerStorage.forceBlock, tntPlayerStorage.forceActive));
 
             return true;
@@ -172,12 +147,37 @@ public class ForceModuleCommand implements Command {
             tntPlayerStorage.forceActive &= ~(1L << module);
             tntPlayerStorage.forceBlock |= (1L << module);
 
-            Main.serverSend(webSocket, new BlockModulesPacket(
+            TNTServer.serverSend(webSocket, new BlockModulesPacket(
                     tntPlayerStorage.forceBlock, tntPlayerStorage.forceActive));
 
             return true;
         }
 
         return false;
+    }
+
+    @NotNull
+    @Override
+    public String @NotNull [] getNames() {
+        return new String[]{"fm", "forcemodule"};
+    }
+
+    @Override
+    public void execute(@NotNull User user, @NotNull WebSocket userWebsocket, @NotNull String text) {
+        if (user instanceof Player) {
+            BotsManager.requestUserPrivileges(user.uuid, privileges -> {
+                if (privileges.isEmpty()) {
+                    CommandManager.sendError(userWebsocket, "Privilege server is not available");
+                } else if (privileges.get().contains(PRIVILEGE)) {
+                    step0(userWebsocket, text.strip().toLowerCase().split(" "));
+                } else {
+                    CommandManager.sendError(userWebsocket, "You don't have permission");
+                }
+            });
+        } else if (user instanceof Bot bot) {
+            if (bot.hasPrivilege(PRIVILEGE)) {
+                step0(userWebsocket, text.strip().toLowerCase().split(" "));
+            }
+        }
     }
 }

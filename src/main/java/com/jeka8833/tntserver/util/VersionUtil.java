@@ -1,4 +1,4 @@
-package com.jeka8833.tntserver;
+package com.jeka8833.tntserver.util;
 
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;

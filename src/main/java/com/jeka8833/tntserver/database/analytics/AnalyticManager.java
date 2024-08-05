@@ -1,7 +1,9 @@
 package com.jeka8833.tntserver.database.analytics;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.jeka8833.tntserver.Main;
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -13,16 +15,71 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public final class AnalyticManager {
     private static final long SLEEP_TIME = 10_000L;
-    private static final Logger LOGGER = LogManager.getLogger(AnalyticManager.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AnalyticManager.class);
 
     private final Path basePath;
     private final long maxFolderSize;
-    private boolean isDirectoryOverflow = false;
     private final Collection<AnalyticGroup> analyticGroups = new ArrayList<>();
+    private boolean isDirectoryOverflow = false;
 
     public AnalyticManager(Path basePath, long maxFolderSize) {
         this.basePath = basePath;
         this.maxFolderSize = maxFolderSize;
+    }
+
+    @Nullable
+    public static AnalyticManager createAndStart() {
+        if (Main.INSTANCE.analycitcsPath.isEmpty()) {
+            LOGGER.warn("Analytic path is not set. Analytic will not be started.");
+
+            return null;
+        }
+
+        var analytic = new AnalyticManager(Main.INSTANCE.analycitcsPath.get(), Main.INSTANCE.analyticsMaxFolderSize);
+        analytic.start();
+
+        return analytic;
+    }
+
+    private static boolean isOverflowFolder(Path folder, long maxFolderSize) {
+        final AtomicLong directorySize = new AtomicLong();
+        try {
+            Files.walkFileTree(folder, Collections.singleton(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
+                    new SimpleFileVisitor<>() {
+                        @Override
+                        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                            if (directorySize.addAndGet(attrs.size()) >= maxFolderSize) {
+                                return FileVisitResult.TERMINATE;
+                            }
+
+                            return FileVisitResult.CONTINUE;
+                        }
+
+                        @Override
+                        public FileVisitResult visitFileFailed(Path file, IOException exc) {
+                            LOGGER.warn("Failed to get file size: {}", file, exc);
+
+                            return FileVisitResult.CONTINUE;
+                        }
+
+                        @Override
+                        public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
+                            if (exc != null) {
+                                LOGGER.warn("Failed to get directory size: {}", dir, exc);
+                            }
+
+                            return FileVisitResult.CONTINUE;
+                        }
+
+
+                    });
+        } catch (Exception e) {
+            LOGGER.error("Failed to get directory size: {}", folder, e);
+
+            return false;
+        }
+
+        return directorySize.get() >= maxFolderSize;
     }
 
     public void start() {
@@ -87,46 +144,5 @@ public final class AnalyticManager {
 
     public boolean isDirectoryOverflow() {
         return isDirectoryOverflow;
-    }
-
-    private static boolean isOverflowFolder(Path folder, long maxFolderSize) {
-        final AtomicLong directorySize = new AtomicLong();
-        try {
-            Files.walkFileTree(folder, Collections.singleton(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
-                    new SimpleFileVisitor<>() {
-                        @Override
-                        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                            if (directorySize.addAndGet(attrs.size()) >= maxFolderSize) {
-                                return FileVisitResult.TERMINATE;
-                            }
-
-                            return FileVisitResult.CONTINUE;
-                        }
-
-                        @Override
-                        public FileVisitResult visitFileFailed(Path file, IOException exc) {
-                            LOGGER.warn("Failed to get file size: " + file, exc);
-
-                            return FileVisitResult.CONTINUE;
-                        }
-
-                        @Override
-                        public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
-                            if (exc != null) {
-                                LOGGER.warn("Failed to get directory size: " + dir, exc);
-                            }
-
-                            return FileVisitResult.CONTINUE;
-                        }
-
-
-                    });
-        } catch (Exception e) {
-            LOGGER.error("Failed to get directory size: " + folder, e);
-
-            return false;
-        }
-
-        return directorySize.get() >= maxFolderSize;
     }
 }

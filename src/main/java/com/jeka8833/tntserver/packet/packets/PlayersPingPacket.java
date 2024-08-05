@@ -1,6 +1,6 @@
 package com.jeka8833.tntserver.packet.packets;
 
-import com.jeka8833.tntserver.Main;
+import com.jeka8833.tntserver.TNTServer;
 import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.database.PlayersDatabase;
 import com.jeka8833.tntserver.database.User;
@@ -17,8 +17,8 @@ import java.util.List;
 import java.util.UUID;
 
 public class PlayersPingPacket implements Packet {
-    private @Nullable TNTPlayerPingStorage playerPing;
     private final List<UUID> requestedPlayers = new ArrayList<>();
+    private @Nullable TNTPlayerPingStorage playerPing;
 
     @Override
     public void write(PacketOutputStream stream) throws IOException {
@@ -43,8 +43,7 @@ public class PlayersPingPacket implements Packet {
 
     @Override
     public void read(PacketInputStream stream) throws IOException {
-        playerPing = new TNTPlayerPingStorage();
-        playerPing.readStream(stream);
+        playerPing = TNTPlayerPingStorage.readStream(stream);
 
         int b = stream.readUnsignedByte();
         for (int i = 0; i < b; i++) requestedPlayers.add(stream.readUUID());
@@ -54,7 +53,7 @@ public class PlayersPingPacket implements Packet {
     public void serverProcess(WebSocket socket, User user) {
         if (user instanceof Player player) {
             if (player.tntPlayerInfo != null) player.tntPlayerInfo.playerPing = playerPing;
-            if (!requestedPlayers.isEmpty()) Main.serverSend(socket, this);
+            if (!requestedPlayers.isEmpty()) TNTServer.serverSend(socket, this);
         } else {
             socket.close();
         }

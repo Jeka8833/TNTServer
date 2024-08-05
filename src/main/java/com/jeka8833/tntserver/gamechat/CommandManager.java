@@ -1,15 +1,15 @@
 package com.jeka8833.tntserver.gamechat;
 
-import com.jeka8833.tntserver.Main;
 import com.jeka8833.tntserver.ServerType;
+import com.jeka8833.tntserver.TNTServer;
 import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.gamechat.commands.Command;
 import com.jeka8833.tntserver.gamechat.commands.ForceModuleCommand;
 import com.jeka8833.tntserver.packet.packets.ChatPacket;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.java_websocket.WebSocket;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,7 +18,7 @@ import java.util.UUID;
 public class CommandManager {
     private static final Map<String, Command> COMMANDS = getCommands(new ForceModuleCommand());
 
-    private static final Logger LOGGER = LogManager.getLogger(ChatPacket.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ChatPacket.class);
 
     private static final UUID EMPTY_UUID = new UUID(0, 0);
 
@@ -61,14 +61,14 @@ public class CommandManager {
     }
 
     public static void sendGood(@NotNull WebSocket socket, @NotNull String text) {
-        Main.serverSend(socket, new ChatPacket(EMPTY_UUID, "<Server> §a" + text));
+        TNTServer.serverSend(socket, new ChatPacket(EMPTY_UUID, "<Server> §a" + text));
     }
 
     public static void sendNeutral(@NotNull WebSocket socket, @NotNull String text) {
-        Main.serverSend(socket, new ChatPacket(EMPTY_UUID, "<Server> §7" + text));
+        TNTServer.serverSend(socket, new ChatPacket(EMPTY_UUID, "<Server> §7" + text));
     }
 
     public static void sendError(@NotNull WebSocket socket, @NotNull String text) {
-        Main.serverSend(socket, new ChatPacket(EMPTY_UUID, "<Server> §c" + text));
+        TNTServer.serverSend(socket, new ChatPacket(EMPTY_UUID, "<Server> §c" + text));
     }
 }

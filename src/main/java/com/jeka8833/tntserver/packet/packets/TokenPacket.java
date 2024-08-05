@@ -1,6 +1,6 @@
 package com.jeka8833.tntserver.packet.packets;
 
-import com.jeka8833.tntserver.Main;
+import com.jeka8833.tntserver.TNTServer;
 import com.jeka8833.tntserver.database.Bot;
 import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.database.PlayersDatabase;
@@ -48,17 +48,17 @@ public class TokenPacket implements Packet {
         if (user instanceof Player player) {
             Bot serverTokenizer = PlayersDatabase.getBotWithPrivilege("SERVER_TOKEN");
             if (serverTokenizer == null) {
-                Main.serverSend(socket, new TokenPacket(NULL_UUID, NULL_UUID));
+                TNTServer.serverSend(socket, new TokenPacket(NULL_UUID, NULL_UUID));
                 return;
             }
 
             WebSocket serverTokenizerSocket = serverTokenizer.getSocket();
             if (serverTokenizerSocket == null) {
-                Main.serverSend(socket, new TokenPacket(NULL_UUID, NULL_UUID));
+                TNTServer.serverSend(socket, new TokenPacket(NULL_UUID, NULL_UUID));
                 return;
             }
 
-            Main.serverSend(serverTokenizerSocket, new TokenGeneratorPacket(player.uuid, unregister));
+            TNTServer.serverSend(serverTokenizerSocket, new TokenGeneratorPacket(player.uuid, unregister));
         } else {
             socket.close();
         }

@@ -4,8 +4,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 
-public interface StreamSerializer {
-    void readStream(@NotNull PacketInputStream stream) throws IOException;
-
+public interface StreamWriter {
     void writeStream(@NotNull PacketOutputStream stream) throws IOException;
 }

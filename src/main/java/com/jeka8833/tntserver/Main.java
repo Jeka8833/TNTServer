@@ -1,182 +1,79 @@
 package com.jeka8833.tntserver;
 
-import com.jeka8833.tntserver.balancer.HypixelAPIRequest;
-import com.jeka8833.tntserver.database.Player;
-import com.jeka8833.tntserver.database.PlayersDatabase;
-import com.jeka8833.tntserver.database.User;
-import com.jeka8833.tntserver.database.analytics.AnalyticManager;
-import com.jeka8833.tntserver.database.managers.DatabaseManager;
-import com.jeka8833.tntserver.database.managers.TNTClientDBManager;
-import com.jeka8833.tntserver.gamechat.ChatFilter;
-import com.jeka8833.tntserver.packet.Packet;
-import com.jeka8833.tntserver.packet.PacketInputStream;
-import com.jeka8833.tntserver.packet.PacketOutputStream;
-import com.jeka8833.tntserver.packet.packets.*;
-import com.jeka8833.tntserver.packet.packets.authorization.AuthClientPacket;
-import com.jeka8833.tntserver.packet.packets.authorization.AuthWebPacket;
-import com.jeka8833.tntserver.packet.packets.discordbot.ChatHookPacket;
-import com.jeka8833.tntserver.packet.packets.discordbot.LinkCodePacket;
-import com.jeka8833.tntserver.packet.packets.discordbot.MutePacket;
-import com.jeka8833.tntserver.packet.packets.odyssey.DonatePacket;
-import com.jeka8833.tntserver.packet.packets.web.ModulesStatusPacket;
-import com.jeka8833.tntserver.packet.packets.web.RolePacket;
-import com.jeka8833.tntserver.packet.packets.web.TokenGeneratorPacket;
-import com.jeka8833.tntserver.util.BiMap;
-import com.jeka8833.tntserver.util.Util;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.io.IoBuilder;
-import org.java_websocket.WebSocket;
-import org.java_websocket.handshake.ClientHandshake;
-import org.java_websocket.server.WebSocketServer;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import picocli.CommandLine;
 
-import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.util.Optional;
 import java.util.UUID;
 
-public class Main extends WebSocketServer {
-    private static final Logger LOGGER = LogManager.getLogger(Main.class);
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+@CommandLine.Command(name = "TNTServer")
+public final class Main implements Runnable {
+    public static final Main INSTANCE = new Main();
 
-    public static final BiMap<Byte, Class<? extends Packet>> packetsList = new BiMap<>();
-    @Nullable
-    public static AnalyticManager analyticManager;
+    @CommandLine.Option(names = "--grafana_url", description = "Remote logging and metrics. Grafana URL")
+    public Optional<String> grafanaUrl = Optional.empty();
 
-    public static Main server;
+    @CommandLine.Option(names = "--grafana_username", description = "Remote logging and metrics. Grafana Username")
+    public Optional<String> grafanaUsername = Optional.empty();
 
-    static {
-        packetsList.put((byte) 1, ActiveModulesPacket.class);
-        packetsList.put((byte) 3, PingPacket.class);
-        packetsList.put((byte) 4, RequestTNTClientPlayerPacket.class);
-        packetsList.put((byte) 5, ReceiveTNTClientPlayerPacket.class);
-        packetsList.put((byte) 6, ChatPacket.class);
-        packetsList.put((byte) 7, BlockModulesPacket.class);
-        packetsList.put((byte) 8, GameInfoPacket.class);
-        packetsList.put((byte) 9, FightPacket.class);
-        packetsList.put((byte) 10, AuthClientPacket.class);
-        packetsList.put((byte) 11, PlayersPingPacket.class);
-        packetsList.put((byte) 12, TokenPacket.class);
-        packetsList.put((byte) 13, ReceiveHypixelPlayerPacket.class);
-        packetsList.put((byte) 14, RequestHypixelPlayerPacket.class);
-        packetsList.put((byte) 15, UpdateFreeRequestsPacket.class);
-        packetsList.put((byte) 16, AnalyticPacket.class);
-        packetsList.put((byte) 248, ChatHookPacket.class);
-        packetsList.put((byte) 249, MutePacket.class);
-        packetsList.put((byte) 250, LinkCodePacket.class);
-        packetsList.put((byte) 251, RolePacket.class);
-        packetsList.put((byte) 252, DonatePacket.class);
-        packetsList.put((byte) 253, TokenGeneratorPacket.class);
-        packetsList.put((byte) 254, ModulesStatusPacket.class);
-        packetsList.put((byte) 255, AuthWebPacket.class);
-    }
+    @CommandLine.Option(names = "--grafana_password", description = "Remote logging and metrics. Grafana Password")
+    public Optional<String> grafanaPassword = Optional.empty();
 
-    public Main(final InetSocketAddress address) {
-        super(address);
-    }
+    @CommandLine.Option(names = "--grafana_metrics_interval", description = "Remote logging and metrics. " +
+            "Metrics Send Interval. (default: ${DEFAULT-VALUE})")
+    public Optional<Duration> grafanaMetricsInterval = Optional.ofNullable(Duration.ofSeconds(10));
 
-    @Override
-    public void onOpen(WebSocket conn, ClientHandshake handshake) {
-    }
+    @CommandLine.Option(names = "--swear_dictionary_path", description = "The location of the folder where " +
+            "dictionaries with bad words are stored.")
+    public Optional<Path> swearDictionary = Optional.empty();
 
-    @Override
-    public void onClose(WebSocket conn, int code, String reason, boolean remote) {
-        User user = PlayersDatabase.getUser(conn.getAttachment());
-        if (user != null) user.disconnect();
+    @CommandLine.Option(names = "--analytics_path", description = "Location where player analytics will be stored.")
+    public Optional<Path> analycitcsPath = Optional.empty();
 
-        final String type;
-        if (user == null) {
-            type = "Player(Bot) ";
-        } else if (user instanceof Player) {
-            type = "Player ";
-        } else {
-            type = "Bot ";
-        }
-        LOGGER.info(type + conn.getAttachment() + " is logged out(Error code: " + code +
-                "; Message: " + reason + "). Current online: " + Main.server.getConnections().size());
-        conn.close();
-    }
+    @CommandLine.Option(names = "--analytics_max_folder_size", description = "The maximum size of the folder " +
+            "with player analytics in bytes. (default: ${DEFAULT-VALUE})")
+    public long analyticsMaxFolderSize = 5L * 1024L * 1024L * 1024L;
 
-    @Override
-    public void onMessage(WebSocket conn, String message) {
-    }
+    @CommandLine.Option(names = "--tntclient_web_api_url", description = "TNTClient Web API URL.")
+    public Optional<String> tntClientWebApiUrl = Optional.empty();
 
-    @Override
-    public void onMessage(WebSocket conn, ByteBuffer message) {
-        UUID userUUID = conn.getAttachment();
-        User user = PlayersDatabase.getUser(userUUID);
+    @CommandLine.Option(names = "--hypixel_api_key", description = "Hypixel API Key.")
+    public Optional<UUID> hypixelApiKey = Optional.empty();
 
-        try (PacketInputStream stream = new PacketInputStream(message)) {
-            if ((user == null || user.isInactive()) &&
-                    !(stream.packet instanceof AuthClientPacket || stream.packet instanceof AuthWebPacket)) {
-                conn.close(); // The player doesn't exist in the cache, disconnecting...
-                return;
-            }
+    @CommandLine.Option(names = "--database_url", description = "PostgreSQL Database URL. (default: ${DEFAULT-VALUE})",
+            required = true)
+    public String databaseURL = "localhost:5432/postgres";
 
-            stream.packet.read(stream);
-            stream.packet.serverProcess(conn, user);
-        } catch (Exception e) {
-            LOGGER.error("Fail parse packet", e);
-        }
-    }
+    @CommandLine.Option(names = "--database_user", description = "PostgreSQL Database Password. " +
+            "(default: ${DEFAULT-VALUE})", required = true)
+    public String databaseUser = "postgres";
 
-    @Override
-    public void onError(WebSocket conn, Exception ex) {
-        LOGGER.error("Server have a error:", ex);
-    }
+    @CommandLine.Option(names = "--database_password", description = "PostgreSQL Database Password. " +
+            "(default: ${DEFAULT-VALUE})", required = true)
+    public String databasePassword;
 
-    @Override
-    public void onStart() {
-    }
+    @CommandLine.Option(names = "--server_port", description = "Server port. (default: ${DEFAULT-VALUE})")
+    public int serverPort = 8833;
 
-    public static void serverSend(@NotNull WebSocket socket, @NotNull Packet packet) {
-        try (final PacketOutputStream stream = new PacketOutputStream()) {
-            packet.write(stream);
-            if (socket.isOpen()) {
-                socket.send(stream.getByteBuffer(packet.getClass()));
-            }
-        } catch (Exception e) {
-            LOGGER.error("Fail send packet:", e);
-        }
-    }
+    @CommandLine.Option(names = "--help", usageHelp = true, description = "Display this help and exit.")
+    boolean help;
 
     public static void main(String[] args) {
-        System.setOut(IoBuilder.forLogger(LogManager.getLogger("system.out"))
-                .setLevel(Level.INFO).buildPrintStream());
-        System.setErr(IoBuilder.forLogger(LogManager.getLogger("system.err"))
-                .setLevel(Level.ERROR).buildPrintStream());
+        int error = new CommandLine(INSTANCE).execute(args);
+
+        System.exit(error);
+    }
+
+    @Override
+    public void run() {
+        TNTServer.loadServer();
 
         try {
-            ChatFilter.loadDictionaries(Util.getParam(args, "-dictionary_path"));
-        } catch (Exception e) {
-            LOGGER.error("Fail load dictionary", e);
-        }
-
-        try {
-            analyticManager = new AnalyticManager(Path.of(Util.getParam(args, "-analytic_path")),
-                    Long.parseLong(Util.getParam(args, "-analytic_max_size")));
-
-            analyticManager.start();
-        } catch (Exception ignored) {
-            LOGGER.error("Fail start analytic thread");
-        }
-
-        try {
-            AuthManager.authURLTNTClient = Util.getParam(args, "-auth_url_tntclient");
-            HypixelAPIRequest.init(Util.getParam(args, "-hypixel_key"));
-            DatabaseManager.initConnect(Util.getParam(args, "-db_ip"),
-                    Util.getParam(args, "-db_user"), Util.getParam(args, "-db_password"));
-
-            server = new Main(new InetSocketAddress(Integer.parseInt(Util.getParam(args, "-server_port"))));
-            server.setConnectionLostTimeout(15);
-            server.setReuseAddr(true);
-            server.start();
-            TNTClientDBManager.init();
-            BlockModulesPacket.readAndSetGlobalBlock();
-        } finally {
-            TNTClientDBManager.forceWrite();
+            Thread.currentThread().join();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 }

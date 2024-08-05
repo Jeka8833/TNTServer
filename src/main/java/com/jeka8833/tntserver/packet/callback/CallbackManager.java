@@ -1,6 +1,6 @@
 package com.jeka8833.tntserver.packet.callback;
 
-import com.jeka8833.tntserver.Main;
+import com.jeka8833.tntserver.TNTServer;
 import org.java_websocket.WebSocket;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -23,7 +23,7 @@ public class CallbackManager {
         //noinspection unchecked
         PACKETS_LISTENERS.put(id, new PacketListener((Consumer<PacketCallback>) callback));
 
-        Main.serverSend(socket, packet);
+        TNTServer.serverSend(socket, packet);
     }
 
     public static void callPacket(@NotNull PacketCallback packet) {

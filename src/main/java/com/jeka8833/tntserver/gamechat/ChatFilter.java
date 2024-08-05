@@ -1,17 +1,17 @@
 package com.jeka8833.tntserver.gamechat;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.jeka8833.tntserver.Main;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.MalformedInputException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -31,20 +31,26 @@ public class ChatFilter {
     private static final Pattern PATTERN_COLOR_CODE = Pattern.compile("(?i)[\\u00A7&][0-9A-FK-OR]");
 
     private static final Collection<String> DICTIONARY = new HashSet<>();
-    private static final Logger LOGGER = LogManager.getLogger(ChatFilter.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ChatFilter.class);
     private static final Map<UUID, Deque<MessageTiming>> MINUTE_TIMING_LIST = new ConcurrentHashMap<>();
 
-    public static void loadDictionaries(String folderPath) {
+    public static void loadDictionaries() {
+        if (Main.INSTANCE.swearDictionary.isEmpty()) {
+            LOGGER.warn("Swear Dictionary path is not set. Chat will not be filtered.");
+
+            return;
+        }
+
         Thread thread = new Thread(() -> {
-            try (Stream<Path> paths = Files.walk(Paths.get(folderPath))) {
+            try (Stream<Path> paths = Files.walk(Main.INSTANCE.swearDictionary.get())) {
                 paths
                         .filter(Files::isRegularFile)
                         .forEach(ChatFilter::readFile);
             } catch (IOException e) {
-                LOGGER.warn("Error load dictionary: " + folderPath, e);
+                LOGGER.warn("Error load dictionary: {}", Main.INSTANCE.swearDictionary.get(), e);
             }
 
-            LOGGER.info("Dictionary loaded: " + DICTIONARY.size() + " words");
+            LOGGER.info("Dictionary loaded: {} words", DICTIONARY.size());
         }, "Dictionary loader");
 
         thread.setPriority(Thread.MIN_PRIORITY);
@@ -91,11 +97,11 @@ public class ChatFilter {
 
                 if (DICTIONARY.add(formattedWord)) loaded++;
             }
-            LOGGER.info("Dictionary loaded: " + file + " (" + loaded + "/" + lines.size() + ")");
+            LOGGER.info("Dictionary loaded: {} ({}/{})", file, loaded, lines.size());
         } catch (MalformedInputException e) {
-            LOGGER.warn("Fail load dictionary: " + file + " (Incorrect encoding, need UTF-8)", e);
+            LOGGER.warn("Fail load dictionary: {} (Incorrect encoding, need UTF-8)", file, e);
         } catch (IOException e) {
-            LOGGER.warn("Error load dictionary: " + file, e);
+            LOGGER.warn("Error load dictionary: {}", file, e);
         }
     }
 

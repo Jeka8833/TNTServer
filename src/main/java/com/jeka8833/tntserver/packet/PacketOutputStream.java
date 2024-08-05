@@ -1,8 +1,8 @@
 package com.jeka8833.tntserver.packet;
 
-import com.jeka8833.tntserver.Main;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.jeka8833.tntserver.TNTServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -12,7 +12,7 @@ import java.nio.ByteBuffer;
 import java.util.UUID;
 
 public class PacketOutputStream extends DataOutputStream {
-    private static final Logger LOGGER = LogManager.getLogger(PacketOutputStream.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(PacketOutputStream.class);
 
     /**
      * Creates a new data output stream to write data to the specified
@@ -31,10 +31,10 @@ public class PacketOutputStream extends DataOutputStream {
     }
 
     public ByteBuffer getByteBuffer(final Class<? extends Packet> type) {
-        Byte ID = Main.packetsList.getKey(type);
+        Byte ID = TNTServer.packetsList.getKey(type);
         if (ID == null) throw new NullPointerException("The sent packet has an unknown ID. Class: " + type);
 
-        LOGGER.debug("Packet ready to be write: " + type.getSimpleName());
+        LOGGER.debug("Packet ready to be write: {}", type.getSimpleName());
 
         final byte[] arr = ((ByteArrayOutputStream) this.out).toByteArray();
         final byte[] out = new byte[arr.length + 1];

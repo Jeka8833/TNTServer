@@ -2,13 +2,14 @@ package com.jeka8833.tntserver.database.storage;
 
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
-import com.jeka8833.tntserver.packet.StreamSerializer;
+import com.jeka8833.tntserver.packet.StreamWriter;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Range;
 
 import java.io.IOException;
 
-public class TNTPlayerPingStorage implements Cloneable, StreamSerializer {
+public class TNTPlayerPingStorage implements Cloneable, StreamWriter {
     @Range(from = 0, to = Integer.MAX_VALUE)
     public int playerPing;
 
@@ -40,14 +41,18 @@ public class TNTPlayerPingStorage implements Cloneable, StreamSerializer {
         this.blockReactionTime = blockReactionTime;
     }
 
-    @Override
-    public void readStream(@NotNull PacketInputStream stream) throws IOException {
-        playerPing = stream.readUnsignedShort();
-        serverPing = stream.readUnsignedShort();
-        serverDownloadSpeed = stream.readInt();
-        serverUploadSpeed = stream.readInt();
-        jumpPing = stream.readUnsignedShort();
-        blockReactionTime = stream.readUnsignedShort();
+    @NotNull
+    @Contract("_ -> new")
+    public static TNTPlayerPingStorage readStream(@NotNull PacketInputStream stream) throws IOException {
+        int playerPing = stream.readUnsignedShort();
+        int serverPing = stream.readUnsignedShort();
+        int serverDownloadSpeed = stream.readInt();
+        int serverUploadSpeed = stream.readInt();
+        int jumpPing = stream.readUnsignedShort();
+        int blockReactionTime = stream.readUnsignedShort();
+
+        return new TNTPlayerPingStorage(playerPing, serverPing, serverDownloadSpeed, serverUploadSpeed, jumpPing,
+                blockReactionTime);
     }
 
     @Override

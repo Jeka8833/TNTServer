@@ -1,9 +1,7 @@
 package com.jeka8833.tntserver.packet.packets;
 
-import com.jeka8833.tntserver.Main;
-import com.jeka8833.tntserver.MojangAPI;
+import com.jeka8833.tntserver.TNTServer;
 import com.jeka8833.tntserver.database.Player;
-import com.jeka8833.tntserver.database.PlayersDatabase;
 import com.jeka8833.tntserver.database.User;
 import com.jeka8833.tntserver.gamechat.ChatFilter;
 import com.jeka8833.tntserver.gamechat.CommandManager;
@@ -12,9 +10,9 @@ import com.jeka8833.tntserver.gamechat.PlayerMute;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.java_websocket.WebSocket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -22,7 +20,7 @@ import java.time.ZonedDateTime;
 import java.util.UUID;
 
 public class ChatPacket implements Packet {
-    private static final Logger LOGGER = LogManager.getLogger(ChatPacket.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ChatPacket.class);
 
     private UUID user;
     private String text;
@@ -58,8 +56,8 @@ public class ChatPacket implements Packet {
 
             PlayerMute playerMute = PlayerMute.getPlayer(player.uuid);
             if (playerMute != null && playerMute.isMuted()) {
-                LOGGER.info("Player " + player.uuid + " tried to send message, but he is banned. Unban after: " +
-                        playerMute.unbanAt());
+                LOGGER.info("Player {} tried to send \"{}\", but he is banned. Unban after: {}",
+                        player.uuid, text, playerMute.unbanAt());
 
                 Duration period = Duration.between(ZonedDateTime.now(), playerMute.unbanAt());
 
@@ -68,7 +66,7 @@ public class ChatPacket implements Packet {
                         ":" + period.toMinutesPart() + ":" + period.toSecondsPart() + ".")
                         .replaceAll(" ", " §c");
 
-                Main.serverSend(socket, new ChatPacket(player.uuid, muteText));
+                TNTServer.serverSend(socket, new ChatPacket(player.uuid, muteText));
                 return;
             }
 
@@ -77,7 +75,7 @@ public class ChatPacket implements Packet {
                 String message = ("§cYou are sending messages too fast, your message has not been delivered. " +
                         "Only you can see this message.").replaceAll(" ", " §c");
 
-                Main.serverSend(socket, new ChatPacket(player.uuid, message));
+                TNTServer.serverSend(socket, new ChatPacket(player.uuid, message));
                 return;
             }
 

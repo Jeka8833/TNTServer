@@ -1,7 +1,7 @@
 package com.jeka8833.tntserver.packet.packets;
 
 import com.jeka8833.tntserver.BotsManager;
-import com.jeka8833.tntserver.Main;
+import com.jeka8833.tntserver.TNTServer;
 import com.jeka8833.tntserver.database.Player;
 import com.jeka8833.tntserver.database.PlayersDatabase;
 import com.jeka8833.tntserver.database.User;
@@ -16,9 +16,8 @@ import java.util.List;
 import java.util.UUID;
 
 public class FightPacket implements Packet {
-    private int playerFight = 0;
-
     private final Collection<WebSocket> activeConnection;
+    private int playerFight = 0;
 
     @SuppressWarnings("unused")
     public FightPacket() {
@@ -61,7 +60,7 @@ public class FightPacket implements Packet {
                 player.tntPlayerInfo.fight = playerFight;
             }
 
-            Main.serverSend(socket, new FightPacket(Main.server.getConnections()));
+            TNTServer.serverSend(socket, new FightPacket(TNTServer.server.getConnections()));
         } else {
             socket.close();
         }
