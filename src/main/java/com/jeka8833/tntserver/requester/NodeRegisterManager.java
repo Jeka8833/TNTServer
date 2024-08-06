@@ -24,9 +24,9 @@ import java.util.concurrent.TimeUnit;
 public final class NodeRegisterManager {
     private static final AsyncHypixelRateLimiter RATE_LIMITER = new AsyncHypixelRateLimiter(
             new ResetManager(Duration.ofMinutes(5)),
-            4,
+            150,
             Duration.ofMillis(100),
-            Duration.ofSeconds(2),
+            Duration.ofSeconds(1),
             Duration.ofSeconds(10));
 
     private static final int OVERLOAD_LOCAL_REQUESTS = 0;

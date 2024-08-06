@@ -35,6 +35,9 @@ public final class RequesterCacheProvider extends AbstractFieldJsonProvider {
             writer.writeFieldSeparator();
 
             writer.writeNumericField("cache_evictionWeight", cacheStats.evictionWeight());
+            writer.writeFieldSeparator();
+
+            writer.writeNumericField("cache_size", HypixelCache.size());
         }
 
         return true;

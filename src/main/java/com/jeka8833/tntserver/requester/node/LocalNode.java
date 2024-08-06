@@ -1,6 +1,7 @@
 package com.jeka8833.tntserver.requester.node;
 
 import com.alibaba.fastjson2.JSON;
+import com.jeka8833.tntserver.requester.HypixelCache;
 import com.jeka8833.tntserver.requester.ratelimiter.AsyncHypixelRateLimiter;
 import com.jeka8833.tntserver.requester.ratelimiter.HypixelResponse;
 import com.jeka8833.tntserver.requester.storage.HypixelCompactStorage;
@@ -28,11 +29,11 @@ public final class LocalNode implements RequesterNode {
     private final OkHttpClient httpClient;
     private final int overloadLimit;
 
-    public LocalNode(AsyncHypixelRateLimiter rateLimiter, UUID key, OkHttpClient client,
+    public LocalNode(AsyncHypixelRateLimiter rateLimiter, UUID key, OkHttpClient httpClient,
                      int overloadLimit) {
         this.rateLimiter = rateLimiter;
         this.key = key.toString();
-        httpClient = client;
+        this.httpClient = httpClient;
         this.overloadLimit = overloadLimit;
     }
 
@@ -48,7 +49,8 @@ public final class LocalNode implements RequesterNode {
                     .header("API-Key", key)
                     .build();
 
-            try (Response response = httpClient.newCall(request).execute()) {
+            try (var ignore = HypixelCache.TASK_MANAGER.disableInterruption(requestedPlayer);
+                 Response response = httpClient.newCall(request).execute()) {
                 serverStatus.setHeaders(response.code(),
                         response.header("RateLimit-Reset"),
                         response.header("RateLimit-Limit"),
@@ -65,8 +67,13 @@ public final class LocalNode implements RequesterNode {
                     return HypixelCompactStorage.compress(object);
                 }
             }
+        } catch (Exception e) {
+            if (!(e instanceof InterruptedException)) rateLimiter.fatalError();
+
+            throw e;
         } finally {
             threadList.remove(Thread.currentThread());
+
             release();
         }
     }

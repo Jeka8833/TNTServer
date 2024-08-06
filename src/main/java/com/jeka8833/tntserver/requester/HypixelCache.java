@@ -18,20 +18,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 public final class HypixelCache {
-    private static final TaskManager TASK_MANAGER = new TaskManager();
+    public static final TaskManager TASK_MANAGER = new TaskManager();
     private static final Logger LOGGER = LoggerFactory.getLogger(HypixelCache.class);
 
     private static final LoadingCache<UUID, HypixelCompactStorage> CACHE = Caffeine.newBuilder()
-            .expireAfterAccess(1, TimeUnit.HOURS)
             .refreshAfterWrite(2, TimeUnit.MINUTES)
-            .maximumWeight(256 * 1024 * 1024 - 1120) // 256 MB - 1120 bytes(Caffeine Baseline) -> 1 242 751 entries
-            .weigher((k, v) -> {
-                if (v == HypixelCompactStorage.EMPTY_INSTANCE) {
-                    return 32 + 88; // HypixelCompactStorage -> 0 bytes; UUID -> 32 bytes; Node -> 88 bytes
-                } else {
-                    return 96 + 32 + 88; // HypixelCompactStorage -> 96 bytes; UUID -> 32 bytes; Node -> 88 bytes
-                }
-            })
+            .maximumSize(500_000)       // (96 + 32 + 96) * 500_000 = +-112 MB
             .recordStats()
             .build(RequestBalancer::get);
 
@@ -173,5 +165,9 @@ public final class HypixelCache {
 
     public static CacheStats getStatistic() {
         return CACHE.stats();
+    }
+
+    public static long size() {
+        return CACHE.estimatedSize();
     }
 }

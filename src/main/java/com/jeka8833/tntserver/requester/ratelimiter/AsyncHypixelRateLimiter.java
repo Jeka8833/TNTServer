@@ -123,8 +123,8 @@ public class AsyncHypixelRateLimiter {
         }
     }
 
-    void fatalError() {
-        firstTryAt = Math.max(System.nanoTime() + sleepAfterFail, resetManager.getResetAtNanos());
+    public void fatalError() {
+        firstTryAt = System.nanoTime() + sleepAfterFail;
 
         requestLock.lock();
         try {

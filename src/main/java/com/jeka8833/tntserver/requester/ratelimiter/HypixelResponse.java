@@ -12,7 +12,6 @@ import java.util.OptionalLong;
 public class HypixelResponse implements Closeable {
 
     private final @NotNull AsyncHypixelRateLimiter rateLimiter;
-    private volatile boolean isInternalError = true;
 
     @Blocking
     public HypixelResponse(@NotNull AsyncHypixelRateLimiter rateLimiter) throws InterruptedException {
@@ -47,8 +46,6 @@ public class HypixelResponse implements Closeable {
         } else {
             rateLimiter.callGood(remainingInt.getAsInt());
         }
-
-        isInternalError = false;
     }
 
     @SuppressWarnings({"OptionalUsedAsFieldOrParameterType", "OptionalAssignedToNull"})
@@ -63,14 +60,10 @@ public class HypixelResponse implements Closeable {
         } else {
             rateLimiter.callGood((int) remaining.getAsLong());
         }
-
-        isInternalError = false;
     }
 
     @Override
     public void close() {
         rateLimiter.threadList.remove(Thread.currentThread());
-
-        if (isInternalError) rateLimiter.fatalError();
     }
 }

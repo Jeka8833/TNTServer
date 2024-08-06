@@ -1,5 +1,6 @@
 package com.jeka8833.tntserver.requester.node;
 
+import com.jeka8833.tntserver.requester.HypixelCache;
 import com.jeka8833.tntserver.requester.storage.HypixelCompactStorage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Range;
@@ -49,12 +50,14 @@ public final class RemoteNode implements RequesterNode {
 
     @Override
     public @NotNull HypixelCompactStorage get(@NotNull UUID requestedPlayer) throws Exception {
-        CompletableFuture<HypixelCompactStorage> completableFuture = WAITING.computeIfAbsent(requestedPlayer,
-                k -> new CompletableFuture<HypixelCompactStorage>().orTimeout(timeoutNanos, TimeUnit.NANOSECONDS));
+        try (var ignore = HypixelCache.TASK_MANAGER.disableInterruption(requestedPlayer)) {
+            CompletableFuture<HypixelCompactStorage> completableFuture = WAITING.computeIfAbsent(requestedPlayer,
+                    k -> new CompletableFuture<HypixelCompactStorage>().orTimeout(timeoutNanos, TimeUnit.NANOSECONDS));
 
-        sendRequest.accept(requestedPlayer);
+            sendRequest.accept(requestedPlayer);
 
-        return completableFuture.get();
+            return completableFuture.get();
+        }
     }
 
     @Override

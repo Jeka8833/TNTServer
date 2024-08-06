@@ -61,7 +61,23 @@ public final class TaskManager {
         }
     }
 
+    public AutoCloseable disableInterruption(@NotNull UUID requestedPlayer) throws InterruptedException {
+        if (Thread.interrupted()) throw new InterruptedException();
+
+        AtomicInteger counter = REQUESTED_PLAYER_LOCKS.computeIfPresent(requestedPlayer, (key, oldValue) -> {
+            oldValue.getAndIncrement();
+            return oldValue;
+        });
+
+        return () -> {
+            if (counter != null) {
+                counter.getAndDecrement();
+            }
+        };
+    }
+
     public void clearUnused() {
+        // Not thread-safe, but this method is called after end of task
         SENDER_MAP.values().removeIf(Collection::isEmpty);
         REQUESTED_PLAYER_LOCKS.values().removeIf(i -> i.get() <= 0);
     }
