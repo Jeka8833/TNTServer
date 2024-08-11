@@ -7,14 +7,13 @@ import com.jeka8833.tntserver.packet.packets.RequestHypixelPlayerPacket;
 import com.jeka8833.tntserver.requester.node.LocalNode;
 import com.jeka8833.tntserver.requester.node.RemoteNode;
 import com.jeka8833.tntserver.requester.node.RequesterNode;
-import com.jeka8833.tntserver.requester.ratelimiter.AsyncHypixelRateLimiter;
-import com.jeka8833.tntserver.requester.ratelimiter.ResetManager;
+import com.jeka8833.tntserver.requester.ratelimiter.HypixelRateLimiter;
+import com.jeka8833.tntserver.requester.ratelimiter.strategy.FullRefill;
 import com.jeka8833.tntserver.util.Util;
 import org.java_websocket.WebSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
@@ -22,12 +21,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 public final class NodeRegisterManager {
-    private static final AsyncHypixelRateLimiter RATE_LIMITER = new AsyncHypixelRateLimiter(
-            new ResetManager(Duration.ofMinutes(5)),
-            150,
-            Duration.ofMillis(100),
-            Duration.ofSeconds(1),
-            Duration.ofSeconds(10));
+    private static final HypixelRateLimiter RATE_LIMITER = new HypixelRateLimiter(
+            TimeUnit.SECONDS.toNanos(10),
+            TimeUnit.MILLISECONDS.toNanos(100),
+            new FullRefill(300));
 
     private static final int OVERLOAD_LOCAL_REQUESTS = 0;
 

@@ -2,8 +2,7 @@ package com.jeka8833.tntserver.requester.node;
 
 import com.alibaba.fastjson2.JSON;
 import com.jeka8833.tntserver.requester.HypixelCache;
-import com.jeka8833.tntserver.requester.ratelimiter.AsyncHypixelRateLimiter;
-import com.jeka8833.tntserver.requester.ratelimiter.HypixelResponse;
+import com.jeka8833.tntserver.requester.ratelimiter.HypixelRateLimiter;
 import com.jeka8833.tntserver.requester.storage.HypixelCompactStorage;
 import com.jeka8833.tntserver.requester.storage.HypixelJSONStructure;
 import okhttp3.OkHttpClient;
@@ -24,12 +23,12 @@ public final class LocalNode implements RequesterNode {
     private final Collection<Thread> threadList = ConcurrentHashMap.newKeySet();
     private final Collection<Thread> blockedThreadsCounts = new HashSet<>();
 
-    private final AsyncHypixelRateLimiter rateLimiter;
+    private final HypixelRateLimiter rateLimiter;
     private final String key;
     private final OkHttpClient httpClient;
     private final int overloadLimit;
 
-    public LocalNode(AsyncHypixelRateLimiter rateLimiter, UUID key, OkHttpClient httpClient,
+    public LocalNode(HypixelRateLimiter rateLimiter, UUID key, OkHttpClient httpClient,
                      int overloadLimit) {
         this.rateLimiter = rateLimiter;
         this.key = key.toString();
@@ -41,7 +40,7 @@ public final class LocalNode implements RequesterNode {
     public @NotNull HypixelCompactStorage get(@NotNull UUID requestedPlayer) throws Exception {
         threadList.add(Thread.currentThread());
 
-        try (HypixelResponse serverStatus = new HypixelResponse(rateLimiter)) {
+        try (HypixelRateLimiter.Status status = rateLimiter.newRequest()) {
             release();
 
             Request request = new Request.Builder()
@@ -51,10 +50,9 @@ public final class LocalNode implements RequesterNode {
 
             try (var ignore = HypixelCache.TASK_MANAGER.disableInterruption(requestedPlayer);
                  Response response = httpClient.newCall(request).execute()) {
-                serverStatus.setHeaders(response.code(),
-                        response.header("RateLimit-Reset"),
-                        response.header("RateLimit-Limit"),
-                        response.header("RateLimit-Remaining"));
+                status.connectionInfo(response.code(),
+                        response.header("RateLimit-Remaining"),
+                        response.header("RateLimit-Reset"));
 
                 if (!response.isSuccessful()) throw new IOException("Hypixel API request returned: " + response.code());
 
@@ -67,10 +65,6 @@ public final class LocalNode implements RequesterNode {
                     return HypixelCompactStorage.compress(object);
                 }
             }
-        } catch (Exception e) {
-            if (!(e instanceof InterruptedException)) rateLimiter.fatalError();
-
-            throw e;
         } finally {
             threadList.remove(Thread.currentThread());
 
@@ -86,7 +80,7 @@ public final class LocalNode implements RequesterNode {
     @Override
     @Range(from = 0, to = Integer.MAX_VALUE)
     public int getAvailable() {
-        return rateLimiter.getFreeAtMoment();
+        return rateLimiter.getRemaining();
     }
 
     @Override
