@@ -2,7 +2,8 @@ package com.jeka8833.tntserver.packet.packets.odyssey;
 
 import com.jeka8833.tntserver.BotsManager;
 import com.jeka8833.tntserver.TNTServer;
-import com.jeka8833.tntserver.database.User;
+import com.jeka8833.tntserver.database.storage.User;
+import com.jeka8833.tntserver.database.RemoteDB;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
@@ -53,13 +54,13 @@ public class DonatePacket implements Packet {
             return;
         }
 
-        BotsManager.requestUserPrivileges(playerUUID, privileges -> {
-            if (privileges.isEmpty()) {
+        RemoteDB.readUserPrivileges(user.uuid, privilegesOptional -> {
+            if (privilegesOptional.isEmpty()) {
                 TNTServer.serverSend(socket, new DonatePacket(playerUUID, 1, 0));
                 return;
             }
 
-            DonateLevel donateLevel = DonateLevel.getDonateLevel(privileges.get());
+            DonateLevel donateLevel = DonateLevel.getDonateLevel(privilegesOptional.get());
             TNTServer.serverSend(socket, new DonatePacket(playerUUID, 0, donateLevel.getLevel()));
         });
     }

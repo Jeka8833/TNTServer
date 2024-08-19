@@ -70,9 +70,11 @@ public final class HypixelJSONStructure {
         // For BowSpleef Duels game
         public @JSONField(name = "bowspleef_duel_wins") Optional<Integer> bowSpleefWins = Optional.empty();
         public @JSONField(name = "bowspleef_duel_losses") Optional<Integer> bowSpleefLosses = Optional.empty();
+        public @JSONField(name = "current_winstreak_mode_bowspleef_duel") Optional<Integer> bowSpleefWinStreak =
+                Optional.empty();
 
         public boolean isEmpty() {
-            return bowSpleefWins.isEmpty() && bowSpleefLosses.isEmpty();
+            return bowSpleefWins.isEmpty() && bowSpleefLosses.isEmpty() && bowSpleefWinStreak.isEmpty();
         }
     }
 }

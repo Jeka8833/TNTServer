@@ -1,5 +1,6 @@
 package com.jeka8833.tntserver;
 
+import com.jeka8833.tntserver.database.RemoteDB;
 import picocli.CommandLine;
 
 import java.nio.file.Path;
@@ -68,12 +69,16 @@ public final class Main implements Runnable {
 
     @Override
     public void run() {
-        TNTServer.loadServer();
-
         try {
-            Thread.currentThread().join();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            TNTServer.loadServer();
+
+            try {
+                Thread.currentThread().join();  // Wait for the server to stop
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        } finally {
+            RemoteDB.saveAndClose();
         }
     }
 }

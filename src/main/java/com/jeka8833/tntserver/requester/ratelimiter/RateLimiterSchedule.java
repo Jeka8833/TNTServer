@@ -65,8 +65,17 @@ public class RateLimiterSchedule {
             if (remaining == 0) {
                 rateLimiterLock.setRemaining(remaining);
             } else {
-                rateLimiterLock.setRemaining(
-                        refillStrategy.refill(remaining, durationNanos, rateLimiterLock::addRemaining, executorService));
+                Thread currentThread = Thread.currentThread();
+
+                int value = refillStrategy.refill(remaining, durationNanos, remaining1 -> {
+                    if (knownRemaining) {
+                        rateLimiterLock.addRemaining(remaining1);
+                    } else if (Thread.currentThread().equals(currentThread)) {
+                        rateLimiterLock.setRemaining(remaining1);
+                    }
+                }, executorService);
+
+                rateLimiterLock.setRemaining(value);
             }
 
             knownRemaining = true;
@@ -77,6 +86,8 @@ public class RateLimiterSchedule {
             if (firstCallTimer == null || firstCallTimer.isDone()) {
                 firstCallTimer = executorService.schedule(() -> {
                     knownRemaining = false;
+                    refillStrategy.stopAll();
+
                     try {
                         rateLimiterLock.requestFirstCall();
                         waitFirstAnswer = true;

@@ -1,8 +1,8 @@
 package com.jeka8833.tntserver.packet.packets;
 
 import com.jeka8833.tntserver.TNTServer;
-import com.jeka8833.tntserver.database.Player;
-import com.jeka8833.tntserver.database.User;
+import com.jeka8833.tntserver.database.storage.Player;
+import com.jeka8833.tntserver.database.storage.User;
 import com.jeka8833.tntserver.database.analytics.AnalyticGroup;
 import com.jeka8833.tntserver.database.analytics.AnalyticPacketLink;
 import com.jeka8833.tntserver.database.analytics.jumpPakets.*;

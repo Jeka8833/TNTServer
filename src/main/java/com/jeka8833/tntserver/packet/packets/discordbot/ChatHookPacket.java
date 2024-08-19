@@ -1,8 +1,8 @@
 package com.jeka8833.tntserver.packet.packets.discordbot;
 
 import com.jeka8833.tntserver.ServerType;
-import com.jeka8833.tntserver.database.Bot;
-import com.jeka8833.tntserver.database.User;
+import com.jeka8833.tntserver.database.storage.Bot;
+import com.jeka8833.tntserver.database.storage.User;
 import com.jeka8833.tntserver.gamechat.CommandManager;
 import com.jeka8833.tntserver.gamechat.GameChatManager;
 import com.jeka8833.tntserver.packet.Packet;

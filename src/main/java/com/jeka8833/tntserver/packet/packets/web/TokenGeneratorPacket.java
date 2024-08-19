@@ -3,7 +3,7 @@ package com.jeka8833.tntserver.packet.packets.web;
 import com.jeka8833.tntserver.BotsManager;
 import com.jeka8833.tntserver.TNTServer;
 import com.jeka8833.tntserver.database.PlayersDatabase;
-import com.jeka8833.tntserver.database.User;
+import com.jeka8833.tntserver.database.storage.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;

@@ -2,7 +2,7 @@ package com.jeka8833.tntserver.gamechat;
 
 import com.jeka8833.tntserver.ServerType;
 import com.jeka8833.tntserver.TNTServer;
-import com.jeka8833.tntserver.database.User;
+import com.jeka8833.tntserver.database.storage.User;
 import com.jeka8833.tntserver.gamechat.commands.Command;
 import com.jeka8833.tntserver.gamechat.commands.ForceModuleCommand;
 import com.jeka8833.tntserver.packet.packets.ChatPacket;

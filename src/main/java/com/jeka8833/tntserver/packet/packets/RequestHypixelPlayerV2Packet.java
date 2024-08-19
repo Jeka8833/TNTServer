@@ -17,14 +17,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
 
-public class RequestHypixelPlayerPacket implements Packet {
+public class RequestHypixelPlayerV2Packet implements Packet {
     private @Nullable Collection<UUID> userList;
 
     @SuppressWarnings("unused")
-    public RequestHypixelPlayerPacket() {
+    public RequestHypixelPlayerV2Packet() {
     }
 
-    public RequestHypixelPlayerPacket(@NotNull Collection<UUID> userList) {
+    public RequestHypixelPlayerV2Packet(@NotNull Collection<UUID> userList) {
         this.userList = userList;
     }
 
@@ -56,9 +56,9 @@ public class RequestHypixelPlayerPacket implements Packet {
             HypixelCache.cancelLoadFor(senderPlayer.uuid, false);
             HypixelCache.get(senderPlayer.uuid, userList.toArray(new UUID[0]), true,
                     playersReady -> TNTServer.serverSend(socket,
-                            new ReceiveHypixelPlayerPacket(playersReady, false)),
+                            new ReceiveHypixelPlayerV2Packet(playersReady, false)),
                     () -> TNTServer.serverSend(socket,
-                            new ReceiveHypixelPlayerPacket(Collections.emptyMap(), true)));
+                            new ReceiveHypixelPlayerV2Packet(Collections.emptyMap(), true)));
         } else {
             socket.close();
         }

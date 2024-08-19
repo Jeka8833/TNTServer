@@ -2,9 +2,9 @@ package com.jeka8833.tntserver.packet.packets.authorization;
 
 import com.jeka8833.tntserver.AuthManager;
 import com.jeka8833.tntserver.TNTServer;
-import com.jeka8833.tntserver.database.Bot;
+import com.jeka8833.tntserver.database.storage.Bot;
 import com.jeka8833.tntserver.database.PlayersDatabase;
-import com.jeka8833.tntserver.database.User;
+import com.jeka8833.tntserver.database.storage.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
@@ -47,6 +47,13 @@ public class AuthWebPacket implements Packet {
                 User newUser = PlayersDatabase.getOrCreate(user);
                 if (newUser instanceof Bot bot) {
                     bot.addPrivileges(privileges);
+
+                    for (WebSocket oldSocket : TNTServer.server.getConnections()) {
+                        UUID oldUser = oldSocket.getAttachment();
+                        if (user.equals(oldUser)) {
+                            oldSocket.close();
+                        }
+                    }
 
                     socket.setAttachment(user);
 

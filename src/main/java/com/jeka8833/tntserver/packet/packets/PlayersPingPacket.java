@@ -1,9 +1,9 @@
 package com.jeka8833.tntserver.packet.packets;
 
 import com.jeka8833.tntserver.TNTServer;
-import com.jeka8833.tntserver.database.Player;
+import com.jeka8833.tntserver.database.storage.Player;
 import com.jeka8833.tntserver.database.PlayersDatabase;
-import com.jeka8833.tntserver.database.User;
+import com.jeka8833.tntserver.database.storage.User;
 import com.jeka8833.tntserver.database.storage.TNTPlayerPingStorage;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
@@ -43,7 +43,7 @@ public class PlayersPingPacket implements Packet {
 
     @Override
     public void read(PacketInputStream stream) throws IOException {
-        playerPing = TNTPlayerPingStorage.readStream(stream);
+        playerPing = new TNTPlayerPingStorage(stream);
 
         int b = stream.readUnsignedByte();
         for (int i = 0; i < b; i++) requestedPlayers.add(stream.readUUID());

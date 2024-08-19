@@ -1,11 +1,10 @@
 package com.jeka8833.tntserver;
 
-import com.jeka8833.tntserver.database.Bot;
+import com.jeka8833.tntserver.database.storage.Bot;
 import com.jeka8833.tntserver.database.PlayersDatabase;
-import com.jeka8833.tntserver.database.User;
+import com.jeka8833.tntserver.database.storage.User;
 import com.jeka8833.tntserver.database.analytics.AnalyticManager;
-import com.jeka8833.tntserver.database.managers.DatabaseManager;
-import com.jeka8833.tntserver.database.managers.TNTClientDBManager;
+import com.jeka8833.tntserver.database.RemoteDB;
 import com.jeka8833.tntserver.gamechat.ChatFilter;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
@@ -58,6 +57,8 @@ public class TNTServer extends WebSocketServer {
         packetsList.put((byte) 14, RequestHypixelPlayerPacket.class);
         packetsList.put((byte) 15, UpdateFreeRequestsPacket.class);
         packetsList.put((byte) 16, AnalyticPacket.class);
+        packetsList.put((byte) 17, ReceiveHypixelPlayerV2Packet.class);
+        packetsList.put((byte) 18, RequestHypixelPlayerV2Packet.class);
         packetsList.put((byte) 248, ChatHookPacket.class);
         packetsList.put((byte) 249, MutePacket.class);
         packetsList.put((byte) 250, LinkCodePacket.class);
@@ -87,22 +88,15 @@ public class TNTServer extends WebSocketServer {
         ChatFilter.loadDictionaries();
         analyticManager = AnalyticManager.createAndStart();
 
-        try {
-            DatabaseManager.initConnect(Main.INSTANCE.databaseURL, Main.INSTANCE.databaseUser,
-                    Main.INSTANCE.databasePassword);
+        RemoteDB.openConnection();
 
-            server = new TNTServer(new InetSocketAddress(Main.INSTANCE.serverPort));
-            server.setConnectionLostTimeout(15);
-            server.setReuseAddr(true);
-            server.start();
+        server = new TNTServer(new InetSocketAddress(Main.INSTANCE.serverPort));
+        server.setConnectionLostTimeout(15);
+        server.setReuseAddr(true);
+        server.start();
 
-            TNTClientDBManager.init();
-            BlockModulesPacket.readAndSetGlobalBlock();
-
-            NodeRegisterManager.init();
-        } finally {
-            TNTClientDBManager.forceWrite();
-        }
+        BlockModulesPacket.readAndSetGlobalBlock();
+        NodeRegisterManager.init();
     }
 
     @Override

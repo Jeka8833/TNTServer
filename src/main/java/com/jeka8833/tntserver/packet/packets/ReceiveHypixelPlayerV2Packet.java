@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
 
-public class ReceiveHypixelPlayerPacket implements Packet {
+public class ReceiveHypixelPlayerV2Packet implements Packet {
     public static final int RECEIVE_FAIL = 0;
     public static final int RECEIVE_GOOD = 1;
     public static final int RECEIVE_GOOD_NOTHING = 2;
@@ -22,10 +22,10 @@ public class ReceiveHypixelPlayerPacket implements Packet {
     private @Nullable Map<UUID, HypixelCompactStorage> storage;
     private boolean lastPacket = false;
 
-    public ReceiveHypixelPlayerPacket() {
+    public ReceiveHypixelPlayerV2Packet() {
     }
 
-    public ReceiveHypixelPlayerPacket(@NotNull Map<UUID, HypixelCompactStorage> storage, boolean lastPacket) {
+    public ReceiveHypixelPlayerV2Packet(@NotNull Map<UUID, HypixelCompactStorage> storage, boolean lastPacket) {
         this.storage = storage;
         this.lastPacket = lastPacket;
     }
@@ -39,7 +39,7 @@ public class ReceiveHypixelPlayerPacket implements Packet {
         for (Map.Entry<UUID, HypixelCompactStorage> player : storage.entrySet()) {
             stream.writeByte(RECEIVE_GOOD);
             stream.writeUUID(player.getKey());
-            player.getValue().writeStream(stream);
+            player.getValue().writeStreamV2(stream);
         }
     }
 
@@ -50,7 +50,7 @@ public class ReceiveHypixelPlayerPacket implements Packet {
             int status = stream.readUnsignedByte();
             UUID playerUUID = stream.readUUID();
             if ((status & RECEIVE_GOOD) == RECEIVE_GOOD) {
-                RemoteNode.put(playerUUID, HypixelCompactStorage.readStream(stream));
+                RemoteNode.put(playerUUID, HypixelCompactStorage.readStreamV2(stream));
             }
         }
     }

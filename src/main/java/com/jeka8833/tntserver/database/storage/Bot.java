@@ -1,5 +1,6 @@
-package com.jeka8833.tntserver.database;
+package com.jeka8833.tntserver.database.storage;
 
+import com.jeka8833.tntserver.database.PlayersDatabase;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;

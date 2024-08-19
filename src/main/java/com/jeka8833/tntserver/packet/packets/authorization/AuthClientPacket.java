@@ -5,10 +5,10 @@ import com.alibaba.fastjson2.annotation.JSONField;
 import com.jeka8833.tntserver.AuthManager;
 import com.jeka8833.tntserver.ServerType;
 import com.jeka8833.tntserver.TNTServer;
-import com.jeka8833.tntserver.database.Player;
+import com.jeka8833.tntserver.database.storage.Player;
 import com.jeka8833.tntserver.database.PlayersDatabase;
-import com.jeka8833.tntserver.database.User;
-import com.jeka8833.tntserver.database.managers.TNTClientDBManager;
+import com.jeka8833.tntserver.database.storage.User;
+import com.jeka8833.tntserver.database.RemoteDB;
 import com.jeka8833.tntserver.database.storage.TNTPlayerStorage;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
@@ -52,9 +52,16 @@ public class AuthClientPacket implements Packet {
         AuthManager.authMojang(playerUsername, serverKey, new AuthManager.AuthResponse() {
             @Override
             public void good(@NotNull UUID user, @Nullable Set<String> privileges) {
-                TNTClientDBManager.readUser(user, ignore -> {
+                RemoteDB.readUser(user, ignore -> {
                     User newUser = PlayersDatabase.getOrCreate(user);
                     if (newUser instanceof Player player) {
+                        for (WebSocket oldSocket : TNTServer.server.getConnections()) {
+                            UUID oldUser = oldSocket.getAttachment();
+                            if (user.equals(oldUser)) {
+                                oldSocket.close();
+                            }
+                        }
+
                         socket.setAttachment(user);
 
                         Parameters parameters = null;
@@ -76,7 +83,7 @@ public class AuthClientPacket implements Packet {
                         player.tntPlayerInfo.version = version;
                         player.tntPlayerInfo.status = TNTPlayerStorage.STATUS_ONLINE;
 
-                        TNTClientDBManager.writeUser(user, null);
+                        RemoteDB.writeUser(newUser);
 
                         TNTServer.serverSend(socket, new BlockModulesPacket(
                                 player.tntPlayerInfo.forceBlock, player.tntPlayerInfo.forceActive));

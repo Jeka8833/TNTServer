@@ -2,10 +2,10 @@ package com.jeka8833.tntserver.packet.packets;
 
 import com.jeka8833.tntserver.BotsManager;
 import com.jeka8833.tntserver.TNTServer;
-import com.jeka8833.tntserver.database.Player;
+import com.jeka8833.tntserver.database.storage.Player;
 import com.jeka8833.tntserver.database.PlayersDatabase;
-import com.jeka8833.tntserver.database.User;
-import com.jeka8833.tntserver.database.managers.TNTClientDBManager;
+import com.jeka8833.tntserver.database.storage.User;
+import com.jeka8833.tntserver.database.RemoteDB;
 import com.jeka8833.tntserver.database.storage.TNTPlayerStorage;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
@@ -34,11 +34,14 @@ public class BlockModulesPacket implements Packet {
     }
 
     public static void readAndSetGlobalBlock() {
-        TNTClientDBManager.readOrCashUser(PlayersDatabase.SETTING_USER, tntUser -> {
-            if (tntUser == null || tntUser.tntPlayerInfo == null) return;
+        RemoteDB.readUser(PlayersDatabase.SETTING_USER, userOptional -> {
+            if (userOptional.isEmpty() ||
+                    !(userOptional.get() instanceof Player player) || player.tntPlayerInfo == null) {
+                return;
+            }
 
-            globalActive = tntUser.tntPlayerInfo.forceActive;
-            globalBlock = tntUser.tntPlayerInfo.forceBlock;
+            globalActive = player.tntPlayerInfo.forceActive;
+            globalBlock = player.tntPlayerInfo.forceBlock;
         });
     }
 
@@ -66,37 +69,41 @@ public class BlockModulesPacket implements Packet {
             globalActive = active;
             globalBlock = block;
 
-            TNTClientDBManager.readOrCashUser(PlayersDatabase.SETTING_USER, ignore -> {
+            RemoteDB.readUser(PlayersDatabase.SETTING_USER, ignore -> {
                 User settingUserStorage = PlayersDatabase.getOrCreate(PlayersDatabase.SETTING_USER);
                 if (settingUserStorage instanceof Player player) {
                     if (player.tntPlayerInfo == null) player.tntPlayerInfo = new TNTPlayerStorage();
+
                     player.tntPlayerInfo.forceActive = active;
                     player.tntPlayerInfo.forceBlock = block;
-
-                    TNTClientDBManager.writeUser(PlayersDatabase.SETTING_USER, null);
                 }
+
+                RemoteDB.writeUser(settingUserStorage);
             });
 
             for (WebSocket socket1 : TNTServer.server.getConnections()) {
                 UUID id = socket1.getAttachment();
                 if (id != null && id.version() == 4) {
-                    TNTClientDBManager.readUser(id, tntUser -> {
-                        if (tntUser == null || tntUser.tntPlayerInfo == null) return;
+                    RemoteDB.readUser(id, userOptional -> {
+                        if (userOptional.isEmpty() ||
+                                !(userOptional.get() instanceof Player player) || player.tntPlayerInfo == null) {
+                            return;
+                        }
 
                         TNTServer.serverSend(socket1, new BlockModulesPacket(
-                                tntUser.tntPlayerInfo.forceBlock, tntUser.tntPlayerInfo.forceActive));
+                                player.tntPlayerInfo.forceBlock, player.tntPlayerInfo.forceActive));
                     });
                 }
             }
         } else {
-            TNTClientDBManager.readUser(editedUser, ignore -> {
+            RemoteDB.readUser(editedUser, ignore -> {
                 User editedUserStorage = PlayersDatabase.getOrCreate(editedUser);
                 if (editedUserStorage instanceof Player player) {
                     if (player.tntPlayerInfo == null) player.tntPlayerInfo = new TNTPlayerStorage();
                     player.tntPlayerInfo.forceActive = active;
                     player.tntPlayerInfo.forceBlock = block;
 
-                    TNTClientDBManager.writeUser(editedUser, null);
+                    RemoteDB.writeUser(editedUserStorage);
 
                     WebSocket editedUserSocket = player.getSocket();
                     if (editedUserSocket != null) {

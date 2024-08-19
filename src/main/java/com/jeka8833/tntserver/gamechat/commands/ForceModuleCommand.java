@@ -1,11 +1,11 @@
 package com.jeka8833.tntserver.gamechat.commands;
 
-import com.jeka8833.tntserver.BotsManager;
 import com.jeka8833.tntserver.TNTServer;
-import com.jeka8833.tntserver.database.Bot;
-import com.jeka8833.tntserver.database.Player;
+import com.jeka8833.tntserver.database.storage.Bot;
+import com.jeka8833.tntserver.database.storage.Player;
 import com.jeka8833.tntserver.database.PlayersDatabase;
-import com.jeka8833.tntserver.database.User;
+import com.jeka8833.tntserver.database.storage.User;
+import com.jeka8833.tntserver.database.RemoteDB;
 import com.jeka8833.tntserver.database.storage.TNTPlayerStorage;
 import com.jeka8833.tntserver.gamechat.CommandManager;
 import com.jeka8833.tntserver.mojang.MojangAPI;
@@ -165,10 +165,10 @@ public class ForceModuleCommand implements Command {
     @Override
     public void execute(@NotNull User user, @NotNull WebSocket userWebsocket, @NotNull String text) {
         if (user instanceof Player) {
-            BotsManager.requestUserPrivileges(user.uuid, privileges -> {
-                if (privileges.isEmpty()) {
+            RemoteDB.readUserPrivileges(user.uuid, privilegesOptional -> {
+                if (privilegesOptional.isEmpty()) {
                     CommandManager.sendError(userWebsocket, "Privilege server is not available");
-                } else if (privileges.get().contains(PRIVILEGE)) {
+                } else if (privilegesOptional.get().contains(PRIVILEGE)) {
                     step0(userWebsocket, text.strip().toLowerCase().split(" "));
                 } else {
                     CommandManager.sendError(userWebsocket, "You don't have permission");

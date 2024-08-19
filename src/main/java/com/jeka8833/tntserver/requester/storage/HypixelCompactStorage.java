@@ -2,7 +2,6 @@ package com.jeka8833.tntserver.requester.storage;
 
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
-import com.jeka8833.tntserver.packet.StreamWriter;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
@@ -33,12 +32,14 @@ public record HypixelCompactStorage(long networkExp,
                                     int tntGamesCoins,
 
                                     int bowSpleefDuelsWins,
-                                    int bowSpleefDuelsLosses) implements StreamWriter {
+                                    int bowSpleefDuelsLosses,
+                                    int bowSpleefDuelsWinstreak) {
 
     public static final HypixelCompactStorage EMPTY_INSTANCE = new HypixelCompactStorage(
             -1L, -1, -1, -1, -1, -1, -1,
             -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1);
+            -1, -1, -1, -1, -1,
+            -1);
 
     public static HypixelCompactStorage compress(@NotNull HypixelJSONStructure structure) {
         if (structure.isEmpty()) return EMPTY_INSTANCE;
@@ -72,7 +73,8 @@ public record HypixelCompactStorage(long networkExp,
                 tntGames.flatMap(g -> g.coins).orElse(-1),
 
                 duels.flatMap(d -> d.bowSpleefWins).orElse(-1),
-                duels.flatMap(d -> d.bowSpleefLosses).orElse(-1)
+                duels.flatMap(d -> d.bowSpleefLosses).orElse(-1),
+                duels.flatMap(d -> d.bowSpleefWinStreak).orElse(-1)
         );
     }
 
@@ -106,13 +108,49 @@ public record HypixelCompactStorage(long networkExp,
 
         int bowSpleefDuelWins = stream.readInt();
         int bowSpleefDuelLosses = stream.readInt();
+        int bowSpleefDuelWinstreak = -1;
 
         return new HypixelCompactStorage(networkExp, wins_tntrun, deaths_tntrun, wins_pvprun, deaths_pvprun,
                 kills_pvprun, wins_bowspleef, deaths_bowspleef, wins_tntag, deaths_tntag, kills_tntag, wins_capture,
-                deaths_capture, kills_capture, winstreak, coins, bowSpleefDuelWins, bowSpleefDuelLosses);
+                deaths_capture, kills_capture, winstreak, coins, bowSpleefDuelWins, bowSpleefDuelLosses,
+                bowSpleefDuelWinstreak);
     }
 
-    @Override
+    @NotNull
+    @Contract("_ -> new")
+    public static HypixelCompactStorage readStreamV2(@NotNull PacketInputStream stream) throws IOException {
+        long networkExp = stream.readLong();
+        int coins = stream.readInt();
+        int winstreak = stream.readInt();
+
+        int wins_tntrun = stream.readInt();
+        int deaths_tntrun = stream.readInt();
+
+        int wins_pvprun = stream.readInt();
+        int deaths_pvprun = stream.readInt();
+        int kills_pvprun = stream.readInt();
+
+        int wins_bowspleef = stream.readInt();
+        int deaths_bowspleef = stream.readInt();
+
+        int wins_tntag = stream.readInt();
+        int deaths_tntag = stream.readInt();
+        int kills_tntag = stream.readInt();
+
+        int wins_capture = stream.readInt();
+        int deaths_capture = stream.readInt();
+        int kills_capture = stream.readInt();
+
+        int bowSpleefDuelWins = stream.readInt();
+        int bowSpleefDuelLosses = stream.readInt();
+        int bowSpleefDuelWinstreak = stream.readInt();
+
+        return new HypixelCompactStorage(networkExp, wins_tntrun, deaths_tntrun, wins_pvprun, deaths_pvprun,
+                kills_pvprun, wins_bowspleef, deaths_bowspleef, wins_tntag, deaths_tntag, kills_tntag, wins_capture,
+                deaths_capture, kills_capture, winstreak, coins, bowSpleefDuelWins, bowSpleefDuelLosses,
+                bowSpleefDuelWinstreak);
+    }
+
     public void writeStream(@NotNull PacketOutputStream stream) throws IOException {
         stream.writeLong(networkExp());
         stream.writeInt(tntGamesCoins());
@@ -141,5 +179,33 @@ public record HypixelCompactStorage(long networkExp,
 
         stream.writeInt(bowSpleefDuelsWins());
         stream.writeInt(bowSpleefDuelsLosses());
+    }
+
+    public void writeStreamV2(@NotNull PacketOutputStream stream) throws IOException {
+        stream.writeLong(networkExp());
+        stream.writeInt(tntGamesCoins());
+        stream.writeInt(tntGamesWinstreak());
+
+        stream.writeInt(tntRunWins());
+        stream.writeInt(tntRunLosses());
+
+        stream.writeInt(pvpRunWins());
+        stream.writeInt(pvpRunLosses());
+        stream.writeInt(pvpRunKills());
+
+        stream.writeInt(bowSpleefWins());
+        stream.writeInt(bowSpleefLosses());
+
+        stream.writeInt(tntTagWins());
+        stream.writeInt(tntTagLosses());
+        stream.writeInt(tntTagKills());
+
+        stream.writeInt(wizardsWins());
+        stream.writeInt(wizardsLosses());
+        stream.writeInt(wizardsKills());
+
+        stream.writeInt(bowSpleefDuelsWins());
+        stream.writeInt(bowSpleefDuelsLosses());
+        stream.writeInt(bowSpleefDuelsWinstreak());
     }
 }

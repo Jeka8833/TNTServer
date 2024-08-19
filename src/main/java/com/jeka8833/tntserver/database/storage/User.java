@@ -1,4 +1,4 @@
-package com.jeka8833.tntserver.database;
+package com.jeka8833.tntserver.database.storage;
 
 import com.jeka8833.tntserver.TNTServer;
 import org.java_websocket.WebSocket;
@@ -25,5 +25,18 @@ public abstract class User {
         }
 
         return null;
+    }
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof User user)) return false;
+
+        return uuid.equals(user.uuid);
+    }
+
+    @Override
+    public int hashCode() {
+        return uuid.hashCode();
     }
 }

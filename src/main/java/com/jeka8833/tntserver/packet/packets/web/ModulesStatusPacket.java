@@ -2,8 +2,9 @@ package com.jeka8833.tntserver.packet.packets.web;
 
 import com.jeka8833.tntserver.BotsManager;
 import com.jeka8833.tntserver.TNTServer;
-import com.jeka8833.tntserver.database.User;
-import com.jeka8833.tntserver.database.managers.TNTClientDBManager;
+import com.jeka8833.tntserver.database.storage.Player;
+import com.jeka8833.tntserver.database.storage.User;
+import com.jeka8833.tntserver.database.RemoteDB;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
@@ -63,13 +64,14 @@ public class ModulesStatusPacket implements Packet {
             return;
         }
 
-        TNTClientDBManager.readOrCashUser(requestedPlayer, tntUser -> {
-            if (tntUser == null || tntUser.tntPlayerInfo == null) {
+        RemoteDB.readUser(requestedPlayer, userOptional -> {
+            if (userOptional.isEmpty() ||
+                    !(userOptional.get() instanceof Player player) || player.tntPlayerInfo == null) {
                 TNTServer.serverSend(socket, new ModulesStatusPacket(callBackID));
             } else {
                 TNTServer.serverSend(socket, new ModulesStatusPacket(
-                        callBackID, tntUser.tntPlayerInfo.activeModules,
-                        tntUser.tntPlayerInfo.forceBlock, tntUser.tntPlayerInfo.forceActive));
+                        callBackID, player.tntPlayerInfo.activeModules,
+                        player.tntPlayerInfo.forceBlock, player.tntPlayerInfo.forceActive));
             }
         });
     }
