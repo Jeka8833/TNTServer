@@ -2,8 +2,8 @@ package com.jeka8833.tntserver.packet.packets.authorization;
 
 import com.jeka8833.tntserver.AuthManager;
 import com.jeka8833.tntserver.TNTServer;
-import com.jeka8833.tntserver.database.storage.Bot;
 import com.jeka8833.tntserver.database.PlayersDatabase;
+import com.jeka8833.tntserver.database.storage.Bot;
 import com.jeka8833.tntserver.database.storage.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;

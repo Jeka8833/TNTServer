@@ -48,12 +48,12 @@ public class RateLimiterLock {
         }
     }
 
-    public boolean tryJoin() {
+    public boolean tryJoin(boolean reserve) {
         lock.lock();
         try {
             boolean success = remaining > 0 && nextAllowTime - System.nanoTime() <= 0L &&
                     !lock.hasWaiters(condition);
-            if (success) {
+            if (success && reserve) {
                 remaining--;
 
                 waitingThreads.add(Thread.currentThread());

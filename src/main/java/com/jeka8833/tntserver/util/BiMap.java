@@ -21,7 +21,7 @@ public class BiMap<K, V> {
     }
 
     @Nullable
-    public final V get(K key) {
+    public final V getValue(K key) {
         return keyToValueMap.get(key);
     }
 }

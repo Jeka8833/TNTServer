@@ -38,6 +38,9 @@ public final class RequesterCacheProvider extends AbstractFieldJsonProvider {
             writer.writeFieldSeparator();
 
             writer.writeNumericField("cache_size", HypixelCache.size());
+            writer.writeFieldSeparator();
+
+            writer.writeNumericField("cache_force_refresh", HypixelCache.getStatisticForceRefresh());
         }
 
         return true;

@@ -1,10 +1,10 @@
 package com.jeka8833.tntserver;
 
-import com.jeka8833.tntserver.database.storage.Bot;
 import com.jeka8833.tntserver.database.PlayersDatabase;
-import com.jeka8833.tntserver.database.storage.User;
-import com.jeka8833.tntserver.database.analytics.AnalyticManager;
 import com.jeka8833.tntserver.database.RemoteDB;
+import com.jeka8833.tntserver.database.analytics.AnalyticManager;
+import com.jeka8833.tntserver.database.storage.Bot;
+import com.jeka8833.tntserver.database.storage.User;
 import com.jeka8833.tntserver.gamechat.ChatFilter;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
@@ -34,39 +34,40 @@ import java.nio.ByteBuffer;
 import java.util.UUID;
 
 public class TNTServer extends WebSocketServer {
-    public static final BiMap<Byte, Class<? extends Packet>> packetsList = new BiMap<>();
+    public static final BiMap<Byte, Class<? extends Packet>> PACKETS_LIST = new BiMap<>();
+
     private static final Logger LOGGER = LoggerFactory.getLogger(TNTServer.class);
+
     @Nullable
     public static AnalyticManager analyticManager;
-
     public static TNTServer server;
 
     static {
-        packetsList.put((byte) 1, ActiveModulesPacket.class);
-        packetsList.put((byte) 3, PingPacket.class);
-        packetsList.put((byte) 4, RequestTNTClientPlayerPacket.class);
-        packetsList.put((byte) 5, ReceiveTNTClientPlayerPacket.class);
-        packetsList.put((byte) 6, ChatPacket.class);
-        packetsList.put((byte) 7, BlockModulesPacket.class);
-        packetsList.put((byte) 8, GameInfoPacket.class);
-        packetsList.put((byte) 9, FightPacket.class);
-        packetsList.put((byte) 10, AuthClientPacket.class);
-        packetsList.put((byte) 11, PlayersPingPacket.class);
-        packetsList.put((byte) 12, TokenPacket.class);
-        packetsList.put((byte) 13, ReceiveHypixelPlayerPacket.class);
-        packetsList.put((byte) 14, RequestHypixelPlayerPacket.class);
-        packetsList.put((byte) 15, UpdateFreeRequestsPacket.class);
-        packetsList.put((byte) 16, AnalyticPacket.class);
-        packetsList.put((byte) 17, ReceiveHypixelPlayerV2Packet.class);
-        packetsList.put((byte) 18, RequestHypixelPlayerV2Packet.class);
-        packetsList.put((byte) 248, ChatHookPacket.class);
-        packetsList.put((byte) 249, MutePacket.class);
-        packetsList.put((byte) 250, LinkCodePacket.class);
-        packetsList.put((byte) 251, RolePacket.class);
-        packetsList.put((byte) 252, DonatePacket.class);
-        packetsList.put((byte) 253, TokenGeneratorPacket.class);
-        packetsList.put((byte) 254, ModulesStatusPacket.class);
-        packetsList.put((byte) 255, AuthWebPacket.class);
+        PACKETS_LIST.put((byte) 1, ActiveModulesPacket.class);
+        PACKETS_LIST.put((byte) 3, PingPacket.class);
+        PACKETS_LIST.put((byte) 4, RequestTNTClientPlayerPacket.class);
+        PACKETS_LIST.put((byte) 5, ReceiveTNTClientPlayerPacket.class);
+        PACKETS_LIST.put((byte) 6, ChatPacket.class);
+        PACKETS_LIST.put((byte) 7, BlockModulesPacket.class);
+        PACKETS_LIST.put((byte) 8, GameInfoPacket.class);
+        PACKETS_LIST.put((byte) 9, FightPacket.class);
+        PACKETS_LIST.put((byte) 10, AuthClientPacket.class);
+        PACKETS_LIST.put((byte) 11, PlayersPingPacket.class);
+        PACKETS_LIST.put((byte) 12, TokenPacket.class);
+        PACKETS_LIST.put((byte) 13, ReceiveHypixelPlayerPacket.class);
+        PACKETS_LIST.put((byte) 14, RequestHypixelPlayerPacket.class);
+        PACKETS_LIST.put((byte) 15, UpdateFreeRequestsPacket.class);
+        PACKETS_LIST.put((byte) 16, AnalyticPacket.class);
+        PACKETS_LIST.put((byte) 17, ReceiveHypixelPlayerV2Packet.class);
+        PACKETS_LIST.put((byte) 18, RequestHypixelPlayerV2Packet.class);
+        PACKETS_LIST.put((byte) 248, ChatHookPacket.class);
+        PACKETS_LIST.put((byte) 249, MutePacket.class);
+        PACKETS_LIST.put((byte) 250, LinkCodePacket.class);
+        PACKETS_LIST.put((byte) 251, RolePacket.class);
+        PACKETS_LIST.put((byte) 252, DonatePacket.class);
+        PACKETS_LIST.put((byte) 253, TokenGeneratorPacket.class);
+        PACKETS_LIST.put((byte) 254, ModulesStatusPacket.class);
+        PACKETS_LIST.put((byte) 255, AuthWebPacket.class);
     }
 
     public TNTServer(final InetSocketAddress address) {

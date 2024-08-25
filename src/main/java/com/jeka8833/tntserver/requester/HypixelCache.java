@@ -12,20 +12,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 public final class HypixelCache {
-    public static final TaskManager TASK_MANAGER = new TaskManager();
-    private static final Logger LOGGER = LoggerFactory.getLogger(HypixelCache.class);
+    private static final long REFRESH_INTERVAL = TimeUnit.MINUTES.toNanos(2);
 
     private static final LoadingCache<UUID, HypixelCompactStorage> CACHE = Caffeine.newBuilder()
-            .refreshAfterWrite(2, TimeUnit.MINUTES)
+            .refreshAfterWrite(REFRESH_INTERVAL, TimeUnit.NANOSECONDS)
             .maximumSize(500_000)       // (96 + 32 + 96) * 500_000 = +-112 MB
             .recordStats()
             .build(RequestBalancer::get);
+
+    public static final TaskManager TASK_MANAGER = new TaskManager();
+    private static final Logger LOGGER = LoggerFactory.getLogger(HypixelCache.class);
+
+    private static final Map<UUID, Long> FORCE_REFRESH = new ConcurrentHashMap<>();
+    private static final AtomicInteger FORCE_REFRESH_COUNTER = new AtomicInteger();
 
     public static void get(@NotNull UUID sender, @Nullable UUID requestedPlayer, boolean canBeCancelled,
                            @NotNull Consumer<@NotNull HypixelCompactStorage> listener) {
@@ -40,19 +45,16 @@ public final class HypixelCache {
         //noinspection DataFlowIssue
         TASK_MANAGER.newTask(() -> {
             try {
-                HypixelCompactStorage newValue = CACHE.get(requestedPlayer);
+                //noinspection DataFlowIssue
+                HypixelCompactStorage newValue = getFromCache(requestedPlayer);
 
-                if (oldValue == null || !oldValue.equals(newValue)) {
+                if (!Objects.equals(oldValue, newValue)) {
                     listener.accept(newValue);
                 }
-            } catch (CompletionException e) {
-                if (e.getCause() instanceof InterruptedException) {
-                    return;
-                }
-
-                LOGGER.warn("Error while getting Hypixel data for player {}", requestedPlayer, e);
             } catch (Exception e) {
-                LOGGER.warn("Error while getting Hypixel data for player {}", requestedPlayer, e);
+                if (!(e.getCause() instanceof InterruptedException)) {
+                    LOGGER.warn("Error while getting Hypixel data for player {}", requestedPlayer, e);
+                }
             }
         }, sender, requestedPlayer, canBeCancelled);
     }
@@ -62,6 +64,7 @@ public final class HypixelCache {
                                    @Nullable UUID, @NotNull HypixelCompactStorage>> listener) {
         SequencedCollection<UUID> needRequest = new ArrayDeque<>(requestedPlayers.length);
         Map<UUID, HypixelCompactStorage> instantSend = new HashMap<>();
+
         for (UUID requestedPlayer : requestedPlayers) {
             if (MojangAPI.isPlayer(requestedPlayer)) {
                 HypixelCompactStorage oldValue = CACHE.getIfPresent(requestedPlayer);
@@ -84,20 +87,16 @@ public final class HypixelCache {
         for (UUID requestedPlayer : needRequest) {
             TASK_MANAGER.newTask(() -> {
                 try {
-                    HypixelCompactStorage newValue = CACHE.get(requestedPlayer);
+                    HypixelCompactStorage newValue = getFromCache(requestedPlayer);
                     HypixelCompactStorage oldValue = instantSend.get(requestedPlayer);
 
-                    if (oldValue == null || !oldValue.equals(newValue)) {
+                    if (!Objects.equals(oldValue, newValue)) {
                         listener.accept(Map.of(requestedPlayer, newValue));
                     }
-                } catch (CompletionException e) {
-                    if (e.getCause() instanceof InterruptedException) {
-                        return;
-                    }
-
-                    LOGGER.warn("Balancer has error for {} player", requestedPlayer, e);
                 } catch (Exception e) {
-                    LOGGER.warn("Balancer has error for {} player", requestedPlayer, e);
+                    if (!(e.getCause() instanceof InterruptedException)) {
+                        LOGGER.warn("Balancer has error for {} player", requestedPlayer, e);
+                    }
                 }
             }, sender, requestedPlayer, canBeCancelled);
         }
@@ -108,12 +107,12 @@ public final class HypixelCache {
                                    @Nullable UUID, @NotNull HypixelCompactStorage>> listener, @NotNull Runnable end) {
         SequencedCollection<UUID> needRequest = new ArrayDeque<>(requestedPlayers.length);
         Map<UUID, HypixelCompactStorage> instantSend = new HashMap<>();
+
         for (UUID requestedPlayer : requestedPlayers) {
             if (MojangAPI.isPlayer(requestedPlayer)) {
                 HypixelCompactStorage oldValue = CACHE.getIfPresent(requestedPlayer);
                 if (oldValue != null) {
                     instantSend.put(requestedPlayer, oldValue);
-
                     needRequest.addLast(requestedPlayer);
                 } else {
                     needRequest.addFirst(requestedPlayer);
@@ -136,20 +135,16 @@ public final class HypixelCache {
         for (UUID requestedPlayer : needRequest) {
             TASK_MANAGER.newTask(() -> {
                 try {
-                    HypixelCompactStorage newValue = CACHE.get(requestedPlayer);
+                    HypixelCompactStorage newValue = getFromCache(requestedPlayer);
                     HypixelCompactStorage oldValue = instantSend.get(requestedPlayer);
 
-                    if (oldValue == null || !oldValue.equals(newValue)) {
+                    if (!Objects.equals(oldValue, newValue)) {
                         listener.accept(Map.of(requestedPlayer, newValue));
                     }
-                } catch (CompletionException e) {
-                    if (e.getCause() instanceof InterruptedException) {
-                        return;
-                    }
-
-                    LOGGER.warn("Balancer has error for {} player", requestedPlayer, e);
                 } catch (Exception e) {
-                    LOGGER.warn("Balancer has error for {} player", requestedPlayer, e);
+                    if (!(e.getCause() instanceof InterruptedException)) {
+                        LOGGER.warn("Balancer has error for {} player", requestedPlayer, e);
+                    }
                 } finally {
                     if (counter.incrementAndGet() == needRequest.size()) {
                         end.run();
@@ -159,12 +154,34 @@ public final class HypixelCache {
         }
     }
 
+    private static HypixelCompactStorage getFromCache(@NotNull UUID requestedPlayer) throws Exception {
+        Long forceRefresh = FORCE_REFRESH.remove(requestedPlayer);
+        if (forceRefresh != null) {
+            FORCE_REFRESH_COUNTER.getAndIncrement();
+
+            return CACHE.refresh(requestedPlayer).get();
+        }
+
+        return CACHE.get(requestedPlayer);
+    }
+
+    public static void forceRefresh(@NotNull UUID player) {
+        long currentTime = System.nanoTime();
+        FORCE_REFRESH.values().removeIf(time -> currentTime - time >= REFRESH_INTERVAL);
+
+        FORCE_REFRESH.put(player, currentTime);
+    }
+
     public static void cancelLoadFor(@NotNull UUID player, boolean all) {
         TASK_MANAGER.cancelFor(player, all);
     }
 
     public static CacheStats getStatistic() {
         return CACHE.stats();
+    }
+
+    public static int getStatisticForceRefresh() {
+        return FORCE_REFRESH_COUNTER.get();
     }
 
     public static long size() {

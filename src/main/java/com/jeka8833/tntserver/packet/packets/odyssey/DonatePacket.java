@@ -2,8 +2,8 @@ package com.jeka8833.tntserver.packet.packets.odyssey;
 
 import com.jeka8833.tntserver.BotsManager;
 import com.jeka8833.tntserver.TNTServer;
-import com.jeka8833.tntserver.database.storage.User;
 import com.jeka8833.tntserver.database.RemoteDB;
+import com.jeka8833.tntserver.database.storage.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;

@@ -7,7 +7,7 @@ import ch.qos.logback.core.spi.FilterReply;
 public final class GrafanaMessageFilter extends Filter<ILoggingEvent> {
     @Override
     public FilterReply decide(ILoggingEvent iLoggingEvent) {
-        if (iLoggingEvent.getMessage().equals(GrafanaProvider.SEND_METRICS)) {
+        if (GrafanaProvider.SEND_METRICS.equals(iLoggingEvent.getMessage())) {
             return FilterReply.DENY;
         }
 

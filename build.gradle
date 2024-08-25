@@ -35,7 +35,7 @@ dependencies {
     implementation group: 'org.jetbrains', name: 'annotations', version: '24.1.0'
 
     // https://mvnrepository.com/artifact/org.postgresql/postgresql
-    implementation group: 'org.postgresql', name: 'postgresql', version: '42.7.3'
+    implementation group: 'org.postgresql', name: 'postgresql', version: '42.7.4'
 
     // https://mvnrepository.com/artifact/org.java-websocket/Java-WebSocket
     implementation group: 'org.java-websocket', name: 'Java-WebSocket', version: '1.5.7'

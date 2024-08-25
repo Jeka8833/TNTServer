@@ -24,7 +24,6 @@ public class UpdateFreeRequestsPacket implements Packet {
 
     @Override
     public void serverProcess(WebSocket socket, @Nullable User user) {
-        // TODO: Remove SERVER_HYPIXEL_API
         NodeRegisterManager.connect(socket);
         NodeRegisterManager.setAvailableCount(socket, count);
     }

@@ -21,7 +21,7 @@ public class PacketInputStream extends DataInputStream {
             throw new RuntimeException("Very big data");
 
         byte ID = readByte();
-        Class<? extends Packet> class_ = TNTServer.packetsList.get(ID);
+        Class<? extends Packet> class_ = TNTServer.PACKETS_LIST.getValue(ID);
         if (class_ == null) throw new NullPointerException("The received packet has an unknown ID: " + ID);
 
         packet = class_.getDeclaredConstructor().newInstance();

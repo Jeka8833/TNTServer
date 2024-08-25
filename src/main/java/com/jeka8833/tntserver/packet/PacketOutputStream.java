@@ -31,7 +31,7 @@ public class PacketOutputStream extends DataOutputStream {
     }
 
     public ByteBuffer getByteBuffer(final Class<? extends Packet> type) {
-        Byte ID = TNTServer.packetsList.getKey(type);
+        Byte ID = TNTServer.PACKETS_LIST.getKey(type);
         if (ID == null) throw new NullPointerException("The sent packet has an unknown ID. Class: " + type);
 
         LOGGER.debug("Packet ready to be write: {}", type.getSimpleName());
