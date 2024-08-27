@@ -2,6 +2,7 @@ package com.jeka8833.tntserver.requester.ratelimiter.strategy;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -53,6 +54,7 @@ public final class GroupRefill implements RefillStrategy {
         }
     }
 
+    @VisibleForTesting
     static Queue<Integer> splitIntoParts(int whole, int parts) {
         Queue<Integer> queue = new ArrayBlockingQueue<>(parts);
         for (int i = 0; i < parts; i++) {

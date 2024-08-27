@@ -9,10 +9,10 @@ import java.util.OptionalInt;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-public final class HypixelRateLimiter {
-    private final RateLimiterLock rateLimiterLock;
-    private final RateLimiterSchedule rateLimiterSchedule;
-    private final @NotNull RefillStrategy refillStrategy;
+public class HypixelRateLimiter {
+    protected final RateLimiterLock rateLimiterLock;
+    protected final RateLimiterSchedule rateLimiterSchedule;
+    protected final @NotNull RefillStrategy refillStrategy;
 
     public HypixelRateLimiter(long retryAfterFailNanos, long delayBetweenCallsNanos,
                               @NotNull RefillStrategy refillStrategy) {
@@ -55,11 +55,11 @@ public final class HypixelRateLimiter {
         return rateLimiterLock.getRemaining();
     }
 
-    public static final class Status implements AutoCloseable {
+    public static class Status implements AutoCloseable {
 
-        private final HypixelRateLimiter rateLimiter;
+        protected final HypixelRateLimiter rateLimiter;
 
-        private Status(HypixelRateLimiter rateLimiter) {
+        protected Status(HypixelRateLimiter rateLimiter) {
             this.rateLimiter = rateLimiter;
         }
 
@@ -77,7 +77,7 @@ public final class HypixelRateLimiter {
         }
 
         @NotNull
-        private static OptionalInt parseInteger(@Nullable String value) {
+        protected static OptionalInt parseInteger(@Nullable String value) {
             if (value == null || value.isEmpty()) return OptionalInt.empty();
 
             try {

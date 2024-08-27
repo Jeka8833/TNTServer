@@ -8,7 +8,7 @@ import com.jeka8833.tntserver.requester.node.LocalNode;
 import com.jeka8833.tntserver.requester.node.RemoteNode;
 import com.jeka8833.tntserver.requester.node.RequesterNode;
 import com.jeka8833.tntserver.requester.ratelimiter.HypixelRateLimiter;
-import com.jeka8833.tntserver.requester.ratelimiter.strategy.FullRefill;
+import com.jeka8833.tntserver.requester.ratelimiter.strategy.TNTServerStrategyRefill;
 import com.jeka8833.tntserver.util.Util;
 import org.java_websocket.WebSocket;
 import org.slf4j.Logger;
@@ -24,7 +24,7 @@ public final class NodeRegisterManager {
     private static final HypixelRateLimiter RATE_LIMITER = new HypixelRateLimiter(
             TimeUnit.SECONDS.toNanos(10),
             TimeUnit.MILLISECONDS.toNanos(100),
-            new FullRefill(300));
+            new TNTServerStrategyRefill(300));
 
     private static final int OVERLOAD_LOCAL_REQUESTS = 0;
 

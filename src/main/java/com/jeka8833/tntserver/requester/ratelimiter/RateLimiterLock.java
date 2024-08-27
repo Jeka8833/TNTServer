@@ -7,14 +7,14 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class RateLimiterLock {
-    private final long delayBetweenCallsNanos;
+    protected final long delayBetweenCallsNanos;
 
-    private final Collection<Thread> waitingThreads = ConcurrentHashMap.newKeySet();
-    private final ReentrantLock lock = new ReentrantLock();
-    private final Condition condition = lock.newCondition();
+    protected final Collection<Thread> waitingThreads = ConcurrentHashMap.newKeySet();
+    protected final ReentrantLock lock = new ReentrantLock();
+    protected final Condition condition = lock.newCondition();
 
-    private int remaining = 1;
-    private long nextAllowTime;
+    protected int remaining = 1;
+    protected long nextAllowTime;
 
     public RateLimiterLock(long delayBetweenCallsNanos) {
         this.delayBetweenCallsNanos = delayBetweenCallsNanos;

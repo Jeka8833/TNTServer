@@ -12,17 +12,17 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class RateLimiterSchedule {
-    private final long retryAfterFailNanos;
-    private final @NotNull RateLimiterLock rateLimiterLock;
-    private final @NotNull RefillStrategy refillStrategy;
-    private final @NotNull ScheduledExecutorService executorService;
+    protected final long retryAfterFailNanos;
+    protected final @NotNull RateLimiterLock rateLimiterLock;
+    protected final @NotNull RefillStrategy refillStrategy;
+    protected final @NotNull ScheduledExecutorService executorService;
 
-    private final Lock lock = new ReentrantLock();
+    protected final Lock lock = new ReentrantLock();
 
-    private boolean waitFirstAnswer = true;
-    private volatile boolean knownRemaining = false;
+    protected boolean waitFirstAnswer = true;
+    protected volatile boolean knownRemaining = false;
 
-    private @Nullable Future<?> firstCallTimer;
+    protected @Nullable Future<?> firstCallTimer;
 
     public RateLimiterSchedule(long retryAfterFailNanos, @NotNull RateLimiterLock rateLimiterLock,
                                @NotNull RefillStrategy refillStrategy,
@@ -58,7 +58,7 @@ public class RateLimiterSchedule {
         setFirstCallValue(remainingValue, resetValue);
     }
 
-    private void setFirstCallValue(int remaining, long durationNanos) {
+    protected void setFirstCallValue(int remaining, long durationNanos) {
         if (waitFirstAnswer) {
             waitFirstAnswer = false;
 

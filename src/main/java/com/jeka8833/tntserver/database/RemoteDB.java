@@ -25,6 +25,7 @@ public final class RemoteDB {
 
     private static @Nullable Connection connection;
     private static @Nullable PreparedStatement readUserPrivileges;
+    private static @Nullable PreparedStatement botLogin;
     private static @Nullable PreparedStatement readUser;
     private static @Nullable PreparedStatement readUsers;
     private static @Nullable PreparedStatement writeUser;
@@ -44,6 +45,8 @@ public final class RemoteDB {
 
             readUserPrivileges = connection.prepareStatement(
                     "SELECT \"roles\" FROM \"TCA_UserPrivileges\" WHERE \"user\" = ?");
+            botLogin = connection.prepareStatement(
+                    "SELECT \"roles\" FROM \"TCA_UserPrivileges\" WHERE \"user\" = ? AND \"staticKey\" = ?");
             readUser = connection.prepareStatement(
                     "SELECT \"version\", \"blockModules\", \"donate\" FROM \"TC_Players\" WHERE \"user\" = ?");
             readUsers = connection.prepareStatement(
@@ -72,6 +75,34 @@ public final class RemoteDB {
                             new HashSet<>(Arrays.asList(rolesString.split(",")));
 
                     consumer.accept(Optional.of(roles));
+                } else {
+                    consumer.accept(Optional.of(Collections.emptySet()));
+                }
+            }
+
+            return true;
+        }, () -> consumer.accept(Optional.empty()));
+    }
+
+    public static void loginAndGetPrivileges(@NotNull UUID user, @NotNull UUID password,
+                                             @NotNull Consumer<
+                                                     @NotNull Optional<@NotNull Set<@NotNull String>>> consumer) {
+        runTask(() -> {
+            //noinspection DataFlowIssue
+            botLogin.setObject(1, user);
+            botLogin.setObject(2, password);
+
+            try (ResultSet rs = botLogin.executeQuery()) {
+                if (rs.next()) {
+                    String rolesString = rs.getString(1);
+                    Set<String> roles = (rolesString == null) ? Collections.emptySet() :
+                            new HashSet<>(Arrays.asList(rolesString.split(",")));
+
+                    if (rolesString != null && roles.contains("TNTCLIENT_SERVER")) {
+                        consumer.accept(Optional.of(roles));
+                    } else {
+                        consumer.accept(Optional.of(Collections.emptySet()));
+                    }
                 } else {
                     consumer.accept(Optional.of(Collections.emptySet()));
                 }
@@ -204,6 +235,7 @@ public final class RemoteDB {
         LOGGER.info("Close connection to DB");
 
         close(readUserPrivileges);
+        close(botLogin);
         close(readUser);
         close(readUsers);
         close(writeUser);

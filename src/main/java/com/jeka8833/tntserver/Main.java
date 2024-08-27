@@ -37,9 +37,6 @@ public final class Main implements Runnable {
             "with player analytics in bytes. (default: ${DEFAULT-VALUE})")
     public long analyticsMaxFolderSize = 5L * 1024L * 1024L * 1024L;
 
-    @CommandLine.Option(names = "--tntclient_web_api_url", description = "TNTClient Web API URL.")
-    public Optional<String> tntClientWebApiUrl = Optional.empty();
-
     @CommandLine.Option(names = "--hypixel_api_key", description = "Hypixel API Key.")
     public Optional<UUID> hypixelApiKey = Optional.empty();
 
@@ -57,9 +54,6 @@ public final class Main implements Runnable {
 
     @CommandLine.Option(names = "--server_port", description = "Server port. (default: ${DEFAULT-VALUE})")
     public int serverPort = 8833;
-
-    @CommandLine.Option(names = "--help", usageHelp = true, description = "Display this help and exit.")
-    boolean help;
 
     public static void main(String[] args) {
         int error = new CommandLine(INSTANCE).execute(args);
