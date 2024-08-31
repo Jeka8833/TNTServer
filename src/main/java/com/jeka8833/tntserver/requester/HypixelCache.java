@@ -12,13 +12,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 public final class HypixelCache {
-    private static final long REFRESH_INTERVAL = TimeUnit.MINUTES.toNanos(2);
+    private static final long REFRESH_INTERVAL = TimeUnit.MINUTES.toNanos(30);
 
     private static final LoadingCache<UUID, HypixelCompactStorage> CACHE = Caffeine.newBuilder()
             .refreshAfterWrite(REFRESH_INTERVAL, TimeUnit.NANOSECONDS)
@@ -51,10 +52,14 @@ public final class HypixelCache {
                 if (!Objects.equals(oldValue, newValue)) {
                     listener.accept(newValue);
                 }
-            } catch (Exception e) {
-                if (!(e.getCause() instanceof InterruptedException)) {
-                    LOGGER.warn("Error while getting Hypixel data for player {}", requestedPlayer, e);
+            } catch (CompletionException e) {
+                if (e.getCause() instanceof InterruptedException) {
+                    return;
                 }
+
+                LOGGER.warn("Error while getting Hypixel data for player {}", requestedPlayer, e);
+            } catch (Exception e) {
+                LOGGER.warn("Error while getting Hypixel data for player {}", requestedPlayer, e);
             }
         }, sender, requestedPlayer, canBeCancelled);
     }
@@ -93,10 +98,14 @@ public final class HypixelCache {
                     if (!Objects.equals(oldValue, newValue)) {
                         listener.accept(Map.of(requestedPlayer, newValue));
                     }
-                } catch (Exception e) {
-                    if (!(e.getCause() instanceof InterruptedException)) {
-                        LOGGER.warn("Balancer has error for {} player", requestedPlayer, e);
+                } catch (CompletionException e) {
+                    if (e.getCause() instanceof InterruptedException) {
+                        return;
                     }
+
+                    LOGGER.warn("Error while getting Hypixel data for player {}", requestedPlayer, e);
+                } catch (Exception e) {
+                    LOGGER.warn("Error while getting Hypixel data for player {}", requestedPlayer, e);
                 }
             }, sender, requestedPlayer, canBeCancelled);
         }
@@ -141,10 +150,14 @@ public final class HypixelCache {
                     if (!Objects.equals(oldValue, newValue)) {
                         listener.accept(Map.of(requestedPlayer, newValue));
                     }
-                } catch (Exception e) {
-                    if (!(e.getCause() instanceof InterruptedException)) {
-                        LOGGER.warn("Balancer has error for {} player", requestedPlayer, e);
+                } catch (CompletionException e) {
+                    if (e.getCause() instanceof InterruptedException) {
+                        return;
                     }
+
+                    LOGGER.warn("Error while getting Hypixel data for player {}", requestedPlayer, e);
+                } catch (Exception e) {
+                    LOGGER.warn("Error while getting Hypixel data for player {}", requestedPlayer, e);
                 } finally {
                     if (counter.incrementAndGet() == needRequest.size()) {
                         end.run();

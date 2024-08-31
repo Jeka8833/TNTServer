@@ -54,7 +54,12 @@ public final class LocalNode implements RequesterNode {
                         response.header("RateLimit-Remaining"),
                         response.header("RateLimit-Reset"));
 
-                if (!response.isSuccessful()) throw new IOException("Hypixel API request returned: " + response.code());
+                if (!response.isSuccessful()) {
+                    status.setError(true);
+                    throw new IOException("Hypixel API request returned: " + response.code());
+                }
+
+                status.setError(false);
 
                 try (ResponseBody body = response.body(); InputStream reader = body.byteStream()) {
                     HypixelJSONStructure object = JSON.parseObject(reader, HypixelJSONStructure.class);

@@ -13,6 +13,7 @@ public class HypixelRateLimiter {
     protected final RateLimiterLock rateLimiterLock;
     protected final RateLimiterSchedule rateLimiterSchedule;
     protected final @NotNull RefillStrategy refillStrategy;
+    protected boolean isError = false;
 
     public HypixelRateLimiter(long retryAfterFailNanos, long delayBetweenCallsNanos,
                               @NotNull RefillStrategy refillStrategy) {
@@ -48,6 +49,8 @@ public class HypixelRateLimiter {
     }
 
     public int getRemaining() {
+        if (isError) return Math.min(1, rateLimiterLock.getRemaining());
+
         if (!rateLimiterSchedule.isKnownRemaining()) {
             return refillStrategy.atFirstRequest(rateLimiterLock.getApproximateWaitingThreadsCount());
         }
@@ -85,6 +88,10 @@ public class HypixelRateLimiter {
             } catch (Exception e) {
                 return OptionalInt.empty();
             }
+        }
+
+        public void setError(boolean isError) {
+            rateLimiter.isError = isError;
         }
     }
 }
