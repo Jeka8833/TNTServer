@@ -5,6 +5,7 @@ import com.jeka8833.tntserver.TNTServer;
 import com.jeka8833.tntserver.database.storage.User;
 import com.jeka8833.tntserver.gamechat.commands.Command;
 import com.jeka8833.tntserver.gamechat.commands.ForceModuleCommand;
+import com.jeka8833.tntserver.gamechat.commands.StopCommand;
 import com.jeka8833.tntserver.packet.packets.ChatPacket;
 import org.java_websocket.WebSocket;
 import org.jetbrains.annotations.NotNull;
@@ -16,7 +17,7 @@ import java.util.Map;
 import java.util.UUID;
 
 public class CommandManager {
-    private static final Map<String, Command> COMMANDS = getCommands(new ForceModuleCommand());
+    private static final Map<String, Command> COMMANDS = getCommands(new ForceModuleCommand(), new StopCommand());
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ChatPacket.class);
 

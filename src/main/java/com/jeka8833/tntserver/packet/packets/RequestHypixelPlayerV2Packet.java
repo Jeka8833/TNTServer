@@ -24,6 +24,7 @@ public class RequestHypixelPlayerV2Packet implements Packet {
     public RequestHypixelPlayerV2Packet() {
     }
 
+    @SuppressWarnings("unused")
     public RequestHypixelPlayerV2Packet(@NotNull Collection<UUID> userList) {
         this.userList = userList;
     }
@@ -53,8 +54,7 @@ public class RequestHypixelPlayerV2Packet implements Packet {
         if (user instanceof Player senderPlayer) {
             if (userList == null || userList.isEmpty()) throw new NullPointerException("User list is empty");
 
-            HypixelCache.cancelLoadFor(senderPlayer.uuid, false);
-            HypixelCache.get(senderPlayer.uuid, userList.toArray(new UUID[0]), true,
+            HypixelCache.get(senderPlayer.uuid, userList.toArray(new UUID[0]),
                     playersReady -> TNTServer.serverSend(socket,
                             new ReceiveHypixelPlayerV2Packet(playersReady, false)),
                     () -> TNTServer.serverSend(socket,

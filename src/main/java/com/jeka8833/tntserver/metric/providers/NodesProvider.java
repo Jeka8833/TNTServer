@@ -4,9 +4,9 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import com.github.loki4j.logback.json.AbstractFieldJsonProvider;
 import com.github.loki4j.logback.json.JsonEventWriter;
 import com.jeka8833.tntserver.metric.GrafanaProvider;
-import com.jeka8833.tntserver.requester.RequestBalancer;
-import com.jeka8833.tntserver.requester.node.LocalNode;
-import com.jeka8833.tntserver.requester.node.RequesterNode;
+import com.jeka8833.tntserver.requester.balancer.RequestBalancer;
+import com.jeka8833.tntserver.requester.balancer.node.BalancerNode;
+import com.jeka8833.tntserver.requester.balancer.node.LocalNode;
 
 public class NodesProvider extends AbstractFieldJsonProvider {
     @Override
@@ -14,10 +14,10 @@ public class NodesProvider extends AbstractFieldJsonProvider {
         if (event.getMessage().equals(GrafanaProvider.SEND_METRICS)) {
             if (startWithSeparator) writer.writeFieldSeparator();
 
-            RequesterNode[] nodes = RequestBalancer.getNodes();
+            BalancerNode[] nodes = RequestBalancer.getNodes();
             long localNode = 0;
             long remoteNode = 0;
-            for (RequesterNode node : nodes) {
+            for (BalancerNode node : nodes) {
                 if (node instanceof LocalNode) {
                     localNode += node.getAvailable();
                 } else {

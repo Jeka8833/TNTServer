@@ -15,64 +15,61 @@ import java.io.Reader;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 public final class MojangAPI {
     private static final AsyncLoadingCache<UUID, MojangProfile> REQUEST_UUID = Caffeine.newBuilder()
-            .expireAfterAccess(10, TimeUnit.MINUTES)
+            .executor(Executors.newVirtualThreadPerTaskExecutor())
+            .expireAfterAccess(1, TimeUnit.HOURS)
             .maximumSize(100)
             .buildAsync(key -> {
-                try {
-                    Request request = new Request.Builder()
-                            .url("https://sessionserver.mojang.com/session/minecraft/profile/" + key)
-                            .build();
+                Request request = new Request.Builder()
+                        .url("https://sessionserver.mojang.com/session/minecraft/profile/" + key)
+                        .build();
 
-                    try (Response response = Util.HTTP_CLIENT.newCall(request).execute()) {
-                        if (response.isSuccessful()) {
-                            try (ResponseBody responseBody = response.body();
-                                 Reader reader = responseBody.charStream()) {
-                                PlayerUUID player = JSON.parseObject(reader, PlayerUUID.class);
-                                if (player != null) {
-                                    return new MojangProfile(player.getName(), player.getUUIDOrElse(key));
-                                }
+                try (Response response = Util.HTTP_CLIENT.newCall(request).execute()) {
+                    if (response.isSuccessful()) {
+                        try (ResponseBody responseBody = response.body();
+                             Reader reader = responseBody.charStream()) {
+                            PlayerUUID player = JSON.parseObject(reader, PlayerUUID.class);
+                            if (player != null) {
+                                return new MojangProfile(player.getName(), player.getUUIDOrElse(key));
                             }
-                        } else if (response.code() == 404 || response.code() == 204) {
-                            MojangProfile profile = new MojangProfile(key);
-                            profile.setNotFound();
-                            return profile;
                         }
+                    } else if (response.code() == 404 || response.code() == 204) {
+                        MojangProfile profile = new MojangProfile(key);
+                        profile.setNotFound();
+                        return profile;
                     }
-                } catch (Exception ignored) {
                 }
                 return new MojangProfile(key);
             });
     private static final AsyncLoadingCache<PlayerName, MojangProfile> REQUEST_NAME = Caffeine.newBuilder()
-            .expireAfterAccess(10, TimeUnit.MINUTES)
+            .executor(Executors.newVirtualThreadPerTaskExecutor())
+            .expireAfterAccess(1, TimeUnit.HOURS)
             .maximumSize(100)
             .buildAsync(name -> {
-                try {
-                    Request request = new Request.Builder()
-                            .url("https://api.mojang.com/users/profiles/minecraft/" + name.name())
-                            .build();
+                Request request = new Request.Builder()
+                        .url("https://api.mojang.com/users/profiles/minecraft/" + name.name())
+                        .build();
 
-                    try (Response response = Util.HTTP_CLIENT.newCall(request).execute()) {
-                        if (response.isSuccessful()) {
-                            try (ResponseBody responseBody = response.body();
-                                 Reader reader = responseBody.charStream()) {
-                                PlayerUUID player = JSON.parseObject(reader, PlayerUUID.class);
-                                if (player != null) {
-                                    return new MojangProfile(player.getNameOrElse(name.name()), player.getUUID());
-                                }
+                try (Response response = Util.HTTP_CLIENT.newCall(request).execute()) {
+                    if (response.isSuccessful()) {
+                        try (ResponseBody responseBody = response.body();
+                             Reader reader = responseBody.charStream()) {
+                            PlayerUUID player = JSON.parseObject(reader, PlayerUUID.class);
+                            if (player != null) {
+                                return new MojangProfile(player.getNameOrElse(name.name()), player.getUUID());
                             }
-                        } else if (response.code() == 404 || response.code() == 204) {
-                            MojangProfile profile = new MojangProfile(name.name());
-                            profile.setNotFound();
-                            return profile;
                         }
+                    } else if (response.code() == 404 || response.code() == 204) {
+                        MojangProfile profile = new MojangProfile(name.name());
+                        profile.setNotFound();
+                        return profile;
                     }
-                } catch (Exception ignored) {
                 }
                 return new MojangProfile(name.name());
             });
@@ -83,6 +80,7 @@ public final class MojangAPI {
                 .url("https://sessionserver.mojang.com/session/minecraft/hasJoined?serverId=" + key +
                         "&username=" + username)
                 .build();
+
         Util.HTTP_CLIENT.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(@NotNull Call call, @NotNull IOException e) {

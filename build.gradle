@@ -21,7 +21,7 @@ dependencies {
     implementation group: 'com.github.ben-manes.caffeine', name: 'caffeine', version: '3.1.8'
 
     // https://mvnrepository.com/artifact/com.alibaba.fastjson2/fastjson2
-    implementation group: 'com.alibaba.fastjson2', name: 'fastjson2', version: '2.0.52'
+    implementation group: 'com.alibaba.fastjson2', name: 'fastjson2', version: '2.0.53'
 
     // Fix conflict
     // https://mvnrepository.com/artifact/org.checkerframework/checker-qual
@@ -32,7 +32,7 @@ dependencies {
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '2.0.16'
 
     // https://mvnrepository.com/artifact/org.jetbrains/annotations
-    implementation group: 'org.jetbrains', name: 'annotations', version: '24.1.0'
+    implementation group: 'org.jetbrains', name: 'annotations', version: '25.0.0'
 
     // https://mvnrepository.com/artifact/org.postgresql/postgresql
     implementation group: 'org.postgresql', name: 'postgresql', version: '42.7.4'

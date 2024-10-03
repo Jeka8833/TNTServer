@@ -6,81 +6,50 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.util.Optional;
+import java.io.Serial;
+import java.io.Serializable;
+import java.util.Comparator;
 
-public record HypixelCompactStorage(long networkExp,
+public record HypixelCompactStructure(
+        long networkExp,
 
-                                    int tntRunWins,
-                                    int tntRunLosses,
+        int tntRunWins,
+        int tntRunLosses,
 
-                                    int pvpRunWins,
-                                    int pvpRunLosses,
-                                    int pvpRunKills,
+        int pvpRunWins,
+        int pvpRunLosses,
+        int pvpRunKills,
 
-                                    int bowSpleefWins,
-                                    int bowSpleefLosses,
+        int bowSpleefWins,
+        int bowSpleefLosses,
 
-                                    int tntTagWins,
-                                    int tntTagLosses,
-                                    int tntTagKills,
+        int tntTagWins,
+        int tntTagLosses,
+        int tntTagKills,
 
-                                    int wizardsWins,
-                                    int wizardsLosses,
-                                    int wizardsKills,
+        int wizardsWins,
+        int wizardsLosses,
+        int wizardsKills,
 
-                                    int tntGamesWinstreak,
-                                    int tntGamesCoins,
+        int tntGamesWinstreak,
+        int tntGamesCoins,
 
-                                    int bowSpleefDuelsWins,
-                                    int bowSpleefDuelsLosses,
-                                    int bowSpleefDuelsWinstreak) {
+        int bowSpleefDuelsWins,
+        int bowSpleefDuelsLosses,
+        int bowSpleefDuelsWinstreak
+) implements Serializable, Comparable<HypixelCompactStructure> {
+    @Serial
+    private static final long serialVersionUID = 5349876747379349796L;
 
-    public static final HypixelCompactStorage EMPTY_INSTANCE = new HypixelCompactStorage(
-            -1L, -1, -1, -1, -1, -1, -1,
+    public static final HypixelCompactStructure EMPTY_INSTANCE = new HypixelCompactStructure(-1L,
+            -1, -1, -1, -1, -1, -1,
             -1, -1, -1, -1, -1, -1,
             -1, -1, -1, -1, -1,
             -1);
 
-    public static HypixelCompactStorage compress(@NotNull HypixelJSONStructure structure) {
-        if (structure.isEmpty()) return EMPTY_INSTANCE;
-
-        Optional<HypixelJSONStructure.Player> player = structure.player;
-        Optional<HypixelJSONStructure.TNTGames> tntGames = player.flatMap(p -> p.stats).flatMap(stats -> stats.tntGames);
-        Optional<HypixelJSONStructure.Duels> duels = player.flatMap(p -> p.stats).flatMap(stats -> stats.duels);
-
-        return new HypixelCompactStorage(
-                player.flatMap(p -> p.networkExp).orElse(-1L),
-
-                tntGames.flatMap(g -> g.tntRunWins).orElse(-1),
-                tntGames.flatMap(g -> g.tntRunLosses).orElse(-1),
-
-                tntGames.flatMap(g -> g.pvpRunWins).orElse(-1),
-                tntGames.flatMap(g -> g.pvpRunLosses).orElse(-1),
-                tntGames.flatMap(g -> g.pvpRunKills).orElse(-1),
-
-                tntGames.flatMap(g -> g.bowSpleefWins).orElse(-1),
-                tntGames.flatMap(g -> g.bowSpleefLosses).orElse(-1),
-
-                tntGames.flatMap(g -> g.tntTagWins).orElse(-1),
-                tntGames.flatMap(g -> g.tntTagLosses).orElse(-1),
-                tntGames.flatMap(g -> g.tntTagKills).orElse(-1),
-
-                tntGames.flatMap(g -> g.wizardsWins).orElse(-1),
-                tntGames.flatMap(g -> g.wizardsLosses).orElse(-1),
-                tntGames.flatMap(g -> g.wizardsKills).orElse(-1),
-
-                tntGames.flatMap(g -> g.winStreak).orElse(-1),
-                tntGames.flatMap(g -> g.coins).orElse(-1),
-
-                duels.flatMap(d -> d.bowSpleefWins).orElse(-1),
-                duels.flatMap(d -> d.bowSpleefLosses).orElse(-1),
-                duels.flatMap(d -> d.bowSpleefWinStreak).orElse(-1)
-        );
-    }
-
     @NotNull
     @Contract("_ -> new")
-    public static HypixelCompactStorage readStream(@NotNull PacketInputStream stream) throws IOException {
+    public static HypixelCompactStructure readStream(@NotNull PacketInputStream stream) throws IOException {
         long networkExp = stream.readLong();
         int coins = stream.readInt();
         int winstreak = stream.readInt();
@@ -110,15 +79,15 @@ public record HypixelCompactStorage(long networkExp,
         int bowSpleefDuelLosses = stream.readInt();
         int bowSpleefDuelWinstreak = -1;
 
-        return new HypixelCompactStorage(networkExp, wins_tntrun, deaths_tntrun, wins_pvprun, deaths_pvprun,
-                kills_pvprun, wins_bowspleef, deaths_bowspleef, wins_tntag, deaths_tntag, kills_tntag, wins_capture,
-                deaths_capture, kills_capture, winstreak, coins, bowSpleefDuelWins, bowSpleefDuelLosses,
-                bowSpleefDuelWinstreak);
+        return new HypixelCompactStructure(networkExp, wins_tntrun, deaths_tntrun,
+                wins_pvprun, deaths_pvprun, kills_pvprun, wins_bowspleef, deaths_bowspleef, wins_tntag, deaths_tntag,
+                kills_tntag, wins_capture, deaths_capture, kills_capture, winstreak, coins, bowSpleefDuelWins,
+                bowSpleefDuelLosses, bowSpleefDuelWinstreak);
     }
 
     @NotNull
     @Contract("_ -> new")
-    public static HypixelCompactStorage readStreamV2(@NotNull PacketInputStream stream) throws IOException {
+    public static HypixelCompactStructure readStreamV2(@NotNull PacketInputStream stream) throws IOException {
         long networkExp = stream.readLong();
         int coins = stream.readInt();
         int winstreak = stream.readInt();
@@ -145,10 +114,10 @@ public record HypixelCompactStorage(long networkExp,
         int bowSpleefDuelLosses = stream.readInt();
         int bowSpleefDuelWinstreak = stream.readInt();
 
-        return new HypixelCompactStorage(networkExp, wins_tntrun, deaths_tntrun, wins_pvprun, deaths_pvprun,
-                kills_pvprun, wins_bowspleef, deaths_bowspleef, wins_tntag, deaths_tntag, kills_tntag, wins_capture,
-                deaths_capture, kills_capture, winstreak, coins, bowSpleefDuelWins, bowSpleefDuelLosses,
-                bowSpleefDuelWinstreak);
+        return new HypixelCompactStructure(networkExp, wins_tntrun, deaths_tntrun,
+                wins_pvprun, deaths_pvprun, kills_pvprun, wins_bowspleef, deaths_bowspleef, wins_tntag, deaths_tntag,
+                kills_tntag, wins_capture, deaths_capture, kills_capture, winstreak, coins, bowSpleefDuelWins,
+                bowSpleefDuelLosses, bowSpleefDuelWinstreak);
     }
 
     public void writeStream(@NotNull PacketOutputStream stream) throws IOException {
@@ -207,5 +176,26 @@ public record HypixelCompactStorage(long networkExp,
         stream.writeInt(bowSpleefDuelsWins());
         stream.writeInt(bowSpleefDuelsLosses());
         stream.writeInt(bowSpleefDuelsWinstreak());
+    }
+
+    @Override
+    public int compareTo(@NotNull HypixelCompactStructure o) {
+        return Comparator.comparingLong((HypixelCompactStructure value) -> value.networkExp)
+                .thenComparingInt(value -> value.tntRunWins)
+                .thenComparingInt(value -> value.tntRunLosses)
+                .thenComparingInt(value -> value.pvpRunWins)
+                .thenComparingInt(value -> value.pvpRunLosses)
+                .thenComparingInt(value -> value.pvpRunKills)
+                .thenComparingInt(value -> value.bowSpleefWins)
+                .thenComparingInt(value -> value.bowSpleefLosses)
+                .thenComparingInt(value -> value.tntTagWins)
+                .thenComparingInt(value -> value.tntTagLosses)
+                .thenComparingInt(value -> value.tntTagKills)
+                .thenComparingInt(value -> value.wizardsWins)
+                .thenComparingInt(value -> value.wizardsLosses)
+                .thenComparingInt(value -> value.wizardsKills)
+                .thenComparingInt(value -> value.bowSpleefDuelsWins)
+                .thenComparingInt(value -> value.bowSpleefDuelsLosses)
+                .compare(o, this);
     }
 }

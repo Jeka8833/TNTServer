@@ -4,7 +4,7 @@ import com.jeka8833.tntserver.database.storage.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
-import com.jeka8833.tntserver.requester.NodeRegisterManager;
+import com.jeka8833.tntserver.requester.balancer.NodeRegisterManager;
 import org.java_websocket.WebSocket;
 import org.jetbrains.annotations.Nullable;
 

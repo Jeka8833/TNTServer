@@ -1,7 +1,9 @@
 package com.jeka8833.tntserver.database;
 
+import com.jeka8833.tntserver.ServerType;
 import com.jeka8833.tntserver.database.storage.Bot;
 import com.jeka8833.tntserver.database.storage.Player;
+import com.jeka8833.tntserver.database.storage.TNTPlayerStorage;
 import com.jeka8833.tntserver.database.storage.User;
 import com.jeka8833.tntserver.mojang.MojangAPI;
 import org.jetbrains.annotations.Contract;
@@ -72,5 +74,27 @@ public class PlayersDatabase {
             }
         }
         return bots;
+    }
+
+    public static boolean isUsesTNTClient(@Nullable UUID uuid) {
+        User user = PlayersDatabase.getUser(uuid);
+        if (user instanceof Player player) {
+            if (player.tntPlayerInfo != null) {
+                return player.tntPlayerInfo.status != TNTPlayerStorage.STATUS_OFFLINE;
+            }
+        }
+
+        return false;
+    }
+
+    @Nullable
+    public static String getGameInfo(UUID uuid) {
+        User user = getUser(uuid);
+        if (user instanceof Player player) {
+            if (player.serverType == ServerType.TNT_COMMUNITY) return "{\"ServerName\":\"Odyssey\"}";
+            if (player.tntPlayerInfo != null) return player.tntPlayerInfo.gameInfo;
+        }
+
+        return null;
     }
 }

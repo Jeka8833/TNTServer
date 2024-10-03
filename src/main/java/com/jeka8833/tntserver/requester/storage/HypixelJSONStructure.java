@@ -12,6 +12,42 @@ public final class HypixelJSONStructure {
         return player.isEmpty() || player.get().isEmpty();
     }
 
+    public HypixelCompactStructure toCompactStructure() {
+        if (isEmpty()) return HypixelCompactStructure.EMPTY_INSTANCE;
+
+        Optional<TNTGames> tntGames = player.flatMap(p -> p.stats).flatMap(stats -> stats.tntGames);
+        Optional<Duels> duels = player.flatMap(p -> p.stats).flatMap(stats -> stats.duels);
+
+        return new HypixelCompactStructure(
+                player.flatMap(p -> p.networkExp).orElse(-1L),
+
+                tntGames.flatMap(g -> g.tntRunWins).orElse(-1),
+                tntGames.flatMap(g -> g.tntRunLosses).orElse(-1),
+
+                tntGames.flatMap(g -> g.pvpRunWins).orElse(-1),
+                tntGames.flatMap(g -> g.pvpRunLosses).orElse(-1),
+                tntGames.flatMap(g -> g.pvpRunKills).orElse(-1),
+
+                tntGames.flatMap(g -> g.bowSpleefWins).orElse(-1),
+                tntGames.flatMap(g -> g.bowSpleefLosses).orElse(-1),
+
+                tntGames.flatMap(g -> g.tntTagWins).orElse(-1),
+                tntGames.flatMap(g -> g.tntTagLosses).orElse(-1),
+                tntGames.flatMap(g -> g.tntTagKills).orElse(-1),
+
+                tntGames.flatMap(g -> g.wizardsWins).orElse(-1),
+                tntGames.flatMap(g -> g.wizardsLosses).orElse(-1),
+                tntGames.flatMap(g -> g.wizardsKills).orElse(-1),
+
+                tntGames.flatMap(g -> g.winStreak).orElse(-1),
+                tntGames.flatMap(g -> g.coins).orElse(-1),
+
+                duels.flatMap(d -> d.bowSpleefWins).orElse(-1),
+                duels.flatMap(d -> d.bowSpleefLosses).orElse(-1),
+                duels.flatMap(d -> d.bowSpleefWinStreak).orElse(-1)
+        );
+    }
+
     public static final class Player {
         public @JSONField(name = "stats") Optional<Stats> stats = Optional.empty();
         public @JSONField(name = "networkExp") Optional<Long> networkExp = Optional.empty();

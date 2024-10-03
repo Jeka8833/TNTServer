@@ -1,6 +1,7 @@
 package com.jeka8833.tntserver.packet.packets.discordbot;
 
 import com.jeka8833.tntserver.ServerType;
+import com.jeka8833.tntserver.database.PlayersDatabase;
 import com.jeka8833.tntserver.database.storage.Bot;
 import com.jeka8833.tntserver.database.storage.User;
 import com.jeka8833.tntserver.gamechat.CommandManager;
@@ -66,7 +67,7 @@ public class ChatHookPacket implements Packet {
     @Override
     public void serverProcess(WebSocket socket, @Nullable User user) {
         if (user instanceof Bot bot && bot.hasPrivilege("SERVER_CHAT")) {
-            if (CommandManager.executeCommand(bot, text)) return;
+            if (CommandManager.executeCommand(PlayersDatabase.getOrCreate(sender), text)) return;
 
             UUID receiver = getReceiver();
             if (receiver == null) {

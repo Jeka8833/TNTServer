@@ -19,7 +19,8 @@ import com.jeka8833.tntserver.packet.packets.odyssey.DonatePacket;
 import com.jeka8833.tntserver.packet.packets.web.ModulesStatusPacket;
 import com.jeka8833.tntserver.packet.packets.web.RolePacket;
 import com.jeka8833.tntserver.packet.packets.web.TokenGeneratorPacket;
-import com.jeka8833.tntserver.requester.NodeRegisterManager;
+import com.jeka8833.tntserver.requester.HypixelCache;
+import com.jeka8833.tntserver.requester.balancer.NodeRegisterManager;
 import com.jeka8833.tntserver.util.BiMap;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
@@ -86,6 +87,8 @@ public class TNTServer extends WebSocketServer {
     }
 
     public static void loadServer() {
+        HypixelCache.loadFromFile(Main.INSTANCE.cacheFile);
+
         ChatFilter.loadDictionaries();
         analyticManager = AnalyticManager.createAndStart();
 

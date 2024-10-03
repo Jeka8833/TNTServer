@@ -1,6 +1,5 @@
 package com.jeka8833.tntserver;
 
-import com.jeka8833.tntserver.database.RemoteDB;
 import picocli.CommandLine;
 
 import java.nio.file.Path;
@@ -12,6 +11,21 @@ import java.util.UUID;
 @CommandLine.Command(name = "TNTServer")
 public final class Main implements Runnable {
     public static final Main INSTANCE = new Main();
+
+    @CommandLine.Option(names = "--database_url", description = "PostgreSQL Database URL. (default: ${DEFAULT-VALUE})",
+            required = true)
+    public String databaseURL = "localhost:5432/postgres";
+
+    @CommandLine.Option(names = "--database_user", description = "PostgreSQL Database Password. " +
+            "(default: ${DEFAULT-VALUE})", required = true)
+    public String databaseUser = "postgres";
+
+    @CommandLine.Option(names = "--database_password", description = "PostgreSQL Database Password. " +
+            "(default: ${DEFAULT-VALUE})", required = true)
+    public String databasePassword;
+
+    @CommandLine.Option(names = "--cacheFile", description = "Cache File", required = true)
+    public Path cacheFile;
 
     @CommandLine.Option(names = "--grafana_url", description = "Remote logging and metrics. Grafana URL")
     public Optional<String> grafanaUrl = Optional.empty();
@@ -40,18 +54,6 @@ public final class Main implements Runnable {
     @CommandLine.Option(names = "--hypixel_api_key", description = "Hypixel API Key.")
     public Optional<UUID> hypixelApiKey = Optional.empty();
 
-    @CommandLine.Option(names = "--database_url", description = "PostgreSQL Database URL. (default: ${DEFAULT-VALUE})",
-            required = true)
-    public String databaseURL = "localhost:5432/postgres";
-
-    @CommandLine.Option(names = "--database_user", description = "PostgreSQL Database Password. " +
-            "(default: ${DEFAULT-VALUE})", required = true)
-    public String databaseUser = "postgres";
-
-    @CommandLine.Option(names = "--database_password", description = "PostgreSQL Database Password. " +
-            "(default: ${DEFAULT-VALUE})", required = true)
-    public String databasePassword;
-
     @CommandLine.Option(names = "--server_port", description = "Server port. (default: ${DEFAULT-VALUE})")
     public int serverPort = 8833;
 
@@ -63,16 +65,12 @@ public final class Main implements Runnable {
 
     @Override
     public void run() {
-        try {
-            TNTServer.loadServer();
+        TNTServer.loadServer();
 
-            try {
-                Thread.currentThread().join();  // Wait for the server to stop
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        } finally {
-            RemoteDB.saveAndClose();
+        try {
+            Thread.currentThread().join();  // Wait for the server to stop
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 }

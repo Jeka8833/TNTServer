@@ -132,11 +132,6 @@ public final class RemoteDB {
     }
 
     public static void readUser(@NotNull UUID uuid, @NotNull Consumer<@NotNull Optional<@NotNull User>> consumer) {
-        if (!PlayersDatabase.isPlayer(uuid)) {
-            consumer.accept(Optional.of(PlayersDatabase.getOrCreate(uuid)));
-            return;
-        }
-
         runTask(() -> {
             //noinspection DataFlowIssue
             readUser.setObject(1, uuid);

@@ -1,7 +1,6 @@
-package com.jeka8833.tntserver.requester.node;
+package com.jeka8833.tntserver.requester.balancer.node;
 
-import com.jeka8833.tntserver.requester.HypixelCache;
-import com.jeka8833.tntserver.requester.storage.HypixelCompactStorage;
+import com.jeka8833.tntserver.requester.storage.HypixelCompactStructure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Range;
 
@@ -14,8 +13,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-public final class RemoteNode implements RequesterNode {
-    private static final Map<UUID, CompletableFuture<HypixelCompactStorage>> WAITING = new ConcurrentHashMap<>();
+public final class RemoteNode implements BalancerNode {
+    private static final Map<UUID, CompletableFuture<HypixelCompactStructure>> WAITING = new ConcurrentHashMap<>();
 
     private final AtomicInteger available = new AtomicInteger(1);
 
@@ -23,16 +22,19 @@ public final class RemoteNode implements RequesterNode {
     private final int priority;
     private final @NotNull Consumer<@NotNull UUID> sendRequest;
     private final int overloadLimit;
+    private final UUID processorUUID;
 
-    public RemoteNode(long timeoutNanos, int priority, @NotNull Consumer<@NotNull UUID> sendRequest, int overloadLimit) {
+    public RemoteNode(long timeoutNanos, int priority, @NotNull Consumer<@NotNull UUID> sendRequest, int overloadLimit,
+                      UUID processorUUID) {
         this.timeoutNanos = timeoutNanos;
         this.priority = priority;
         this.sendRequest = sendRequest;
         this.overloadLimit = overloadLimit;
+        this.processorUUID = processorUUID;
     }
 
-    public static void put(@NotNull UUID requestedPlayer, @NotNull HypixelCompactStorage storage) {
-        CompletableFuture<HypixelCompactStorage> future = WAITING.remove(requestedPlayer);
+    public static void put(@NotNull UUID requestedPlayer, @NotNull HypixelCompactStructure storage) {
+        CompletableFuture<HypixelCompactStructure> future = WAITING.remove(requestedPlayer);
         if (future != null) {
             future.complete(storage);
         }
@@ -49,15 +51,23 @@ public final class RemoteNode implements RequesterNode {
     }
 
     @Override
-    public @NotNull HypixelCompactStorage get(@NotNull UUID requestedPlayer) throws Exception {
-        try (var ignore = HypixelCache.TASK_MANAGER.disableInterruption(requestedPlayer)) {
-            CompletableFuture<HypixelCompactStorage> completableFuture = WAITING.computeIfAbsent(requestedPlayer,
-                    k -> new CompletableFuture<HypixelCompactStorage>().orTimeout(timeoutNanos, TimeUnit.NANOSECONDS));
+    public @NotNull HypixelCompactStructure get(@NotNull UUID requestedPlayer) throws Exception {
+        CompletableFuture<HypixelCompactStructure> completableFuture = WAITING.computeIfAbsent(requestedPlayer,
+                k -> new CompletableFuture<HypixelCompactStructure>().orTimeout(timeoutNanos, TimeUnit.NANOSECONDS));
 
-            sendRequest.accept(requestedPlayer);
+        sendRequest.accept(requestedPlayer);
 
-            return completableFuture.get();
-        }
+        return completableFuture.get();
+    }
+
+    @Override
+    public long refreshTimeNanos(boolean isTNTClientUser, int wins) {
+        return TimeUnit.HOURS.toNanos(13);
+    }
+
+    @Override
+    public UUID getNodeUUID() {
+        return processorUUID;
     }
 
     @Override
@@ -71,17 +81,17 @@ public final class RemoteNode implements RequesterNode {
     }
 
     @Override
-    public boolean tryTake() {
+    public boolean canReserve() {
         return available.getAndUpdate(value -> value + overloadLimit > 0 ? value - 1 : value) > -overloadLimit;
     }
 
     @Override
-    public void release() {
+    public void releaseReserve() {
     }
 
     @Override
     public void cancelAll() {
-        Iterator<CompletableFuture<HypixelCompactStorage>> futures = WAITING.values().iterator();
+        Iterator<CompletableFuture<HypixelCompactStructure>> futures = WAITING.values().iterator();
         while (futures.hasNext()) {
             futures.next().cancel(true);
 

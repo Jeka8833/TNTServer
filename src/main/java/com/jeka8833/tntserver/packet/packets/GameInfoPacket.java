@@ -1,12 +1,10 @@
 package com.jeka8833.tntserver.packet.packets;
 
-import com.jeka8833.tntserver.ServerType;
 import com.jeka8833.tntserver.database.storage.Player;
 import com.jeka8833.tntserver.database.storage.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
-import com.jeka8833.tntserver.requester.HypixelCache;
 import org.java_websocket.WebSocket;
 
 import java.io.IOException;
@@ -27,10 +25,6 @@ public class GameInfoPacket implements Packet {
     @Override
     public void serverProcess(WebSocket socket, User user) {
         if (user instanceof Player player) {
-            if (player.serverType.equals(ServerType.HYPIXEL)) {
-                HypixelCache.forceRefresh(player.uuid);
-            }
-
             if (player.tntPlayerInfo != null) player.tntPlayerInfo.gameInfo = gameInfo;
         } else {
             socket.close();

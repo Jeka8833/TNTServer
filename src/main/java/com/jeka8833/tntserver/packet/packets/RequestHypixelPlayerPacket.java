@@ -53,8 +53,7 @@ public class RequestHypixelPlayerPacket implements Packet {
         if (user instanceof Player senderPlayer) {
             if (userList == null || userList.isEmpty()) throw new NullPointerException("User list is empty");
 
-            HypixelCache.cancelLoadFor(senderPlayer.uuid, false);
-            HypixelCache.get(senderPlayer.uuid, userList.toArray(new UUID[0]), true,
+            HypixelCache.get(senderPlayer.uuid, userList.toArray(new UUID[0]),
                     playersReady -> TNTServer.serverSend(socket,
                             new ReceiveHypixelPlayerPacket(playersReady, false)),
                     () -> TNTServer.serverSend(socket,
