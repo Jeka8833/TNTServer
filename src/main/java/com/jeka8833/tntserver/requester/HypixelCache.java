@@ -30,7 +30,7 @@ public final class HypixelCache {
     private static final LoadingCache<UUID, CacheValue> CACHE = Caffeine.newBuilder()
             .executor(Executors.newVirtualThreadPerTaskExecutor())
             .maximumSize(150_000)
-            .expireAfterAccess(1, TimeUnit.DAYS)
+            .expireAfterWrite(1, TimeUnit.DAYS)
             .build(loadStrategy());
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HypixelCache.class);
@@ -87,10 +87,7 @@ public final class HypixelCache {
             futures.add(newValue);
 
             newValue.whenComplete((cacheValue, throwable) -> {
-                if (throwable instanceof SilentCancelException || (throwable instanceof CompletionException &&
-                        throwable.getCause() instanceof SilentCancelException)) {
-                    return;
-                }
+                if (throwable instanceof CancellationException) return;
 
                 if (throwable != null) {
                     LOGGER.warn("Error while getting Hypixel data for player {}", requestedPlayer, throwable);
@@ -168,20 +165,22 @@ public final class HypixelCache {
 
                 String gameInfo = GAME_INFO.get();
 
-                return CompletableFuture.supplyAsync(() -> {
+                CompletableFuture<CacheValue> future = new CompletableFuture<>();
+                executor.execute(() -> {
                     try {
                         CacheValue cacheValue = new CacheValue();
 
                         HypixelCompactStructure response = RequestBalancer.get(key, cacheValue);
                         cacheValue.update(response, gameInfo);
 
-                        return cacheValue;
-                    } catch (RuntimeException e) {
-                        throw e;
-                    } catch (Exception e) {
-                        throw new CompletionException(e);
+                        future.complete(cacheValue);
+                    } catch (SilentCancelException e) {
+                        future.cancel(false);
+                    } catch (Throwable e) {
+                        future.completeExceptionally(new CompletionException(e));
                     }
-                }, executor);
+                });
+                return future;
             }
 
             @Override
@@ -191,18 +190,20 @@ public final class HypixelCache {
 
                 String gameInfo = GAME_INFO.get();
 
-                return CompletableFuture.supplyAsync(() -> {
+                CompletableFuture<CacheValue> future = new CompletableFuture<>();
+                executor.execute(() -> {
                     try {
                         HypixelCompactStructure response = RequestBalancer.get(key, oldValue);
                         oldValue.update(response, gameInfo);
 
-                        return oldValue;
-                    } catch (RuntimeException e) {
-                        throw e;
-                    } catch (Exception e) {
-                        throw new CompletionException(e);
+                        future.complete(oldValue);
+                    } catch (SilentCancelException e) {
+                        future.cancel(false);
+                    } catch (Throwable e) {
+                        future.completeExceptionally(new CompletionException(e));
                     }
-                }, executor);
+                });
+                return future;
             }
         };
     }

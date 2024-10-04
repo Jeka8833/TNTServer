@@ -1,9 +1,6 @@
 package com.jeka8833.tntserver.requester.balancer.node;
 
 import com.alibaba.fastjson2.JSON;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.LoadingCache;
-import com.jeka8833.tntserver.requester.balancer.SilentCancelException;
 import com.jeka8833.tntserver.requester.ratelimiter.HypixelRateLimiter;
 import com.jeka8833.tntserver.requester.storage.HypixelCompactStructure;
 import com.jeka8833.tntserver.requester.storage.HypixelJSONStructure;
@@ -13,8 +10,6 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Range;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,16 +17,9 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public final class LocalNode implements BalancerNode {
-    private static final Logger LOGGER = LoggerFactory.getLogger(LocalNode.class);
-    private static final LoadingCache<UUID, Boolean> USED = Caffeine.newBuilder()
-            .expireAfterWrite(2, TimeUnit.HOURS)
-            .executor(Executors.newVirtualThreadPerTaskExecutor())
-            .build(o -> true);
-
     private final Collection<Thread> threadList = ConcurrentHashMap.newKeySet();
     private final Collection<Thread> blockedThreadsCounts = new HashSet<>();
 
@@ -40,8 +28,7 @@ public final class LocalNode implements BalancerNode {
     private final OkHttpClient httpClient;
     private final int overloadLimit;
 
-    public LocalNode(HypixelRateLimiter rateLimiter, UUID key, OkHttpClient httpClient,
-                     int overloadLimit) {
+    public LocalNode(HypixelRateLimiter rateLimiter, UUID key, OkHttpClient httpClient, int overloadLimit) {
         this.rateLimiter = rateLimiter;
         this.key = key;
         this.httpClient = httpClient;
@@ -51,14 +38,6 @@ public final class LocalNode implements BalancerNode {
     @NotNull
     @Override
     public HypixelCompactStructure get(@NotNull UUID requestedPlayer) throws Exception {
-        if (USED.getIfPresent(requestedPlayer) != null) {
-            LOGGER.error("Player {} already requested", requestedPlayer);
-
-            throw new SilentCancelException();
-        }
-        USED.get(requestedPlayer);
-
-
         threadList.add(Thread.currentThread());
 
         try (HypixelRateLimiter.Status status = rateLimiter.newRequest()) {
@@ -76,6 +55,7 @@ public final class LocalNode implements BalancerNode {
 
                 if (!response.isSuccessful()) {
                     status.setError(true);
+
                     throw new IOException("Hypixel API request returned: " + response.code());
                 }
 

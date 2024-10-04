@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.util.UUID;
 
 public class ChatHookPacket implements Packet {
-    private static final UUID EMPTY_UUID = new UUID(0, 0);
+    public static final UUID EMPTY_UUID = new UUID(0, 0);
 
     private UUID sender;
     private UUID receiver;
