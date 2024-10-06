@@ -29,8 +29,7 @@ import static java.util.Objects.requireNonNull;
 public final class HypixelCache {
     private static final LoadingCache<UUID, CacheValue> CACHE = Caffeine.newBuilder()
             .executor(Executors.newVirtualThreadPerTaskExecutor())
-            .maximumSize(150_000)
-            .expireAfterWrite(1, TimeUnit.DAYS)
+            .expireAfterAccess(2, TimeUnit.DAYS)
             .build(loadStrategy());
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HypixelCache.class);

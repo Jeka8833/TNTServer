@@ -32,7 +32,7 @@ public class StopCommand implements Command {
             } else if (privilegesOptional.get().contains(PRIVILEGE)) {
                 try {
                     GameChatManager.sendGlobalMessage(ChatHookPacket.EMPTY_UUID, ServerType.UNKNOWN,
-                            "§7(TNTClient Server) Server is shutting down...");
+                            "§c(TNTClient Server) Server is shutting down...");
                     HypixelCache.storeToFile(Main.INSTANCE.cacheFile);
                     LOGGER.info("[Shutdown] Cache file stored");
                     TNTServer.server.stop(10_000);
