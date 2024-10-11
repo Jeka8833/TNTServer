@@ -1,6 +1,5 @@
 package com.jeka8833.tntserver.packet.packets;
 
-import com.jeka8833.tntserver.BotsManager;
 import com.jeka8833.tntserver.TNTServer;
 import com.jeka8833.tntserver.database.PlayersDatabase;
 import com.jeka8833.tntserver.database.storage.Player;
@@ -55,7 +54,7 @@ public class FightPacket implements Packet {
 
     @Override
     public void serverProcess(WebSocket socket, User user) {
-        if (user instanceof Player || !BotsManager.isAbsent(user, "FIGHT_LIST")) {
+        if (user instanceof Player || !PlayersDatabase.isPrivilegeAbsent(user, "FIGHT_LIST")) {
             if (user instanceof Player player && player.tntPlayerInfo != null) {
                 player.tntPlayerInfo.fight = playerFight;
             }

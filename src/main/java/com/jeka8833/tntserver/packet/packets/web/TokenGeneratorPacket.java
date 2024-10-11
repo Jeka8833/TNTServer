@@ -1,6 +1,5 @@
 package com.jeka8833.tntserver.packet.packets.web;
 
-import com.jeka8833.tntserver.BotsManager;
 import com.jeka8833.tntserver.TNTServer;
 import com.jeka8833.tntserver.database.PlayersDatabase;
 import com.jeka8833.tntserver.database.storage.User;
@@ -47,7 +46,7 @@ public class TokenGeneratorPacket implements Packet {
     public void serverProcess(WebSocket socket, @Nullable User user) {
         if (this.user == null || this.key == null) throw new NullPointerException("user or key is null");
 
-        if (BotsManager.isAbsent(user, "SERVER_TOKEN")) {
+        if (PlayersDatabase.isPrivilegeAbsent(user, "SERVER_TOKEN")) {
             socket.close();
             return;
         }

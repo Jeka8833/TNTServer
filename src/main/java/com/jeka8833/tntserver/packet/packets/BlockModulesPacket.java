@@ -1,6 +1,5 @@
 package com.jeka8833.tntserver.packet.packets;
 
-import com.jeka8833.tntserver.BotsManager;
 import com.jeka8833.tntserver.TNTServer;
 import com.jeka8833.tntserver.database.PlayersDatabase;
 import com.jeka8833.tntserver.database.RemoteDB;
@@ -60,7 +59,7 @@ public class BlockModulesPacket implements Packet {
 
     @Override
     public void serverProcess(WebSocket socket, User user) {
-        if (BotsManager.isAbsent(user, "SERVER_CONTROL_MODULES")) {
+        if (PlayersDatabase.isPrivilegeAbsent(user, "SERVER_CONTROL_MODULES")) {
             socket.close();
             return;
         }

@@ -1,8 +1,5 @@
 package com.jeka8833.tntserver.requester;
 
-import com.github.benmanes.caffeine.cache.CacheLoader;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.jeka8833.tntserver.database.PlayersDatabase;
 import com.jeka8833.tntserver.metric.providers.RequesterCacheProvider;
 import com.jeka8833.tntserver.mojang.MojangAPI;
@@ -21,19 +18,24 @@ import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import static java.util.Objects.requireNonNull;
-
 public final class HypixelCache {
-    private static final LoadingCache<UUID, CacheValue> CACHE = Caffeine.newBuilder()
-            .executor(Executors.newVirtualThreadPerTaskExecutor())
-            .expireAfterAccess(2, TimeUnit.DAYS)
-            .build(loadStrategy());
-
     private static final Logger LOGGER = LoggerFactory.getLogger(HypixelCache.class);
-    private static final ThreadLocal<String> GAME_INFO = new ThreadLocal<>();
+
+    private static final CustomLoadingCache<UUID, CacheValue, String> CACHE = new CustomLoadingCache<>(
+            (key, oldValue, loadParameter) -> {
+                CacheValue cacheValue = oldValue == null ? new CacheValue() : oldValue;
+
+                HypixelCompactStructure response = RequestBalancer.get(key, cacheValue);
+                cacheValue.update(response, loadParameter);
+
+                return cacheValue;
+            }, TimeUnit.DAYS.toNanos(2),
+            Executors.newVirtualThreadPerTaskExecutor(), Executors.newSingleThreadScheduledExecutor());
 
     public static void get(@NotNull UUID sender, @Nullable UUID @NotNull [] requestedPlayers,
                            @NotNull Consumer<@NotNull Map<@Nullable UUID, @NotNull HypixelCompactStructure>> listener,
@@ -76,17 +78,18 @@ public final class HypixelCache {
             return;
         }
 
-        GAME_INFO.set(gameInfo);
-
         Collection<CompletableFuture<CacheValue>> futures = new ArrayList<>(needRequest.size());
         for (UUID requestedPlayer : needRequest) {
             HypixelCompactStructure oldValue = instantSend.get(requestedPlayer);
 
-            CompletableFuture<CacheValue> newValue = CACHE.refresh(requestedPlayer);
+            CompletableFuture<CacheValue> newValue = CACHE.reload(requestedPlayer, gameInfo);
             futures.add(newValue);
 
             newValue.whenComplete((cacheValue, throwable) -> {
-                if (throwable instanceof CancellationException) return;
+                if (throwable instanceof CustomLoadingCache.LoadException e &&
+                        e.getCause() instanceof SilentCancelException) {
+                    return;
+                }
 
                 if (throwable != null) {
                     LOGGER.warn("Error while getting Hypixel data for player {}", requestedPlayer, throwable);
@@ -111,8 +114,6 @@ public final class HypixelCache {
     }
 
     public static void storeToFile(Path path) {
-        Map<UUID, CacheValue> map = new HashMap<>(CACHE.asMap());
-
         try {
             if (!Files.exists(path)) {
                 Files.createFile(path);
@@ -120,6 +121,9 @@ public final class HypixelCache {
         } catch (IOException e) {
             LOGGER.warn("Failed to create cache file", e);
         }
+
+        CACHE.cleanOld();
+        Map<UUID, CacheValue> map = CACHE.asMap();
 
         try (ObjectOutputStream objectOutputStream = new ObjectOutputStream(Files.newOutputStream(path))) {
             objectOutputStream.writeObject(map);
@@ -138,72 +142,13 @@ public final class HypixelCache {
             //noinspection unchecked
             HashMap<UUID, CacheValue> map = (HashMap<UUID, CacheValue>) objectInputStream.readObject();
 
-            for (HashMap.Entry<UUID, CacheValue> entry : map.entrySet()) {
-                CACHE.put(entry.getKey(), entry.getValue());
-            }
+            CACHE.putAll(map);
         } catch (Exception e) {
             LOGGER.warn("Failed to load cache from file", e);
         }
     }
 
     public static long size() {
-        return CACHE.estimatedSize();
-    }
-
-    private static CacheLoader<UUID, CacheValue> loadStrategy() {
-        return new CacheLoader<>() {
-            @Override
-            public CacheValue load(UUID key) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public CompletableFuture<CacheValue> asyncLoad(UUID key, Executor executor) {
-                requireNonNull(key);
-                requireNonNull(executor);
-
-                String gameInfo = GAME_INFO.get();
-
-                CompletableFuture<CacheValue> future = new CompletableFuture<>();
-                executor.execute(() -> {
-                    try {
-                        CacheValue cacheValue = new CacheValue();
-
-                        HypixelCompactStructure response = RequestBalancer.get(key, cacheValue);
-                        cacheValue.update(response, gameInfo);
-
-                        future.complete(cacheValue);
-                    } catch (SilentCancelException e) {
-                        future.cancel(false);
-                    } catch (Throwable e) {
-                        future.completeExceptionally(new CompletionException(e));
-                    }
-                });
-                return future;
-            }
-
-            @Override
-            public CompletableFuture<CacheValue> asyncReload(UUID key, CacheValue oldValue, Executor executor) {
-                requireNonNull(key);
-                requireNonNull(executor);
-
-                String gameInfo = GAME_INFO.get();
-
-                CompletableFuture<CacheValue> future = new CompletableFuture<>();
-                executor.execute(() -> {
-                    try {
-                        HypixelCompactStructure response = RequestBalancer.get(key, oldValue);
-                        oldValue.update(response, gameInfo);
-
-                        future.complete(oldValue);
-                    } catch (SilentCancelException e) {
-                        future.cancel(false);
-                    } catch (Throwable e) {
-                        future.completeExceptionally(new CompletionException(e));
-                    }
-                });
-                return future;
-            }
-        };
+        return CACHE.size();
     }
 }

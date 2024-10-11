@@ -10,14 +10,12 @@ import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
 import com.jeka8833.tntserver.packet.packets.*;
+import com.jeka8833.tntserver.packet.packets.authorization.AuthBotPacket;
 import com.jeka8833.tntserver.packet.packets.authorization.AuthClientPacket;
-import com.jeka8833.tntserver.packet.packets.authorization.AuthWebPacket;
 import com.jeka8833.tntserver.packet.packets.discordbot.ChatHookPacket;
 import com.jeka8833.tntserver.packet.packets.discordbot.LinkCodePacket;
 import com.jeka8833.tntserver.packet.packets.discordbot.MutePacket;
 import com.jeka8833.tntserver.packet.packets.odyssey.DonatePacket;
-import com.jeka8833.tntserver.packet.packets.web.ModulesStatusPacket;
-import com.jeka8833.tntserver.packet.packets.web.RolePacket;
 import com.jeka8833.tntserver.packet.packets.web.TokenGeneratorPacket;
 import com.jeka8833.tntserver.requester.HypixelCache;
 import com.jeka8833.tntserver.requester.balancer.NodeRegisterManager;
@@ -64,11 +62,9 @@ public class TNTServer extends WebSocketServer {
         PACKETS_LIST.put((byte) 248, ChatHookPacket.class);
         PACKETS_LIST.put((byte) 249, MutePacket.class);
         PACKETS_LIST.put((byte) 250, LinkCodePacket.class);
-        PACKETS_LIST.put((byte) 251, RolePacket.class);
         PACKETS_LIST.put((byte) 252, DonatePacket.class);
         PACKETS_LIST.put((byte) 253, TokenGeneratorPacket.class);
-        PACKETS_LIST.put((byte) 254, ModulesStatusPacket.class);
-        PACKETS_LIST.put((byte) 255, AuthWebPacket.class);
+        PACKETS_LIST.put((byte) 255, AuthBotPacket.class);
     }
 
     public TNTServer(final InetSocketAddress address) {
@@ -137,7 +133,7 @@ public class TNTServer extends WebSocketServer {
 
         try (PacketInputStream stream = new PacketInputStream(message)) {
             if ((user == null || user.isInactive()) &&
-                    !(stream.packet instanceof AuthClientPacket || stream.packet instanceof AuthWebPacket)) {
+                    !(stream.packet instanceof AuthClientPacket || stream.packet instanceof AuthBotPacket)) {
                 conn.close(); // The player doesn't exist in the cache, disconnecting...
                 return;
             }

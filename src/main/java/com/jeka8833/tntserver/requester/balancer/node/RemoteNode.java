@@ -62,7 +62,7 @@ public final class RemoteNode implements BalancerNode {
 
     @Override
     public long refreshTimeNanos(boolean isTNTClientUser, int wins) {
-        return TimeUnit.MINUTES.toNanos(30);
+        return TimeUnit.HOURS.toNanos(1);
     }
 
     @Override

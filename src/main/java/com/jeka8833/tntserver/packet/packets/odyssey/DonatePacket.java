@@ -1,7 +1,7 @@
 package com.jeka8833.tntserver.packet.packets.odyssey;
 
-import com.jeka8833.tntserver.BotsManager;
 import com.jeka8833.tntserver.TNTServer;
+import com.jeka8833.tntserver.database.PlayersDatabase;
 import com.jeka8833.tntserver.database.RemoteDB;
 import com.jeka8833.tntserver.database.storage.User;
 import com.jeka8833.tntserver.packet.Packet;
@@ -49,7 +49,7 @@ public class DonatePacket implements Packet {
     public void serverProcess(WebSocket socket, @Nullable User user) {
         if (playerUUID == null) throw new NullPointerException("User is null");
 
-        if (BotsManager.isAbsent(user, "ODYSSEY_DONATE")) {
+        if (PlayersDatabase.isPrivilegeAbsent(user, "ODYSSEY_DONATE")) {
             socket.close();
             return;
         }

@@ -97,4 +97,12 @@ public class PlayersDatabase {
 
         return null;
     }
+
+    @Contract(value = "null, _ -> true; _, null -> true", pure = true)
+    public static boolean isPrivilegeAbsent(@Nullable User user, @Nullable String privilege) {
+        if (user instanceof Bot bot) {
+            return !bot.hasPrivilege(privilege);
+        }
+        return true;
+    }
 }

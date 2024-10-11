@@ -18,8 +18,8 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.UUID;
 
-public class AuthWebPacket implements Packet {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AuthWebPacket.class);
+public class AuthBotPacket implements Packet {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthBotPacket.class);
 
     private UUID user;
     private UUID key;
@@ -57,7 +57,7 @@ public class AuthWebPacket implements Packet {
 
                     socket.setAttachment(user);
 
-                    TNTServer.serverSend(socket, new AuthWebPacket());
+                    TNTServer.serverSend(socket, new AuthBotPacket());
 
                     LOGGER.info("Bot {} logged in.", user);
                 } else {

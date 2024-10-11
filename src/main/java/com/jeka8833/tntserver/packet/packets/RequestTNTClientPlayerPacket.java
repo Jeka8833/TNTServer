@@ -1,7 +1,7 @@
 package com.jeka8833.tntserver.packet.packets;
 
-import com.jeka8833.tntserver.BotsManager;
 import com.jeka8833.tntserver.TNTServer;
+import com.jeka8833.tntserver.database.PlayersDatabase;
 import com.jeka8833.tntserver.database.RemoteDB;
 import com.jeka8833.tntserver.database.storage.Player;
 import com.jeka8833.tntserver.database.storage.User;
@@ -33,7 +33,7 @@ public class RequestTNTClientPlayerPacket implements Packet {
 
     @Override
     public void serverProcess(WebSocket socket, User user) {
-        if (user instanceof Player || !BotsManager.isAbsent(user, "TNT_PLAYER_REQUEST")) {
+        if (user instanceof Player || !PlayersDatabase.isPrivilegeAbsent(user, "TNT_PLAYER_REQUEST")) {
             RemoteDB.readUsers(users, resultUsers -> {
                 Player[] players = resultUsers.stream()
                         .filter(player -> player instanceof Player)
