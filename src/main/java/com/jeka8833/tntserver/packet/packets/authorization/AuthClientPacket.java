@@ -14,11 +14,11 @@ import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
 import com.jeka8833.tntserver.packet.packets.BlockModulesPacket;
+import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.java_websocket.WebSocket;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -26,9 +26,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+@Slf4j
+@NoArgsConstructor
 public class AuthClientPacket implements Packet {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AuthClientPacket.class);
-
     private String playerUsername;
     private String serverKey;
     private String version;
@@ -72,7 +72,7 @@ public class AuthClientPacket implements Packet {
 
                             parameters = JSON.parseObject(fixed, Parameters.class);
                         } catch (Exception e) {
-                            LOGGER.warn("Failed to parse custom parameters", e);
+                            log.warn("Failed to parse custom parameters", e);
                         }
 
                         player.serverType = parameters != null && parameters.serverBrand.isPresent() ?
@@ -88,7 +88,7 @@ public class AuthClientPacket implements Packet {
                         TNTServer.serverSend(socket, new BlockModulesPacket(
                                 player.tntPlayerInfo.forceBlock, player.tntPlayerInfo.forceActive));
 
-                        LOGGER.info("Player {} logged in.", playerUsername);
+                        log.info("Player {} logged in.", playerUsername);
                     } else {
                         socket.close();
                     }

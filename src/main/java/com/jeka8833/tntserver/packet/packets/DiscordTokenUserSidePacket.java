@@ -1,20 +1,22 @@
-package com.jeka8833.tntserver.packet.packets.discordbot;
+package com.jeka8833.tntserver.packet.packets;
 
 import com.jeka8833.tntserver.TNTServer;
 import com.jeka8833.tntserver.database.PlayersDatabase;
+import com.jeka8833.tntserver.database.RemoteDB;
 import com.jeka8833.tntserver.database.storage.Bot;
 import com.jeka8833.tntserver.database.storage.Player;
 import com.jeka8833.tntserver.database.storage.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
+import com.jeka8833.tntserver.packet.packets.webendpoints.DiscordTokenEndpointSidePacket;
 import org.java_websocket.WebSocket;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.UUID;
 
-public class LinkCodePacket implements Packet {
+public class DiscordTokenUserSidePacket implements Packet {
     public static final int INTERNAL_ERROR = 0;
     public static final int CONNECTION_ERROR = 1;
     public static final int MESSAGE_GOOD_LINK = 2;
@@ -29,11 +31,11 @@ public class LinkCodePacket implements Packet {
     private int statusCode;
 
     @SuppressWarnings("unused")
-    public LinkCodePacket() {
+    public DiscordTokenUserSidePacket() {
         this(null, Integer.MIN_VALUE, INTERNAL_ERROR);
     }
 
-    public LinkCodePacket(UUID user, int code, int statusCode) {
+    public DiscordTokenUserSidePacket(UUID user, int code, int statusCode) {
         this.user = user;
         this.code = code;
         this.statusCode = statusCode;
@@ -58,25 +60,25 @@ public class LinkCodePacket implements Packet {
         if (user instanceof Player player) {
             Bot serverTokenizer = PlayersDatabase.getBotWithPrivilege("SERVER_DISCORD_LINK");
             if (serverTokenizer == null) {
-                TNTServer.serverSend(socket, new LinkCodePacket(player.uuid, code, CONNECTION_ERROR));
+                TNTServer.serverSend(socket, new DiscordTokenUserSidePacket(player.uuid, code, CONNECTION_ERROR));
                 return;
             }
 
             WebSocket serverTokenizerSocket = serverTokenizer.getSocket();
             if (serverTokenizerSocket == null) {
-                TNTServer.serverSend(socket, new LinkCodePacket(player.uuid, code, CONNECTION_ERROR));
+                TNTServer.serverSend(socket, new DiscordTokenUserSidePacket(player.uuid, code, CONNECTION_ERROR));
                 return;
             }
 
-            TNTServer.serverSend(serverTokenizerSocket, new LinkCodePacket(player.uuid, code, statusCode));
-        } else if (user instanceof Bot bot && bot.hasPrivilege("SERVER_DISCORD_LINK")) {
-            User toUser = PlayersDatabase.getUser(this.user);
-            if (toUser == null) return;
-
-            WebSocket toUserSocket = toUser.getSocket();
-            if (toUserSocket == null) return;
-
-            TNTServer.serverSend(toUserSocket, new LinkCodePacket(this.user, code, statusCode));
+            if (statusCode == TRY_LINK) {
+                TNTServer.serverSend(serverTokenizerSocket, new DiscordTokenEndpointSidePacket(player.uuid, code));
+            } else if (statusCode == TRY_UNLINK) {
+                RemoteDB.removeDiscordUser(player.uuid);
+                TNTServer.serverSend(socket,
+                        new DiscordTokenUserSidePacket(player.uuid, code, MESSAGE_GOOD_UNLINK));
+            } else {
+                TNTServer.serverSend(socket, new DiscordTokenUserSidePacket(player.uuid, code, INTERNAL_ERROR));
+            }
         } else {
             socket.close();
         }

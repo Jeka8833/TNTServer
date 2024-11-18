@@ -9,29 +9,33 @@ import com.jeka8833.tntserver.packet.PacketOutputStream;
 import org.java_websocket.WebSocket;
 
 import java.io.IOException;
+import java.util.Objects;
 
-public record ReceiveTNTClientPlayerPacket(Player[] users, boolean isAdmin) implements Packet {
+public record ReceiveTNTClientPlayerPacket(Player[] users) implements Packet {
     @Override
     public void write(PacketOutputStream stream) throws IOException {
         stream.writeByte(users.length);
         for (Player user : users) {
             stream.writeUUID(user.uuid);
+
             boolean inTNTDatabase = user.tntPlayerInfo != null;
             stream.writeBoolean(inTNTDatabase);
             if (inTNTDatabase) {
+                boolean isOffline = user.tntPlayerInfo.status == TNTPlayerStorage.STATUS_OFFLINE ||
+                        user.tntPlayerInfo.status == TNTPlayerStorage.STATUS_INVISIBLE;
+
+                long isDJFix = user.tntPlayerInfo.activeModules & (1L << 6L | 1L << 29L | 1L << 30L);
+
                 stream.writeByte(user.tntPlayerInfo.donate);
-                stream.writeByte(switch (user.tntPlayerInfo.status) {
-                    case TNTPlayerStorage.STATUS_ONLINE -> 3;
-                    case TNTPlayerStorage.STATUS_AFK -> 2;
-                    default -> 0;
-                });
-                final long isDJFix = user.tntPlayerInfo.activeModules & 64L;
-                stream.writeLong(isAdmin ? user.tntPlayerInfo.activeModules : isDJFix);
-                stream.writeUTF(user.tntPlayerInfo.version == null ? "" : user.tntPlayerInfo.version);
-                if (user.tntPlayerInfo.gameInfo == null)
-                    stream.writeUTF("");
-                else
-                    stream.writeUTF((isAdmin || user.tntPlayerInfo.status > 1) ? user.tntPlayerInfo.gameInfo : "");
+
+                stream.writeByte(isOffline ? TNTPlayerStorage.STATUS_OFFLINE : user.tntPlayerInfo.status);
+
+                stream.writeLong(isDJFix);
+
+                stream.writeUTF(Objects.requireNonNullElse(user.tntPlayerInfo.version, ""));
+
+                stream.writeUTF(Objects.requireNonNullElse(
+                        isOffline ? null : user.tntPlayerInfo.gameInfo, ""));
             }
         }
     }

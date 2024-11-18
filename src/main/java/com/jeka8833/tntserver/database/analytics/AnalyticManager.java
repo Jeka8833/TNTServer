@@ -1,6 +1,7 @@
 package com.jeka8833.tntserver.database.analytics;
 
 import com.jeka8833.tntserver.Main;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,9 +14,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicLong;
 
+@Slf4j
 public final class AnalyticManager {
     private static final long SLEEP_TIME = 10_000L;
-    private static final Logger LOGGER = LoggerFactory.getLogger(AnalyticManager.class);
 
     private final Path basePath;
     private final long maxFolderSize;
@@ -30,7 +31,7 @@ public final class AnalyticManager {
     @Nullable
     public static AnalyticManager createAndStart() {
         if (Main.INSTANCE.analycitcsPath.isEmpty()) {
-            LOGGER.warn("Analytic path is not set. Analytic will not be started.");
+            log.warn("Analytic path is not set. Analytic will not be started.");
 
             return null;
         }
@@ -57,7 +58,7 @@ public final class AnalyticManager {
 
                         @Override
                         public FileVisitResult visitFileFailed(Path file, IOException exc) {
-                            LOGGER.warn("Failed to get file size: {}", file, exc);
+                            log.warn("Failed to get file size: {}", file, exc);
 
                             return FileVisitResult.CONTINUE;
                         }
@@ -65,7 +66,7 @@ public final class AnalyticManager {
                         @Override
                         public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
                             if (exc != null) {
-                                LOGGER.warn("Failed to get directory size: {}", dir, exc);
+                                log.warn("Failed to get directory size: {}", dir, exc);
                             }
 
                             return FileVisitResult.CONTINUE;
@@ -74,7 +75,7 @@ public final class AnalyticManager {
 
                     });
         } catch (Exception e) {
-            LOGGER.error("Failed to get directory size: {}", folder, e);
+            log.error("Failed to get directory size: {}", folder, e);
 
             return false;
         }
@@ -88,7 +89,7 @@ public final class AnalyticManager {
                 try {
                     Files.createDirectories(basePath);
                 } catch (IOException e) {
-                    LOGGER.error("Failed to create analytic folder, stop analytic", e);
+                    log.error("Failed to create analytic folder, stop analytic", e);
 
                     return;
                 }
@@ -99,7 +100,7 @@ public final class AnalyticManager {
                     isDirectoryOverflow = isOverflowFolder(basePath, maxFolderSize);
 
                     if (isDirectoryOverflow()) {
-                        LOGGER.warn("Base analytic folder size is too big, please check it.");
+                        log.warn("Base analytic folder size is too big, please check it.");
 
                         for (AnalyticGroup analyticGroup : analyticGroups) {
                             analyticGroup.clear();
@@ -119,7 +120,7 @@ public final class AnalyticManager {
                 } catch (InterruptedException e) {
                     return;
                 } catch (Exception e) {
-                    LOGGER.error("Failed to write analytic", e);
+                    log.error("Failed to write analytic", e);
 
                     try {
                         //noinspection BusyWait

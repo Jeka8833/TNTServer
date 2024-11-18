@@ -12,19 +12,19 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 public class RequestHypixelPlayerPacket implements Packet {
-    private @Nullable Collection<UUID> userList;
+    private @Nullable Set<UUID> userList;
 
     @SuppressWarnings("unused")
     public RequestHypixelPlayerPacket() {
     }
 
-    public RequestHypixelPlayerPacket(@NotNull Collection<UUID> userList) {
+    public RequestHypixelPlayerPacket(@NotNull Set<UUID> userList) {
         this.userList = userList;
     }
 
@@ -42,7 +42,7 @@ public class RequestHypixelPlayerPacket implements Packet {
     @Override
     public void read(PacketInputStream stream) throws IOException {
         int size = stream.readUnsignedByte();
-        userList = new ArrayList<>(size);
+        userList = new HashSet<>(size);
         for (int i = 0; i < size; i++) {
             userList.add(stream.readUUID());
         }
@@ -53,7 +53,7 @@ public class RequestHypixelPlayerPacket implements Packet {
         if (user instanceof Player senderPlayer) {
             if (userList == null || userList.isEmpty()) throw new NullPointerException("User list is empty");
 
-            HypixelCache.get(senderPlayer.uuid, userList.toArray(new UUID[0]),
+            HypixelCache.get(senderPlayer.uuid, userList,
                     playersReady -> TNTServer.serverSend(socket,
                             new ReceiveHypixelPlayerPacket(playersReady, false)),
                     () -> TNTServer.serverSend(socket,

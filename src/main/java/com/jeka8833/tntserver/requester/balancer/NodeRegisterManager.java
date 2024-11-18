@@ -10,9 +10,8 @@ import com.jeka8833.tntserver.requester.balancer.node.RemoteNode;
 import com.jeka8833.tntserver.requester.ratelimiter.HypixelRateLimiter;
 import com.jeka8833.tntserver.requester.ratelimiter.strategy.TNTServerStrategyRefill;
 import com.jeka8833.tntserver.util.Util;
+import lombok.extern.slf4j.Slf4j;
 import org.java_websocket.WebSocket;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.Map;
@@ -21,6 +20,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 public final class NodeRegisterManager {
     private static final HypixelRateLimiter RATE_LIMITER = new HypixelRateLimiter(
             TimeUnit.SECONDS.toNanos(10),
@@ -30,13 +30,12 @@ public final class NodeRegisterManager {
     private static final int OVERLOAD_LOCAL_REQUESTS = 0;
 
     private static final Map<WebSocket, RemoteNode> NODES = new ConcurrentHashMap<>();
-    private static final Logger LOGGER = LoggerFactory.getLogger(NodeRegisterManager.class);
 
     public static void init() {
         Optional<UUID> hypixelApiKey = Main.INSTANCE.hypixelApiKey;
 
         if (hypixelApiKey.isEmpty()) {
-            LOGGER.error("Hypixel API key is not set. Local node will not be added.");
+            log.error("Hypixel API key is not set. Local node will not be added.");
 
             return;
         }
@@ -53,7 +52,7 @@ public final class NodeRegisterManager {
 
         var remoteNode = new RemoteNode(TimeUnit.SECONDS.toNanos(isPlayer ? 10 : 20),
                 isPlayer ? BalancerNode.PRIORITY_PLAYER : BalancerNode.PRIORITY_SUPPORT_SERVER,
-                (uuid) -> TNTServer.serverSend(node, new RequestHypixelPlayerPacket(Collections.singletonList(uuid))),
+                (uuid) -> TNTServer.serverSend(node, new RequestHypixelPlayerPacket(Collections.singleton(uuid))),
                 0, user);
 
         NODES.put(node, remoteNode);

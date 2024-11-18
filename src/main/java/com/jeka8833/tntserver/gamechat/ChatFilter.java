@@ -1,11 +1,10 @@
 package com.jeka8833.tntserver.gamechat;
 
 import com.jeka8833.tntserver.Main;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.MalformedInputException;
@@ -19,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+@Slf4j
 public class ChatFilter {
     private static final long DIFFERENT_MESSAGE_TIMING = TimeUnit.MILLISECONDS.toNanos(750);
     private static final long SAME_MESSAGE_TIMING = TimeUnit.SECONDS.toNanos(10);
@@ -31,12 +31,11 @@ public class ChatFilter {
     private static final Pattern PATTERN_COLOR_CODE = Pattern.compile("(?i)[\\u00A7&][0-9A-FK-OR]");
 
     private static final Collection<String> DICTIONARY = new HashSet<>();
-    private static final Logger LOGGER = LoggerFactory.getLogger(ChatFilter.class);
     private static final Map<UUID, Deque<MessageTiming>> MINUTE_TIMING_LIST = new ConcurrentHashMap<>();
 
     public static void loadDictionaries() {
         if (Main.INSTANCE.swearDictionary.isEmpty()) {
-            LOGGER.warn("Swear Dictionary path is not set. Chat will not be filtered.");
+            log.warn("Swear Dictionary path is not set. Chat will not be filtered.");
 
             return;
         }
@@ -47,10 +46,10 @@ public class ChatFilter {
                         .filter(Files::isRegularFile)
                         .forEach(ChatFilter::readFile);
             } catch (IOException e) {
-                LOGGER.warn("Error load dictionary: {}", Main.INSTANCE.swearDictionary.get(), e);
+                log.warn("Error load dictionary: {}", Main.INSTANCE.swearDictionary.get(), e);
             }
 
-            LOGGER.info("Dictionary loaded: {} words", DICTIONARY.size());
+            log.info("Dictionary loaded: {} words", DICTIONARY.size());
         }, "Dictionary loader");
 
         thread.setPriority(Thread.MIN_PRIORITY);
@@ -97,11 +96,11 @@ public class ChatFilter {
 
                 if (DICTIONARY.add(formattedWord)) loaded++;
             }
-            LOGGER.info("Dictionary loaded: {} ({}/{})", file, loaded, lines.size());
+            log.info("Dictionary loaded: {} ({}/{})", file, loaded, lines.size());
         } catch (MalformedInputException e) {
-            LOGGER.warn("Fail load dictionary: {} (Incorrect encoding, need UTF-8)", file, e);
+            log.warn("Fail load dictionary: {} (Incorrect encoding, need UTF-8)", file, e);
         } catch (IOException e) {
-            LOGGER.warn("Error load dictionary: {}", file, e);
+            log.warn("Error load dictionary: {}", file, e);
         }
     }
 

@@ -40,7 +40,7 @@ public class RequestTNTClientPlayerPacket implements Packet {
                         .map(player -> (Player) player)
                         .toArray(Player[]::new);
 
-                TNTServer.serverSend(socket, new ReceiveTNTClientPlayerPacket(players, false));
+                TNTServer.serverSend(socket, new ReceiveTNTClientPlayerPacket(players));
             });
         } else {
             socket.close();

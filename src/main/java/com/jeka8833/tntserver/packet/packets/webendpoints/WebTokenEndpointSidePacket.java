@@ -1,4 +1,4 @@
-package com.jeka8833.tntserver.packet.packets.web;
+package com.jeka8833.tntserver.packet.packets.webendpoints;
 
 import com.jeka8833.tntserver.TNTServer;
 import com.jeka8833.tntserver.database.PlayersDatabase;
@@ -6,34 +6,29 @@ import com.jeka8833.tntserver.database.storage.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
-import com.jeka8833.tntserver.packet.packets.TokenPacket;
+import com.jeka8833.tntserver.packet.packets.WebTokenUseSidePacket;
+import lombok.NoArgsConstructor;
 import org.java_websocket.WebSocket;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.UUID;
 
-public class TokenGeneratorPacket implements Packet {
-    private @Nullable UUID user;
+@NoArgsConstructor
+public class WebTokenEndpointSidePacket implements Packet {
+    private UUID user;
     private UUID key;
-    private boolean unregister;
+    private boolean register;
 
-    @SuppressWarnings("unused")
-    public TokenGeneratorPacket() {
-    }
-
-    public TokenGeneratorPacket(@NotNull UUID user, boolean unregister) {
+    public WebTokenEndpointSidePacket(UUID user, boolean register) {
         this.user = user;
-        this.unregister = unregister;
+        this.register = register;
     }
 
     @Override
     public void write(PacketOutputStream stream) throws IOException {
-        if (this.user == null) throw new IllegalArgumentException("user or key is null");
-
         stream.writeUUID(user);
-        stream.writeBoolean(unregister);
+        stream.writeBoolean(register);
     }
 
     @Override
@@ -44,16 +39,17 @@ public class TokenGeneratorPacket implements Packet {
 
     @Override
     public void serverProcess(WebSocket socket, @Nullable User user) {
-        if (this.user == null || this.key == null) throw new NullPointerException("user or key is null");
-
         if (PlayersDatabase.isPrivilegeAbsent(user, "SERVER_TOKEN")) {
             socket.close();
+
             return;
         }
 
         User foundUser = PlayersDatabase.getOrCreate(this.user);
 
         WebSocket foundUserSocket = foundUser.getSocket();
-        if (foundUserSocket != null) TNTServer.serverSend(foundUserSocket, new TokenPacket(this.user, this.key));
+        if (foundUserSocket != null) {
+            TNTServer.serverSend(foundUserSocket, new WebTokenUseSidePacket(this.user, this.key));
+        }
     }
 }

@@ -1,9 +1,7 @@
-package com.jeka8833.tntserver.requester.balancer.node;
+package com.jeka8833.tntserver.requester;
 
 import com.alibaba.fastjson2.JSON;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.LoadingCache;
-import com.jeka8833.tntserver.requester.balancer.SilentCancelException;
+import com.jeka8833.tntserver.requester.balancer.node.BalancerNode;
 import com.jeka8833.tntserver.requester.ratelimiter.HypixelRateLimiter;
 import com.jeka8833.tntserver.requester.storage.HypixelCompactStructure;
 import com.jeka8833.tntserver.requester.storage.HypixelJSONStructure;
@@ -24,20 +22,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
-public final class LocalNode implements BalancerNode {
-    private static final LoadingCache<UUID, Boolean> CACHE = Caffeine.newBuilder()
-            .expireAfterWrite(175, TimeUnit.MINUTES)
-            .build(key1 -> true);
-
+public class LocalNodeDecoy implements BalancerNode {
     private final Collection<Thread> threadList = ConcurrentHashMap.newKeySet();
-    private final Collection<Thread> blockedThreadsCounts = ConcurrentHashMap.newKeySet();
+    private final Collection<Thread> blockedThreadsCountsNew = ConcurrentHashMap.newKeySet();
 
     private final HypixelRateLimiter rateLimiter;
     private final UUID key;
     private final OkHttpClient httpClient;
     private final int overloadLimit;
 
-    public LocalNode(HypixelRateLimiter rateLimiter, UUID key, OkHttpClient httpClient, int overloadLimit) {
+    public LocalNodeDecoy(HypixelRateLimiter rateLimiter, UUID key, OkHttpClient httpClient, int overloadLimit) {
         this.rateLimiter = rateLimiter;
         this.key = key;
         this.httpClient = httpClient;
@@ -47,28 +41,20 @@ public final class LocalNode implements BalancerNode {
     @NotNull
     @Override
     public HypixelCompactStructure get(@NotNull UUID requestedPlayer) throws Exception {
-        if (CACHE.getIfPresent(requestedPlayer) != null) {
-            log.warn("Hypixel player already requested: {}", requestedPlayer);
-
-            throw new SilentCancelException();
-        }
-        CACHE.get(requestedPlayer);
-
-
         threadList.add(Thread.currentThread());
 
         try (HypixelRateLimiter.Status status = rateLimiter.newRequest()) {
             releaseReserve();
 
             Request request = new Request.Builder()
-                    .url("https://api.hypixel.net/v2/player?uuid=" + requestedPlayer)
+                    .url("https://2fab0cf2-3add-4943-97ba-be882387b452.mock.pstmn.io/test?uuid=" + requestedPlayer)
                     .header("API-Key", key.toString())
                     .build();
 
             try (Response response = httpClient.newCall(request).execute()) {
                 status.connectionInfo(response.code(),
-                        response.header("RateLimit-Remaining"),
-                        response.header("RateLimit-Reset"));
+                        response.header("X-RateLimit-Remaining"),
+                        "60");
 
                 if (!response.isSuccessful()) {
                     status.setError(true);
@@ -117,9 +103,9 @@ public final class LocalNode implements BalancerNode {
     @Locked
     @Override
     public boolean canReserve() {
-        boolean isAvailable = getAvailable() - blockedThreadsCounts.size() + overloadLimit > 0;
+        boolean isAvailable = getAvailable() - blockedThreadsCountsNew.size() + overloadLimit > 0;
         if (isAvailable) {
-            blockedThreadsCounts.add(Thread.currentThread());
+            blockedThreadsCountsNew.add(Thread.currentThread());
         }
 
         return isAvailable;
@@ -127,7 +113,7 @@ public final class LocalNode implements BalancerNode {
 
     @Override
     public void releaseReserve() {
-        blockedThreadsCounts.remove(Thread.currentThread());
+        blockedThreadsCountsNew.remove(Thread.currentThread());
     }
 
     @Override
@@ -136,7 +122,7 @@ public final class LocalNode implements BalancerNode {
             thread.interrupt();
         }
 
-        for (Thread thread : blockedThreadsCounts) {
+        for (Thread thread : blockedThreadsCountsNew) {
             thread.interrupt();
         }
     }

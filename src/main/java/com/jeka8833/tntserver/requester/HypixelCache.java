@@ -4,13 +4,11 @@ import com.jeka8833.tntserver.database.PlayersDatabase;
 import com.jeka8833.tntserver.metric.providers.RequesterCacheProvider;
 import com.jeka8833.tntserver.mojang.MojangAPI;
 import com.jeka8833.tntserver.requester.balancer.RequestBalancer;
-import com.jeka8833.tntserver.requester.balancer.SilentCancelException;
 import com.jeka8833.tntserver.requester.storage.CacheValue;
 import com.jeka8833.tntserver.requester.storage.HypixelCompactStructure;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -21,10 +19,11 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
+@Slf4j
 public final class HypixelCache {
-    private static final Logger LOGGER = LoggerFactory.getLogger(HypixelCache.class);
 
     private static final CustomLoadingCache<UUID, CacheValue, String> CACHE = new CustomLoadingCache<>(
             (key, oldValue, loadParameter) -> {
@@ -34,17 +33,17 @@ public final class HypixelCache {
                 cacheValue.update(response, loadParameter);
 
                 return cacheValue;
-            }, TimeUnit.DAYS.toNanos(2),
+            }, TimeUnit.DAYS.toNanos(3),
             Executors.newVirtualThreadPerTaskExecutor(), Executors.newSingleThreadScheduledExecutor());
 
-    public static void get(@NotNull UUID sender, @Nullable UUID @NotNull [] requestedPlayers,
+    public static void get(@NotNull UUID sender, @NotNull Set<@Nullable UUID> requestedPlayers,
                            @NotNull Consumer<@NotNull Map<@Nullable UUID, @NotNull HypixelCompactStructure>> listener,
                            @NotNull Runnable end) {
-        RequesterCacheProvider.requestedCount.getAndAccumulate(requestedPlayers.length, Long::sum);
+        RequesterCacheProvider.requestedCount.getAndAdd(requestedPlayers.size());
 
         String gameInfo = PlayersDatabase.getGameInfo(sender);
 
-        SequencedCollection<UUID> needRequest = new ArrayDeque<>(requestedPlayers.length);
+        Collection<UUID> needRequest = new ArrayList<>();
         Map<UUID, HypixelCompactStructure> instantSend = new HashMap<>();
 
         for (UUID requestedPlayer : requestedPlayers) {
@@ -56,12 +55,12 @@ public final class HypixelCache {
                     if (oldValue.isGameInfoDifferent(gameInfo)) {
                         RequesterCacheProvider.updateCount.getAndIncrement();
 
-                        needRequest.addLast(requestedPlayer);
+                        needRequest.add(requestedPlayer);
                     }
                 } else {
                     RequesterCacheProvider.missCount.getAndIncrement();
 
-                    needRequest.addFirst(requestedPlayer);
+                    needRequest.add(requestedPlayer);
                 }
             } else {
                 instantSend.put(requestedPlayer, HypixelCompactStructure.EMPTY_INSTANCE);
@@ -78,39 +77,30 @@ public final class HypixelCache {
             return;
         }
 
-        Collection<CompletableFuture<CacheValue>> futures = new ArrayList<>(needRequest.size());
+        AtomicInteger counter = new AtomicInteger(needRequest.size());
         for (UUID requestedPlayer : needRequest) {
-            HypixelCompactStructure oldValue = instantSend.get(requestedPlayer);
-
             CompletableFuture<CacheValue> newValue = CACHE.reload(requestedPlayer, gameInfo);
-            futures.add(newValue);
 
             newValue.whenComplete((cacheValue, throwable) -> {
-                if (throwable instanceof CustomLoadingCache.LoadException e &&
-                        e.getCause() instanceof SilentCancelException) {
-                    return;
-                }
+                try {
+                    if (cacheValue == null) return;
 
-                if (throwable != null) {
-                    LOGGER.warn("Error while getting Hypixel data for player {}", requestedPlayer, throwable);
+                    HypixelCompactStructure oldValue = instantSend.get(requestedPlayer);
 
-                    return;
-                }
+                    if (Objects.equals(oldValue, cacheValue.getCompactStructure())) {
+                        RequesterCacheProvider.loadSuccessSameCount.getAndIncrement();
+                    } else {
+                        listener.accept(Map.of(requestedPlayer, cacheValue.getCompactStructure()));
 
-                if (cacheValue == null) return;
-
-                if (!Objects.equals(oldValue, cacheValue.getCompactStructure())) {
-                    RequesterCacheProvider.loadSuccessNewCount.getAndIncrement();
-
-                    listener.accept(Map.of(requestedPlayer, cacheValue.getCompactStructure()));
-                } else {
-                    RequesterCacheProvider.loadSuccessSameCount.getAndIncrement();
+                        RequesterCacheProvider.loadSuccessNewCount.getAndIncrement();
+                    }
+                } finally {
+                    if (counter.decrementAndGet() == 0) {
+                        end.run();
+                    }
                 }
             });
         }
-
-        CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
-                .whenComplete((unused, throwable) -> end.run());
     }
 
     public static void storeToFile(Path path) {
@@ -119,7 +109,7 @@ public final class HypixelCache {
                 Files.createFile(path);
             }
         } catch (IOException e) {
-            LOGGER.warn("Failed to create cache file", e);
+            log.warn("Failed to create cache file", e);
         }
 
         CACHE.cleanOld();
@@ -128,13 +118,14 @@ public final class HypixelCache {
         try (ObjectOutputStream objectOutputStream = new ObjectOutputStream(Files.newOutputStream(path))) {
             objectOutputStream.writeObject(map);
         } catch (Exception e) {
-            LOGGER.warn("Failed to store cache to file", e);
+            log.warn("Failed to store cache to file", e);
         }
     }
 
     public static void loadFromFile(Path path) {
         if (!Files.exists(path)) {
-            LOGGER.info("Cache file not found, creating new one");
+            log.info("Cache file not found, creating new one");
+
             return;
         }
 
@@ -144,7 +135,7 @@ public final class HypixelCache {
 
             CACHE.putAll(map);
         } catch (Exception e) {
-            LOGGER.warn("Failed to load cache from file", e);
+            log.warn("Failed to load cache from file", e);
         }
     }
 

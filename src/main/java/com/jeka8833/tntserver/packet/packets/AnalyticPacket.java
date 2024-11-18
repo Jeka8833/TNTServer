@@ -53,7 +53,7 @@ public class AnalyticPacket implements Packet {
 
     @Override
     public void read(PacketInputStream stream) throws IOException {
-        if (TNTServer.analyticManager == null || TNTServer.analyticManager.isDirectoryOverflow()) return;
+        /*if (TNTServer.analyticManager == null || TNTServer.analyticManager.isDirectoryOverflow()) return;
 
         UUID randomID = stream.readUUID();
 
@@ -74,12 +74,12 @@ public class AnalyticPacket implements Packet {
             }
         } catch (ReflectiveOperationException e) {
             throw new IOException(e);
-        }
+        }*/
     }
 
     @Override
     public void serverProcess(WebSocket socket, @Nullable User user) {
-        if (user instanceof Player player) {
+/*        if (user instanceof Player player) {
             if (player.tntPlayerInfo == null || player.tntPlayerInfo.version == null) return;
 
             if (VersionUtil.compareVersions(player.tntPlayerInfo.version, "v1.3.16") < 0) {
@@ -89,7 +89,7 @@ public class AnalyticPacket implements Packet {
             for (AnalyticTempStorage storage : TEMP_STORAGE_LIST) {
                 storage.group.addToProcess(player.tntPlayerInfo.version, storage.sessionID, storage.packet);
             }
-        }
+        }*/
     }
 
     private record AnalyticTempStorage(AnalyticGroup group, UUID sessionID,

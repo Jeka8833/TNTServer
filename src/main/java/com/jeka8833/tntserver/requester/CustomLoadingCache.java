@@ -1,11 +1,18 @@
 package com.jeka8833.tntserver.requester;
 
+import com.jeka8833.tntserver.requester.balancer.SilentCancelException;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
 
+@Slf4j
 public class CustomLoadingCache<Key, Value, AdditionalParameter> {
-    private final Map<Key, ValueTimeWrapper<Value>> map = new ConcurrentHashMap<>();
+    private final Map<Key, TimedCompletableFuture<Value>> map = new ConcurrentHashMap<>();
     private final Loader<Key, Value, AdditionalParameter> function;
     private final long expirationTimeNanos;
     private final Executor executor;
@@ -20,7 +27,7 @@ public class CustomLoadingCache<Key, Value, AdditionalParameter> {
     }
 
     public Value getIfPresent(Key key) {
-        ValueTimeWrapper<Value> future = map.get(key);
+        TimedCompletableFuture<Value> future = map.get(key);
         if (future == null) return null;
 
         return future.getNow();
@@ -28,46 +35,55 @@ public class CustomLoadingCache<Key, Value, AdditionalParameter> {
 
     public CompletableFuture<Value> reload(Key key, AdditionalParameter parameter) {
         return map.compute(key, (key_, oldValueTimeWrapper) -> {
-            if (oldValueTimeWrapper == null || oldValueTimeWrapper.value().isDone()) {
-                Value oldValue = oldValueTimeWrapper == null ? null : oldValueTimeWrapper.getNow();
-
-                CompletableFuture<Value> future = new CompletableFuture<>();
+            if (oldValueTimeWrapper == null || oldValueTimeWrapper.isDone()) {
+                TimedCompletableFuture<Value> future = new TimedCompletableFuture<>();
 
                 executor.execute(() -> {
+                    Value oldValue = oldValueTimeWrapper == null ? null : oldValueTimeWrapper.getNow();
+
                     try {
                         future.complete(function.load(key_, oldValue, parameter));
                     } catch (Throwable e) {
-                        future.completeExceptionally(new LoadException(oldValue, e));
+                        if (oldValue == null) {
+                            map.remove(key_);   // Remove ghost value
+                        }
+
+                        future.completeExceptionally(new LoadException(oldValue));
+
+                        // Bad, but memory optimization
+                        if (e instanceof SilentCancelException) return;
+                        log.warn("Error while getting Hypixel data for player {}", key_, e);
                     }
                 });
 
-                return new ValueTimeWrapper<>(future);
+                return future;
             }
 
             return oldValueTimeWrapper;
-        }).value();
+        });
     }
 
     public void cleanOld() {
         long now = System.nanoTime();
 
-        map.entrySet().removeIf(entry ->
-                now - entry.getValue().loadTimeNanos() > expirationTimeNanos);
+        map.values().removeIf(value -> now - value.getCreateTimeNanos() > expirationTimeNanos);
     }
 
     public void putAll(Map<Key, Value> map) {
         for (Map.Entry<Key, Value> entry : map.entrySet()) {
             if (entry.getValue() == null) continue;
 
-            this.map.put(entry.getKey(),
-                    new ValueTimeWrapper<>(CompletableFuture.completedFuture(entry.getValue())));
+            TimedCompletableFuture<Value> future = new TimedCompletableFuture<>();
+            future.complete(entry.getValue());
+
+            this.map.put(entry.getKey(), future);
         }
 
     }
 
     public Map<Key, Value> asMap() {
         Map<Key, Value> map = new HashMap<>(this.map.size());
-        for (Map.Entry<Key, ValueTimeWrapper<Value>> entry : this.map.entrySet()) {
+        for (Map.Entry<Key, TimedCompletableFuture<Value>> entry : this.map.entrySet()) {
             Value value = entry.getValue().getNow();
             if (value == null) continue;
 
@@ -80,57 +96,36 @@ public class CustomLoadingCache<Key, Value, AdditionalParameter> {
         return map.size();
     }
 
-    public static final class LoadException extends Exception {
-        private final Object previousValue;
-        private final Throwable cause;
-
-        private LoadException(Object previousValue, Throwable cause) {
-            this.previousValue = previousValue;
-            this.cause = cause;
-        }
-
-        public Object getPreviousValue() {
-            return previousValue;
-        }
-
-        public Throwable getCause() {
-            return cause;
-        }
-    }
-
     @FunctionalInterface
     public interface Loader<Key, Value, AdditionalParameter> {
         Value load(Key key, Value oldValue, AdditionalParameter parameter) throws Exception;
     }
 
-    private static final class ValueTimeWrapper<Value> {
-        private final Long loadTimeNanos = System.nanoTime();
-        private final CompletableFuture<Value> value;
+    @Getter
+    @RequiredArgsConstructor
+    private static final class LoadException extends Exception {
+        private final Object previousValue;
+    }
 
-        private ValueTimeWrapper(CompletableFuture<Value> value) {
-            this.value = value;
-        }
+    @Getter
+    private static final class TimedCompletableFuture<Value> extends CompletableFuture<Value> {
+        private final long createTimeNanos = System.nanoTime();
 
+        @Nullable
         private Value getNow() {
             try {
-                return value.getNow(null);
+                return getNow(null);
             } catch (CompletionException e) {
-                if (e.getCause() instanceof LoadException) {
+                if (e.getCause() instanceof LoadException loadException) {
                     //noinspection unchecked
-                    return (Value) ((LoadException) e.getCause()).getPreviousValue();
+                    return (Value) loadException.getPreviousValue();
                 }
-            } catch (Exception ignored) {
+
+                log.error("Failed to getNow value", e);
+            } catch (Throwable e) {
+                log.error("Failed to getNow value", e);
             }
-
             return null;
-        }
-
-        private Long loadTimeNanos() {
-            return loadTimeNanos;
-        }
-
-        private CompletableFuture<Value> value() {
-            return value;
         }
     }
 }

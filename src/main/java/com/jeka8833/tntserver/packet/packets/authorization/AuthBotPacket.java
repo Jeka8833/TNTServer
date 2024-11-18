@@ -8,19 +8,19 @@ import com.jeka8833.tntserver.database.storage.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
+import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.java_websocket.WebSocket;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Set;
 import java.util.UUID;
 
+@Slf4j
+@NoArgsConstructor
 public class AuthBotPacket implements Packet {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AuthBotPacket.class);
-
     private UUID user;
     private UUID key;
 
@@ -41,6 +41,7 @@ public class AuthBotPacket implements Packet {
             public void good(@NotNull UUID user, @Nullable Set<String> privileges) {
                 if (privileges == null) {
                     socket.close();
+
                     return;
                 }
 
@@ -59,7 +60,7 @@ public class AuthBotPacket implements Packet {
 
                     TNTServer.serverSend(socket, new AuthBotPacket());
 
-                    LOGGER.info("Bot {} logged in.", user);
+                    log.info("Bot {} logged in.", user);
                 } else {
                     socket.close();
                 }

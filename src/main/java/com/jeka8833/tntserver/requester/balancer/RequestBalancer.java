@@ -3,15 +3,14 @@ package com.jeka8833.tntserver.requester.balancer;
 import com.jeka8833.tntserver.database.PlayersDatabase;
 import com.jeka8833.tntserver.requester.balancer.node.BalancerNode;
 import com.jeka8833.tntserver.requester.storage.HypixelCompactStructure;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+@Slf4j
 public final class RequestBalancer {
-    private static final Logger LOGGER = LoggerFactory.getLogger(RequestBalancer.class);
     private static final CopyOnWriteArrayList<BalancerNode> NODES = new CopyOnWriteArrayList<>();
 
     @NotNull
@@ -28,23 +27,28 @@ public final class RequestBalancer {
                 if (nodeOpt.isEmpty()) break;
 
                 BalancerNode node = nodeOpt.get();
+                boolean isSilent = false;
 
                 try {
                     usedNodes.add(node);
 
-                    HypixelCompactStructure hypixelCompactStructure = node.get(requestedPlayer);
+                    return node.get(requestedPlayer);
+                } catch (SilentCancelException e) {
+                    isSilent = true;
 
-                    oldStorage.getRequestTimeMap().put(node.getNodeUUID(), System.nanoTime());
-
-                    return hypixelCompactStructure;
+                    throw e;
                 } finally {
                     node.releaseReserve();
+
+                    if (!isSilent) {
+                        oldStorage.getRequestTimeMap().put(node.getNodeUUID(), System.nanoTime());
+                    }
                 }
             } catch (SilentCancelException ignored) {
             } catch (InterruptedException e) {
                 break;
             } catch (Exception e) {
-                LOGGER.warn("Failed to load data from node", e);
+                log.warn("Failed to load data from node", e);
             }
         }
 

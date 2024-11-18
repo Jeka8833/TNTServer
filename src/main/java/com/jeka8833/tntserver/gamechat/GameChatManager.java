@@ -8,37 +8,43 @@ import com.jeka8833.tntserver.database.storage.Player;
 import com.jeka8833.tntserver.database.storage.User;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
 import com.jeka8833.tntserver.packet.packets.ChatPacket;
-import com.jeka8833.tntserver.packet.packets.discordbot.ChatHookPacket;
+import com.jeka8833.tntserver.packet.packets.webendpoints.ChatHookPacket;
+import lombok.extern.slf4j.Slf4j;
 import org.java_websocket.WebSocket;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.UUID;
 
+@Slf4j
 public class GameChatManager {
-    private static final Logger LOGGER = LoggerFactory.getLogger(GameChatManager.class);
+    private static final UUID EMPTY_UUID = new UUID(0, 0);
 
-    public static void sendDirectMessage(@NotNull UUID sender, @NotNull UUID receiver, @NotNull String message) {
+    public static void sendDirectMessage(@Nullable UUID sender, @Nullable UUID receiver, @NotNull String message,
+                                         boolean isSystemMessage) {
         User user = PlayersDatabase.getUser(receiver);
         if (user instanceof Player player) {
             try {
                 WebSocket webSocket = player.getSocket();
 
-                if (webSocket != null) TNTServer.serverSend(webSocket, new ChatPacket(sender, message));
+                if (webSocket != null) {
+                    TNTServer.serverSend(webSocket,
+                            new ChatPacket(Objects.requireNonNullElse(sender, EMPTY_UUID), message));
+                }
             } catch (Exception e) {
-                LOGGER.error("Fail send packet:", e);
+                log.error("Fail send packet:", e);
             }
 
+            if (isSystemMessage) return;
             sendToHook(sender, receiver, player.serverType, message);
         }
     }
 
-    public static void sendGlobalMessage(@NotNull UUID sender,
-                                         @NotNull ServerType destination, @NotNull String message) {
-        var packet = new ChatPacket(sender, message);
+    public static void sendGlobalMessage(@Nullable UUID sender, @NotNull ServerType destination, @NotNull String message,
+                                         boolean isSystemMessage) {
+        var packet = new ChatPacket(Objects.requireNonNullElse(sender, EMPTY_UUID), message);
 
         try (final PacketOutputStream stream = new PacketOutputStream()) {
             packet.write(stream);
@@ -53,19 +59,20 @@ public class GameChatManager {
                         if (client.isOpen()) client.send(send);
                     }
                 } catch (Exception e) {
-                    LOGGER.error("Fail send packet:", e);
+                    log.error("Fail send packet:", e);
                 }
             }
         } catch (Exception e) {
-            LOGGER.error("Fail generate packet:", e);
+            log.error("Fail generate packet:", e);
         }
 
+        if (isSystemMessage) return;
         sendToHook(sender, null, destination, message);
     }
 
-    public static void sendToHook(@NotNull UUID sender, @Nullable UUID receiver,
+    public static void sendToHook(@Nullable UUID sender, @Nullable UUID receiver,
                                   @NotNull ServerType server, @NotNull String text) {
-        LOGGER.info("Chat: {} -> {} {}: {}", sender, receiver, server, text);
+        log.info("Chat: {} -> {} {}: {}", sender, receiver, server, text);
 
         Iterable<Bot> bots = PlayersDatabase.getBotsWithPrivilege("SERVER_CHAT");
 

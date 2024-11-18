@@ -1,6 +1,7 @@
 package com.jeka8833.tntserver.requester.storage;
 
 import com.jeka8833.tntserver.requester.balancer.BalancerRefresh;
+import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -16,24 +17,19 @@ public class CacheValue implements Serializable, BalancerRefresh {
     @Serial
     private static final long serialVersionUID = -4596793276874632260L;
 
-    private Map<UUID, Long> lastRequestTime = new ConcurrentHashMap<>();
-    private @Nullable String gameInfo;
-    private @NotNull HypixelCompactStructure compactStructure = HypixelCompactStructure.EMPTY_INSTANCE;
+    @Getter
+    private Map<UUID, Long> requestTimeMap = new ConcurrentHashMap<>();
+
+    @Nullable
+    private String gameInfo;
+
+    @Getter
+    @NotNull
+    private HypixelCompactStructure compactStructure = HypixelCompactStructure.EMPTY_INSTANCE;
 
     public void update(@NotNull HypixelCompactStructure response, @Nullable String gameInfo) {
         this.compactStructure = response;
         this.gameInfo = gameInfo;
-    }
-
-    @NotNull
-    @Override
-    public Map<UUID, Long> getRequestTimeMap() {
-        return lastRequestTime;
-    }
-
-    @NotNull
-    public HypixelCompactStructure getCompactStructure() {
-        return compactStructure;
     }
 
     public boolean isGameInfoDifferent(String gameInfo) {
@@ -52,8 +48,8 @@ public class CacheValue implements Serializable, BalancerRefresh {
         out.writeObject(compactStructure);
         out.writeObject(gameInfo);
 
-        HashMap<UUID, Long> map = new HashMap<>(lastRequestTime.size());
-        for (Map.Entry<UUID, Long> entry : lastRequestTime.entrySet()) {
+        HashMap<UUID, Long> map = new HashMap<>(requestTimeMap.size());
+        for (Map.Entry<UUID, Long> entry : requestTimeMap.entrySet()) {
             map.put(entry.getKey(), System.currentTimeMillis() -
                     TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - entry.getValue()));
         }
@@ -68,10 +64,10 @@ public class CacheValue implements Serializable, BalancerRefresh {
 
         //noinspection unchecked
         Map<UUID, Long> map = (HashMap<UUID, Long>) in.readObject();
-        lastRequestTime = new ConcurrentHashMap<>(map.size());
+        requestTimeMap = new ConcurrentHashMap<>(map.size());
 
         for (Map.Entry<UUID, Long> entry : map.entrySet()) {
-            lastRequestTime.put(entry.getKey(), System.nanoTime() -
+            requestTimeMap.put(entry.getKey(), System.nanoTime() -
                     TimeUnit.MILLISECONDS.toNanos(System.currentTimeMillis() - entry.getValue()));
         }
     }

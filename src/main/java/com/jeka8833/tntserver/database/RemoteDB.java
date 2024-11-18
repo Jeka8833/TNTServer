@@ -4,12 +4,13 @@ import com.jeka8833.tntserver.Main;
 import com.jeka8833.tntserver.database.storage.Player;
 import com.jeka8833.tntserver.database.storage.TNTPlayerStorage;
 import com.jeka8833.tntserver.database.storage.User;
+import com.jeka8833.tntserver.gamechat.MuteDto;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.*;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -17,11 +18,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+@Slf4j
 public final class RemoteDB {
     private static final int MAX_RETRIES = 3;
 
     private static final ExecutorService EXECUTORS = Executors.newSingleThreadExecutor();
-    private static final Logger LOGGER = LoggerFactory.getLogger(RemoteDB.class);
 
     private static @Nullable Connection connection;
     private static @Nullable PreparedStatement readUserPrivileges;
@@ -29,24 +30,26 @@ public final class RemoteDB {
     private static @Nullable PreparedStatement readUser;
     private static @Nullable PreparedStatement readUsers;
     private static @Nullable PreparedStatement writeUser;
+    private static @Nullable PreparedStatement readMutePlayer;
+    private static @Nullable PreparedStatement removeDiscordUser;
 
     public static void openConnection() {
         if (Main.INSTANCE.databaseURL == null ||
                 Main.INSTANCE.databaseUser == null || Main.INSTANCE.databasePassword == null) {
-            LOGGER.warn("Database URL, user or password is null");
+            log.warn("Database URL, user or password is null");
             return;
         }
 
-        LOGGER.info("Open connection to DB");
+        log.info("Open connection to DB");
 
         try {
             connection = DriverManager.getConnection("jdbc:postgresql://" + Main.INSTANCE.databaseURL,
                     Main.INSTANCE.databaseUser, Main.INSTANCE.databasePassword);
 
             readUserPrivileges = connection.prepareStatement(
-                    "SELECT \"roles\" FROM \"TCA_UserPrivileges\" WHERE \"user\" = ?");
+                    "SELECT \"roles\" FROM \"tntclient_user_roles_and_keys\" WHERE \"user\" = ?");
             botLogin = connection.prepareStatement(
-                    "SELECT \"roles\" FROM \"TCA_UserPrivileges\" WHERE \"user\" = ? AND \"staticKey\" = ?");
+                    "SELECT \"roles\" FROM \"tntclient_user_roles_and_keys\" WHERE \"user\" = ? AND \"static_key\" = ?");
             readUser = connection.prepareStatement(
                     "SELECT \"version\", \"blockModules\", \"donate\" FROM \"TC_Players\" WHERE \"user\" = ?");
             readUsers = connection.prepareStatement(
@@ -57,8 +60,13 @@ public final class RemoteDB {
                             "VALUES (?, ?, CURRENT_TIMESTAMP, ?) ON CONFLICT (\"user\")" +
                             "DO UPDATE SET \"version\" = EXCLUDED.\"version\", \"timeLogin\" = CURRENT_TIMESTAMP," +
                             "\"blockModules\" = EXCLUDED.\"blockModules\"");
+            readMutePlayer = connection.prepareStatement(
+                    "SELECT \"reason\", \"unmute_time\" FROM \"tntclient_muted_player\" WHERE \"player\" = ?");
+            removeDiscordUser = connection.prepareStatement(
+                    "DELETE FROM \"discordbot_discord_minecraft_user_connection\" WHERE \"minecraft\" = ?");
+
         } catch (SQLException e) {
-            LOGGER.error("Fail connect to DB", e);
+            log.error("Fail connect to DB", e);
         }
     }
 
@@ -197,6 +205,36 @@ public final class RemoteDB {
         }, null);
     }
 
+    public static void readMute(@NotNull UUID uuid, @NotNull Consumer<@NotNull Optional<@NotNull MuteDto>> consumer) {
+        runTask(() -> {
+            //noinspection DataFlowIssue
+            readMutePlayer.setObject(1, uuid);
+
+            try (ResultSet rs = readMutePlayer.executeQuery()) {
+                if (rs.next()) {
+                    String reason = rs.getString(1);
+                    Instant unmuteTime = rs.getObject(2, Timestamp.class).toInstant();
+
+                    consumer.accept(Optional.of(new MuteDto(reason, unmuteTime)));
+                } else {
+                    consumer.accept(Optional.empty());
+                }
+            }
+
+            return true;
+        }, () -> consumer.accept(Optional.empty()));
+    }
+
+    public static void removeDiscordUser(@NotNull UUID uuid) {
+        runTask(() -> {
+            //noinspection DataFlowIssue
+            removeDiscordUser.setObject(1, uuid);
+            removeDiscordUser.executeUpdate();
+
+            return true;
+        }, null);
+    }
+
     public static void saveAndClose() {
         EXECUTORS.shutdown();
         try {
@@ -213,13 +251,13 @@ public final class RemoteDB {
             if (connection == null || connection.isClosed()) {
                 openConnection();
             } else if (!connection.isValid(5)) { // Timeout 5 second
-                LOGGER.warn("Connection to DB is invalid");
+                log.warn("Connection to DB is invalid");
 
                 closeConnection();
                 openConnection();
             }
         } catch (SQLException throwable) {
-            LOGGER.warn("Fail check connection to DB", throwable);
+            log.warn("Fail check connection to DB", throwable);
 
             closeConnection();
             openConnection();
@@ -227,13 +265,15 @@ public final class RemoteDB {
     }
 
     private static void closeConnection() {
-        LOGGER.info("Close connection to DB");
+        log.info("Close connection to DB");
 
         close(readUserPrivileges);
         close(botLogin);
         close(readUser);
         close(readUsers);
         close(writeUser);
+        close(readMutePlayer);
+        close(removeDiscordUser);
         close(connection);
     }
 
@@ -243,7 +283,7 @@ public final class RemoteDB {
         try {
             closeable.close();
         } catch (Exception e) {
-            LOGGER.warn("Fail close to DB:", e);
+            log.warn("Fail close to DB:", e);
         }
     }
 
@@ -260,7 +300,7 @@ public final class RemoteDB {
                         fail.run();
                     }
                 } catch (Exception e) {
-                    LOGGER.warn("Fail run DB task", e);
+                    log.warn("Fail run DB task", e);
                 }
             }
 
@@ -268,7 +308,7 @@ public final class RemoteDB {
                 fail.run();
             }
 
-            LOGGER.warn("Max retry run DB task");
+            log.warn("Max retry run DB task");
         });
     }
 }

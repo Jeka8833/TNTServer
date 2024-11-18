@@ -7,19 +7,17 @@ import com.jeka8833.tntserver.gamechat.commands.Command;
 import com.jeka8833.tntserver.gamechat.commands.ForceModuleCommand;
 import com.jeka8833.tntserver.gamechat.commands.StopCommand;
 import com.jeka8833.tntserver.packet.packets.ChatPacket;
+import lombok.extern.slf4j.Slf4j;
 import org.java_websocket.WebSocket;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+@Slf4j
 public class CommandManager {
     private static final Map<String, Command> COMMANDS = getCommands(new ForceModuleCommand(), new StopCommand());
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(ChatPacket.class);
 
     private static final UUID EMPTY_UUID = new UUID(0, 0);
 
@@ -45,7 +43,7 @@ public class CommandManager {
                 return true;
             }
         } catch (Exception e) {
-            LOGGER.error("Error while executing command", e);
+            log.error("Error while executing command", e);
         }
 
         return false;

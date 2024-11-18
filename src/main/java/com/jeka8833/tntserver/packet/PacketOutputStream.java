@@ -1,8 +1,7 @@
 package com.jeka8833.tntserver.packet;
 
 import com.jeka8833.tntserver.TNTServer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -11,9 +10,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 
+@Slf4j
 public class PacketOutputStream extends DataOutputStream {
-    private static final Logger LOGGER = LoggerFactory.getLogger(PacketOutputStream.class);
-
     /**
      * Creates a new data output stream to write data to the specified
      * underlying output stream. The counter {@code written} is
@@ -34,7 +32,7 @@ public class PacketOutputStream extends DataOutputStream {
         Byte ID = TNTServer.PACKETS_LIST.getKey(type);
         if (ID == null) throw new NullPointerException("The sent packet has an unknown ID. Class: " + type);
 
-        LOGGER.debug("Packet ready to be write: {}", type.getSimpleName());
+        log.debug("Packet ready to be write: {}", type.getSimpleName());
 
         final byte[] arr = ((ByteArrayOutputStream) this.out).toByteArray();
         final byte[] out = new byte[arr.length + 1];

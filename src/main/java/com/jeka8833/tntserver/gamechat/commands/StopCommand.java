@@ -7,17 +7,15 @@ import com.jeka8833.tntserver.database.RemoteDB;
 import com.jeka8833.tntserver.database.storage.User;
 import com.jeka8833.tntserver.gamechat.CommandManager;
 import com.jeka8833.tntserver.gamechat.GameChatManager;
-import com.jeka8833.tntserver.packet.packets.discordbot.ChatHookPacket;
+import com.jeka8833.tntserver.packet.packets.webendpoints.ChatHookPacket;
 import com.jeka8833.tntserver.requester.HypixelCache;
+import lombok.extern.slf4j.Slf4j;
 import org.java_websocket.WebSocket;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+@Slf4j
 public class StopCommand implements Command {
     private static final String PRIVILEGE = "SERVER_STOP";
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(StopCommand.class);
 
     @Override
     public @NotNull String @NotNull [] getNames() {
@@ -31,17 +29,17 @@ public class StopCommand implements Command {
                 CommandManager.sendError(userSocket, "Privilege server is not available");
             } else if (privilegesOptional.get().contains(PRIVILEGE)) {
                 try {
-                    GameChatManager.sendGlobalMessage(ChatHookPacket.EMPTY_UUID, ServerType.UNKNOWN,
-                            "§c(TNTClient Server) Server is shutting down...");
+                    GameChatManager.sendGlobalMessage(null, ServerType.UNKNOWN,
+                            "§c(TNTClient Server) Server is shutting down...", true);
                     HypixelCache.storeToFile(Main.INSTANCE.cacheFile);
-                    LOGGER.info("[Shutdown] Cache file stored");
+                    log.info("[Shutdown] Cache file stored");
                     TNTServer.server.stop(10_000);
-                    LOGGER.info("[Shutdown] Server stopped");
+                    log.info("[Shutdown] Server stopped");
                     RemoteDB.saveAndClose();
-                    LOGGER.info("[Shutdown] Database closed");
+                    log.info("[Shutdown] Database closed");
                     System.exit(0);
                 } catch (Exception e) {
-                    LOGGER.error("Failed to stop server", e);
+                    log.error("Failed to stop server", e);
 
                     CommandManager.sendError(userSocket, e.toString());
                 }
