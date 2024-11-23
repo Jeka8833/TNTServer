@@ -28,6 +28,5 @@ public class Player extends User {
 
     @Override
     public void disconnect() {
-        tntPlayerInfo = null;
     }
 }

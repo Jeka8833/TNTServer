@@ -106,8 +106,8 @@ public class ForceModuleCommand implements Command {
     private static void getPlayerByName(@NotNull String name,
                                         @NotNull Consumer<@NotNull Optional<@NotNull Player>> listener) {
         MojangAPI.getUUID(name, mojangProfile -> {
-            if (mojangProfile.getUUID().isPresent()) {
-                User user = PlayersDatabase.getUser(mojangProfile.getUUID().get());
+            if (mojangProfile.getUuid().isPresent()) {
+                User user = PlayersDatabase.getUser(mojangProfile.getUuid().get());
                 if (user instanceof Player player) {
                     listener.accept(Optional.of(player));
 

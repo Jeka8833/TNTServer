@@ -1,13 +1,11 @@
 package com.jeka8833.tntserver.requester.balancer.node;
 
 import com.alibaba.fastjson2.JSON;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.LoadingCache;
-import com.jeka8833.tntserver.requester.balancer.SilentCancelException;
 import com.jeka8833.tntserver.requester.ratelimiter.HypixelRateLimiter;
 import com.jeka8833.tntserver.requester.storage.HypixelCompactStructure;
 import com.jeka8833.tntserver.requester.storage.HypixelJSONStructure;
 import lombok.Locked;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -24,37 +22,19 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
+@RequiredArgsConstructor
 public final class LocalNode implements BalancerNode {
-    private static final LoadingCache<UUID, Boolean> CACHE = Caffeine.newBuilder()
-            .expireAfterWrite(175, TimeUnit.MINUTES)
-            .build(key1 -> true);
-
-    private final Collection<Thread> threadList = ConcurrentHashMap.newKeySet();
-    private final Collection<Thread> blockedThreadsCounts = ConcurrentHashMap.newKeySet();
-
     private final HypixelRateLimiter rateLimiter;
     private final UUID key;
     private final OkHttpClient httpClient;
     private final int overloadLimit;
 
-    public LocalNode(HypixelRateLimiter rateLimiter, UUID key, OkHttpClient httpClient, int overloadLimit) {
-        this.rateLimiter = rateLimiter;
-        this.key = key;
-        this.httpClient = httpClient;
-        this.overloadLimit = overloadLimit;
-    }
+    private final Collection<Thread> threadList = ConcurrentHashMap.newKeySet();
+    private final Collection<Thread> blockedThreadsCounts = ConcurrentHashMap.newKeySet();
 
     @NotNull
     @Override
     public HypixelCompactStructure get(@NotNull UUID requestedPlayer) throws Exception {
-        if (CACHE.getIfPresent(requestedPlayer) != null) {
-            log.warn("Hypixel player already requested: {}", requestedPlayer);
-
-            throw new SilentCancelException();
-        }
-        CACHE.get(requestedPlayer);
-
-
         threadList.add(Thread.currentThread());
 
         try (HypixelRateLimiter.Status status = rateLimiter.newRequest()) {

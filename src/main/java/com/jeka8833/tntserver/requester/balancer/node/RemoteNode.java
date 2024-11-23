@@ -1,6 +1,7 @@
 package com.jeka8833.tntserver.requester.balancer.node;
 
 import com.jeka8833.tntserver.requester.storage.HypixelCompactStructure;
+import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Range;
 
@@ -13,10 +14,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
+@RequiredArgsConstructor
 public final class RemoteNode implements BalancerNode {
     private static final Map<UUID, CompletableFuture<HypixelCompactStructure>> WAITING = new ConcurrentHashMap<>();
-
-    private final AtomicInteger available = new AtomicInteger(1);
 
     private final long timeoutNanos;
     private final int priority;
@@ -24,14 +24,7 @@ public final class RemoteNode implements BalancerNode {
     private final int overloadLimit;
     private final UUID processorUUID;
 
-    public RemoteNode(long timeoutNanos, int priority, @NotNull Consumer<@NotNull UUID> sendRequest, int overloadLimit,
-                      UUID processorUUID) {
-        this.timeoutNanos = timeoutNanos;
-        this.priority = priority;
-        this.sendRequest = sendRequest;
-        this.overloadLimit = overloadLimit;
-        this.processorUUID = processorUUID;
-    }
+    private final AtomicInteger available = new AtomicInteger(1);
 
     public static void put(@NotNull UUID requestedPlayer, @NotNull HypixelCompactStructure storage) {
         CompletableFuture<HypixelCompactStructure> future = WAITING.remove(requestedPlayer);

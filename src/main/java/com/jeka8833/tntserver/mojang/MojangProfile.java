@@ -1,5 +1,7 @@
 package com.jeka8833.tntserver.mojang;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -7,6 +9,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Optional;
 import java.util.UUID;
 
+@Getter
+@RequiredArgsConstructor
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public final class MojangProfile {
     private final @NotNull Optional<String> name;
@@ -31,25 +35,8 @@ public final class MojangProfile {
         this.uuid = Optional.ofNullable(uuid);
     }
 
-    public MojangProfile(@NotNull Optional<@NotNull String> name, @NotNull Optional<@NotNull UUID> uuid) {
-        this.name = name;
-        this.uuid = uuid;
-    }
-
     public void setNotFound() {
         isNotFound = true;
-    }
-
-    @NotNull
-    @Contract(pure = true)
-    public Optional<String> getName() {
-        return name;
-    }
-
-    @NotNull
-    @Contract(pure = true)
-    public Optional<UUID> getUUID() {
-        return uuid;
     }
 
     @Contract(pure = true)

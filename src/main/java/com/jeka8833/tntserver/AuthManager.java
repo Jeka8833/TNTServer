@@ -14,8 +14,8 @@ public class AuthManager {
 
     public static void authMojang(@NotNull String username, @NotNull String key, @NotNull AuthResponse response) {
         MojangAPI.checkSession(username, key, mojangProfile -> {
-            if (mojangProfile.getUUID().isPresent()) {
-                response.good(mojangProfile.getUUID().get(), null);
+            if (mojangProfile.getUuid().isPresent()) {
+                response.good(mojangProfile.getUuid().get(), null);
             } else {
                 response.bad(ERROR_LOGIN_FAIL);
             }
