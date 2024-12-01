@@ -8,6 +8,7 @@ import com.jeka8833.tntserver.database.storage.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
+import com.jeka8833.tntserver.user.UserBase;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.java_websocket.WebSocket;
@@ -25,17 +26,17 @@ public class AuthBotPacket implements Packet {
     private UUID key;
 
     @Override
-    public void write(PacketOutputStream stream) {
+    public void write(PacketOutputStream stream, int protocolVersion) {
     }
 
     @Override
-    public void read(PacketInputStream stream) throws IOException {
+    public void read(PacketInputStream stream, int protocolVersion) throws IOException {
         user = stream.readUUID();
         key = stream.readUUID();
     }
 
     @Override
-    public void serverProcess(WebSocket socket, User user) {
+    public void serverProcess(@NotNull UserBase user, @NotNull TNTServer server) {
         AuthManager.authTNTClient(this.user, key, new AuthManager.AuthResponse() {
             @Override
             public void good(@NotNull UUID user, @Nullable Set<String> privileges) {

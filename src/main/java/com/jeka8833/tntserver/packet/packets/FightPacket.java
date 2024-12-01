@@ -1,21 +1,21 @@
 package com.jeka8833.tntserver.packet.packets;
 
 import com.jeka8833.tntserver.TNTServer;
-import com.jeka8833.tntserver.database.PlayersDatabase;
-import com.jeka8833.tntserver.database.storage.Player;
-import com.jeka8833.tntserver.database.storage.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
-import org.java_websocket.WebSocket;
+import com.jeka8833.tntserver.user.UserBase;
+import com.jeka8833.tntserver.user.player.Player;
+import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 
+@RequiredArgsConstructor
 public class FightPacket implements Packet {
-    private final Collection<WebSocket> activeConnection;
+    private final Collection<Player> activeConnection;
     private int playerFight = 0;
 
     @SuppressWarnings("unused")
@@ -23,45 +23,32 @@ public class FightPacket implements Packet {
         this(null);
     }
 
-    public FightPacket(Collection<WebSocket> activeConnection) {
-        this.activeConnection = activeConnection;
-    }
-
     @Override
-    public void write(PacketOutputStream stream) throws IOException {
-        final List<Player> users = activeConnection.stream()
-                .map(webSocket -> {
-                    UUID user = webSocket.getAttachment();
-                    if (user == null) return null;
-                    return PlayersDatabase.getUser(user);
-                })
-                .filter(tntUser -> tntUser instanceof Player player &&
-                        player.tntPlayerInfo != null && player.tntPlayerInfo.fight != 0)
-                .map(tntUser -> (Player) tntUser)
+    public void write(PacketOutputStream stream, int protocolVersion) throws IOException {
+        List<Player> users = activeConnection.stream()
+                .filter(player -> player.getFight() != 0)
                 .toList();
 
         stream.writeByte(users.size());
         for (Player user : users) {
-            stream.writeUUID(user.uuid);
-            stream.writeInt(user.tntPlayerInfo == null ? 0 : user.tntPlayerInfo.fight);
+            stream.writeUUID(user.getUuid());
+            stream.writeInt(user.getFight());
         }
     }
 
     @Override
-    public void read(PacketInputStream stream) throws IOException {
+    public void read(PacketInputStream stream, int protocolVersion) throws IOException {
         playerFight = stream.readInt();
     }
 
     @Override
-    public void serverProcess(WebSocket socket, User user) {
-        if (user instanceof Player || !PlayersDatabase.isPrivilegeAbsent(user, "FIGHT_LIST")) {
-            if (user instanceof Player player && player.tntPlayerInfo != null) {
-                player.tntPlayerInfo.fight = playerFight;
-            }
+    public void serverProcess(@NotNull UserBase user, @NotNull TNTServer server) {
+        if (user instanceof Player player) {
+            player.setFight(playerFight);
 
-            TNTServer.serverSend(socket, new FightPacket(TNTServer.server.getConnections()));
+            player.sendPacket(new FightPacket(server.getUserDatabase().getAllPlayers()));
         } else {
-            socket.close();
+            user.disconnect();
         }
     }
 }

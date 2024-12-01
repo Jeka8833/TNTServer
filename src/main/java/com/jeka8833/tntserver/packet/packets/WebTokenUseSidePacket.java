@@ -1,19 +1,23 @@
 package com.jeka8833.tntserver.packet.packets;
 
 import com.jeka8833.tntserver.TNTServer;
-import com.jeka8833.tntserver.database.PlayersDatabase;
-import com.jeka8833.tntserver.database.storage.Bot;
-import com.jeka8833.tntserver.database.storage.Player;
-import com.jeka8833.tntserver.database.storage.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
 import com.jeka8833.tntserver.packet.packets.webendpoints.WebTokenEndpointSidePacket;
-import org.java_websocket.WebSocket;
+import com.jeka8833.tntserver.user.Bot;
+import com.jeka8833.tntserver.user.UserBase;
+import com.jeka8833.tntserver.user.player.Player;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 
+@Slf4j
+@RequiredArgsConstructor
 public class WebTokenUseSidePacket implements Packet {
     private static final UUID NULL_UUID = new UUID(0, 0);
 
@@ -27,40 +31,34 @@ public class WebTokenUseSidePacket implements Packet {
         this(null, null);
     }
 
-    public WebTokenUseSidePacket(UUID user, UUID key) {
-        this.user = user;
-        this.key = key;
-    }
-
     @Override
-    public void write(PacketOutputStream stream) throws IOException {
+    public void write(PacketOutputStream stream, int protocolVersion) throws IOException {
         stream.writeUUID(user);
         stream.writeUUID(key);
     }
 
     @Override
-    public void read(PacketInputStream stream) throws IOException {
+    public void read(PacketInputStream stream, int protocolVersion) throws IOException {
         unregister = stream.readBoolean();
     }
 
     @Override
-    public void serverProcess(WebSocket socket, User user) {
+    public void serverProcess(@NotNull UserBase user, @NotNull TNTServer server) {
         if (user instanceof Player player) {
-            Bot serverTokenizer = PlayersDatabase.getBotWithPrivilege("SERVER_TOKEN");
-            if (serverTokenizer == null) {
-                TNTServer.serverSend(socket, new WebTokenUseSidePacket(NULL_UUID, NULL_UUID));
+            List<Bot> bots = server.getUserDatabase().findAllBotsByPrivilege("SERVER_TOKEN");
+            if (bots.isEmpty()) {
+                user.sendPacket(new WebTokenUseSidePacket(NULL_UUID, NULL_UUID));
+
                 return;
             }
 
-            WebSocket serverTokenizerSocket = serverTokenizer.getSocket();
-            if (serverTokenizerSocket == null) {
-                TNTServer.serverSend(socket, new WebTokenUseSidePacket(NULL_UUID, NULL_UUID));
-                return;
+            if (bots.size() > 1) {
+                log.warn("Multiple bots with SERVER_TOKEN privilege!! UUIDs: {}", bots);
             }
 
-            TNTServer.serverSend(serverTokenizerSocket, new WebTokenEndpointSidePacket(player.uuid, !unregister));
+            bots.getFirst().sendPacket(new WebTokenEndpointSidePacket(player.getUuid(), !unregister));
         } else {
-            socket.close();
+            user.disconnect();
         }
     }
 }

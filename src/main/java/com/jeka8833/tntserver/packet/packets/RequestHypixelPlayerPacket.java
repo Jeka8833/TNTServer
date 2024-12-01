@@ -1,13 +1,14 @@
 package com.jeka8833.tntserver.packet.packets;
 
 import com.jeka8833.tntserver.TNTServer;
-import com.jeka8833.tntserver.database.storage.Player;
-import com.jeka8833.tntserver.database.storage.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
 import com.jeka8833.tntserver.requester.HypixelCache;
-import org.java_websocket.WebSocket;
+import com.jeka8833.tntserver.user.UserBase;
+import com.jeka8833.tntserver.user.player.Player;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -17,19 +18,13 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
+@NoArgsConstructor
+@AllArgsConstructor
 public class RequestHypixelPlayerPacket implements Packet {
     private @Nullable Set<UUID> userList;
 
-    @SuppressWarnings("unused")
-    public RequestHypixelPlayerPacket() {
-    }
-
-    public RequestHypixelPlayerPacket(@NotNull Set<UUID> userList) {
-        this.userList = userList;
-    }
-
     @Override
-    public void write(PacketOutputStream stream) throws IOException {
+    public void write(PacketOutputStream stream, int protocolVersion) throws IOException {
         if (userList == null || userList.isEmpty()) throw new NullPointerException("User list is empty");
 
         UUID[] array = userList.toArray(UUID[]::new);
@@ -40,7 +35,7 @@ public class RequestHypixelPlayerPacket implements Packet {
     }
 
     @Override
-    public void read(PacketInputStream stream) throws IOException {
+    public void read(PacketInputStream stream, int protocolVersion) throws IOException {
         int size = stream.readUnsignedByte();
         userList = new HashSet<>(size);
         for (int i = 0; i < size; i++) {
@@ -49,17 +44,15 @@ public class RequestHypixelPlayerPacket implements Packet {
     }
 
     @Override
-    public void serverProcess(WebSocket socket, @Nullable User user) {
-        if (user instanceof Player senderPlayer) {
+    public void serverProcess(@NotNull UserBase user, @NotNull TNTServer server) {
+        if (user instanceof Player player) {
             if (userList == null || userList.isEmpty()) throw new NullPointerException("User list is empty");
 
-            HypixelCache.get(senderPlayer.uuid, userList,
-                    playersReady -> TNTServer.serverSend(socket,
-                            new ReceiveHypixelPlayerPacket(playersReady, false)),
-                    () -> TNTServer.serverSend(socket,
-                            new ReceiveHypixelPlayerPacket(Collections.emptyMap(), true)));
+            HypixelCache.get(player.getUuid(), userList,
+                    playersReady -> user.sendPacket(new ReceiveHypixelPlayerPacket(playersReady, false)),
+                    () -> user.sendPacket(new ReceiveHypixelPlayerPacket(Collections.emptyMap(), true)));
         } else {
-            socket.close();
+            user.disconnect();
         }
     }
 }

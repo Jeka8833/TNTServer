@@ -9,8 +9,10 @@ import com.jeka8833.tntserver.database.storage.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
+import com.jeka8833.tntserver.user.UserBase;
 import com.jeka8833.tntserver.util.VersionUtil;
 import org.java_websocket.WebSocket;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -48,11 +50,11 @@ public class AnalyticPacket implements Packet {
     }
 
     @Override
-    public void write(PacketOutputStream stream) {
+    public void write(PacketOutputStream stream, int protocolVersion) {
     }
 
     @Override
-    public void read(PacketInputStream stream) throws IOException {
+    public void read(PacketInputStream stream, int protocolVersion) throws IOException {
         /*if (TNTServer.analyticManager == null || TNTServer.analyticManager.isDirectoryOverflow()) return;
 
         UUID randomID = stream.readUUID();
@@ -78,7 +80,7 @@ public class AnalyticPacket implements Packet {
     }
 
     @Override
-    public void serverProcess(WebSocket socket, @Nullable User user) {
+    public void serverProcess(@NotNull UserBase user, @NotNull TNTServer server) {
 /*        if (user instanceof Player player) {
             if (player.tntPlayerInfo == null || player.tntPlayerInfo.version == null) return;
 

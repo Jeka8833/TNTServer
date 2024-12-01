@@ -1,13 +1,12 @@
 package com.jeka8833.tntserver.gamechat.commands;
 
 import com.jeka8833.tntserver.Main;
-import com.jeka8833.tntserver.ServerType;
+import com.jeka8833.tntserver.user.player.GameServer;
 import com.jeka8833.tntserver.TNTServer;
 import com.jeka8833.tntserver.database.RemoteDB;
 import com.jeka8833.tntserver.database.storage.User;
 import com.jeka8833.tntserver.gamechat.CommandManager;
 import com.jeka8833.tntserver.gamechat.GameChatManager;
-import com.jeka8833.tntserver.packet.packets.webendpoints.ChatHookPacket;
 import com.jeka8833.tntserver.requester.HypixelCache;
 import lombok.extern.slf4j.Slf4j;
 import org.java_websocket.WebSocket;
@@ -29,7 +28,7 @@ public class StopCommand implements Command {
                 CommandManager.sendError(userSocket, "Privilege server is not available");
             } else if (privilegesOptional.get().contains(PRIVILEGE)) {
                 try {
-                    GameChatManager.sendGlobalMessage(null, ServerType.UNKNOWN,
+                    GameChatManager.sendGlobalMessage(null, GameServer.UNKNOWN,
                             "§c(TNTClient Server) Server is shutting down...", true);
                     HypixelCache.storeToFile(Main.INSTANCE.cacheFile);
                     log.info("[Shutdown] Cache file stored");

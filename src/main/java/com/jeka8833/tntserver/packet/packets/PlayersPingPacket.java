@@ -2,13 +2,14 @@ package com.jeka8833.tntserver.packet.packets;
 
 import com.jeka8833.tntserver.TNTServer;
 import com.jeka8833.tntserver.database.PlayersDatabase;
-import com.jeka8833.tntserver.database.storage.Player;
 import com.jeka8833.tntserver.database.storage.TNTPlayerPingStorage;
-import com.jeka8833.tntserver.database.storage.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
-import org.java_websocket.WebSocket;
+import com.jeka8833.tntserver.user.UserBase;
+import com.jeka8833.tntserver.user.player.Player;
+import com.jeka8833.tntserver.user.player.PlayerPing;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -21,7 +22,7 @@ public class PlayersPingPacket implements Packet {
     private @Nullable TNTPlayerPingStorage playerPing;
 
     @Override
-    public void write(PacketOutputStream stream) throws IOException {
+    public void write(PacketOutputStream stream, int protocolVersion) throws IOException {
         Player[] playerPings = requestedPlayers.stream()
                 .map(PlayersDatabase::getUser)
                 .filter(tntUser -> tntUser instanceof Player player &&
@@ -42,7 +43,7 @@ public class PlayersPingPacket implements Packet {
     }
 
     @Override
-    public void read(PacketInputStream stream) throws IOException {
+    public void read(PacketInputStream stream, int protocolVersion) throws IOException {
         playerPing = new TNTPlayerPingStorage(stream);
 
         int b = stream.readUnsignedByte();
@@ -50,12 +51,15 @@ public class PlayersPingPacket implements Packet {
     }
 
     @Override
-    public void serverProcess(WebSocket socket, User user) {
+    public void serverProcess(@NotNull UserBase user, @NotNull TNTServer server) {
         if (user instanceof Player player) {
+            player.setPlayerPing(playerPing);
             if (player.tntPlayerInfo != null) player.tntPlayerInfo.playerPing = playerPing;
             if (!requestedPlayers.isEmpty()) TNTServer.serverSend(socket, this);
         } else {
             socket.close();
         }
     }
+
+    private static PlayerPing read()
 }

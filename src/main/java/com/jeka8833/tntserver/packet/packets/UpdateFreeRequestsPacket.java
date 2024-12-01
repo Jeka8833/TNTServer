@@ -1,12 +1,12 @@
 package com.jeka8833.tntserver.packet.packets;
 
-import com.jeka8833.tntserver.database.storage.User;
+import com.jeka8833.tntserver.TNTServer;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
 import com.jeka8833.tntserver.requester.balancer.NodeRegisterManager;
-import org.java_websocket.WebSocket;
-import org.jetbrains.annotations.Nullable;
+import com.jeka8833.tntserver.user.UserBase;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 
@@ -14,17 +14,17 @@ public class UpdateFreeRequestsPacket implements Packet {
     private int count;
 
     @Override
-    public void write(PacketOutputStream stream) {
+    public void write(PacketOutputStream stream, int protocolVersion) {
     }
 
     @Override
-    public void read(PacketInputStream stream) throws IOException {
+    public void read(PacketInputStream stream, int protocolVersion) throws IOException {
         count = stream.readInt();
     }
 
     @Override
-    public void serverProcess(WebSocket socket, @Nullable User user) {
-        NodeRegisterManager.connect(socket);
-        NodeRegisterManager.setAvailableCount(socket, count);
+    public void serverProcess(@NotNull UserBase user, @NotNull TNTServer server) {
+        NodeRegisterManager.connect(user.getSocket());
+        NodeRegisterManager.setAvailableCount(user.getSocket(), count);
     }
 }

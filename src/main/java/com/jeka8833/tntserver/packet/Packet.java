@@ -1,15 +1,15 @@
 package com.jeka8833.tntserver.packet;
 
-import com.jeka8833.tntserver.database.storage.User;
-import org.java_websocket.WebSocket;
-import org.jetbrains.annotations.Nullable;
+import com.jeka8833.tntserver.TNTServer;
+import com.jeka8833.tntserver.user.UserBase;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 
 public interface Packet {
-    void write(PacketOutputStream stream) throws IOException;
+    void write(PacketOutputStream stream, int protocolVersion) throws IOException;
 
-    void read(PacketInputStream stream) throws IOException;
+    void read(PacketInputStream stream, int protocolVersion) throws IOException;
 
-    void serverProcess(WebSocket socket, @Nullable User user);
+    void serverProcess(@NotNull UserBase user, @NotNull TNTServer server);
 }

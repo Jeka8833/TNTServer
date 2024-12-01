@@ -3,7 +3,8 @@ package com.jeka8833.tntserver.packet.packets.authorization;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.annotation.JSONField;
 import com.jeka8833.tntserver.AuthManager;
-import com.jeka8833.tntserver.ServerType;
+import com.jeka8833.tntserver.user.UserBase;
+import com.jeka8833.tntserver.user.player.GameServer;
 import com.jeka8833.tntserver.TNTServer;
 import com.jeka8833.tntserver.database.PlayersDatabase;
 import com.jeka8833.tntserver.database.RemoteDB;
@@ -35,11 +36,11 @@ public class AuthClientPacket implements Packet {
     private byte[] customParameters;
 
     @Override
-    public void write(PacketOutputStream stream) {
+    public void write(PacketOutputStream stream, int protocolVersion) {
     }
 
     @Override
-    public void read(PacketInputStream stream) throws IOException {
+    public void read(PacketInputStream stream, int protocolVersion) throws IOException {
         playerUsername = stream.readUTF();
         serverKey = stream.readUTF();
         version = stream.readUTF();
@@ -48,7 +49,7 @@ public class AuthClientPacket implements Packet {
     }
 
     @Override
-    public void serverProcess(WebSocket socket, User user) {
+    public void serverProcess(@NotNull UserBase user, @NotNull TNTServer server) {
         AuthManager.authMojang(playerUsername, serverKey, new AuthManager.AuthResponse() {
             @Override
             public void good(@NotNull UUID user, @Nullable Set<String> privileges) {
@@ -76,7 +77,7 @@ public class AuthClientPacket implements Packet {
                         }
 
                         player.serverType = parameters != null && parameters.serverBrand.isPresent() ?
-                                ServerType.getServer(parameters.serverBrand.get()) : ServerType.HYPIXEL;
+                                GameServer.findByServerBrand(parameters.serverBrand.get()) : GameServer.HYPIXEL;
 
                         if (player.tntPlayerInfo == null) player.tntPlayerInfo = new TNTPlayerStorage();
 

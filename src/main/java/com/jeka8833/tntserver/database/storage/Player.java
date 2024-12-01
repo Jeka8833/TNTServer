@@ -1,6 +1,6 @@
 package com.jeka8833.tntserver.database.storage;
 
-import com.jeka8833.tntserver.ServerType;
+import com.jeka8833.tntserver.user.player.GameServer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 public class Player extends User {
     private static final long INACTIVE_TIME = TimeUnit.MINUTES.toNanos(5);
     public @Nullable TNTPlayerStorage tntPlayerInfo;
-    public @NotNull ServerType serverType = ServerType.UNKNOWN;
+    public @NotNull GameServer serverType = GameServer.UNKNOWN;
     private long lastCallTime = System.nanoTime();
 
     public Player(@NotNull UUID uuid) {

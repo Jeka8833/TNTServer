@@ -1,6 +1,6 @@
 package com.jeka8833.tntserver.database;
 
-import com.jeka8833.tntserver.ServerType;
+import com.jeka8833.tntserver.user.player.GameServer;
 import com.jeka8833.tntserver.database.storage.Bot;
 import com.jeka8833.tntserver.database.storage.Player;
 import com.jeka8833.tntserver.database.storage.TNTPlayerStorage;
@@ -52,7 +52,6 @@ public class PlayersDatabase {
 
     public static void deleteUser(@NotNull UUID uuid) {
         USER_MAP.remove(uuid);
-        clearInactivePeople();
     }
 
     @Nullable
@@ -91,7 +90,7 @@ public class PlayersDatabase {
     public static String getGameInfo(UUID uuid) {
         User user = getUser(uuid);
         if (user instanceof Player player) {
-            if (player.serverType == ServerType.TNT_COMMUNITY) return "{\"ServerName\":\"Odyssey\"}";
+            if (player.serverType == GameServer.TNT_COMMUNITY) return "{\"ServerName\":\"Odyssey\"}";
             if (player.tntPlayerInfo != null) return player.tntPlayerInfo.gameInfo;
         }
 

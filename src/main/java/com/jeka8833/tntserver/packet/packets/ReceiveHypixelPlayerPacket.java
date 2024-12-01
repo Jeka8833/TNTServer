@@ -1,12 +1,12 @@
 package com.jeka8833.tntserver.packet.packets;
 
-import com.jeka8833.tntserver.database.storage.User;
+import com.jeka8833.tntserver.TNTServer;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
 import com.jeka8833.tntserver.requester.balancer.node.RemoteNode;
 import com.jeka8833.tntserver.requester.storage.HypixelCompactStructure;
-import org.java_websocket.WebSocket;
+import com.jeka8833.tntserver.user.UserBase;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,7 +32,7 @@ public class ReceiveHypixelPlayerPacket implements Packet {
     }
 
     @Override
-    public void write(PacketOutputStream stream) throws IOException {
+    public void write(PacketOutputStream stream, int protocolVersion) throws IOException {
         if (storage == null) throw new NullPointerException("User list is empty");
 
         stream.writeBoolean(lastPacket);
@@ -45,7 +45,7 @@ public class ReceiveHypixelPlayerPacket implements Packet {
     }
 
     @Override
-    public void read(PacketInputStream stream) throws IOException {
+    public void read(PacketInputStream stream, int protocolVersion) throws IOException {
         int size = stream.readUnsignedByte();
         storage = new HashMap<>(size);
 
@@ -61,13 +61,7 @@ public class ReceiveHypixelPlayerPacket implements Packet {
     }
 
     @Override
-    public void serverProcess(WebSocket socket, @Nullable User user) {
-        if (user == null) {
-            socket.close();
-
-            return;
-        }
-
+    public void serverProcess(@NotNull UserBase user, @NotNull TNTServer server) {
         if (storage == null) return;
 
         for (Map.Entry<UUID, HypixelCompactStructure> player : storage.entrySet()) {

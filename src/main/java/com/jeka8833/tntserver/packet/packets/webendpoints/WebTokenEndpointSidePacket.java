@@ -1,15 +1,14 @@
 package com.jeka8833.tntserver.packet.packets.webendpoints;
 
 import com.jeka8833.tntserver.TNTServer;
-import com.jeka8833.tntserver.database.PlayersDatabase;
-import com.jeka8833.tntserver.database.storage.User;
 import com.jeka8833.tntserver.packet.Packet;
 import com.jeka8833.tntserver.packet.PacketInputStream;
 import com.jeka8833.tntserver.packet.PacketOutputStream;
 import com.jeka8833.tntserver.packet.packets.WebTokenUseSidePacket;
+import com.jeka8833.tntserver.user.UserBase;
+import com.jeka8833.tntserver.user.player.Player;
 import lombok.NoArgsConstructor;
-import org.java_websocket.WebSocket;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -26,30 +25,28 @@ public class WebTokenEndpointSidePacket implements Packet {
     }
 
     @Override
-    public void write(PacketOutputStream stream) throws IOException {
+    public void write(PacketOutputStream stream, int protocolVersion) throws IOException {
         stream.writeUUID(user);
         stream.writeBoolean(register);
     }
 
     @Override
-    public void read(PacketInputStream stream) throws IOException {
+    public void read(PacketInputStream stream, int protocolVersion) throws IOException {
         user = stream.readUUID();
         key = stream.readUUID();
     }
 
     @Override
-    public void serverProcess(WebSocket socket, @Nullable User user) {
-        if (PlayersDatabase.isPrivilegeAbsent(user, "SERVER_TOKEN")) {
-            socket.close();
+    public void serverProcess(@NotNull UserBase user, @NotNull TNTServer server) {
+        if (!user.hasPrivilege("SERVER_TOKEN")) {
+            user.disconnect();
 
             return;
         }
 
-        User foundUser = PlayersDatabase.getOrCreate(this.user);
-
-        WebSocket foundUserSocket = foundUser.getSocket();
-        if (foundUserSocket != null) {
-            TNTServer.serverSend(foundUserSocket, new WebTokenUseSidePacket(this.user, this.key));
+        Player player = server.getUserDatabase().getPlayer(this.user);
+        if (player != null) {
+            player.sendPacket(new WebTokenUseSidePacket(this.user, this.key));
         }
     }
 }

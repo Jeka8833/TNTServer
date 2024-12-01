@@ -17,17 +17,32 @@ import com.jeka8833.tntserver.packet.packets.webendpoints.DiscordTokenEndpointSi
 import com.jeka8833.tntserver.packet.packets.webendpoints.WebTokenEndpointSidePacket;
 import com.jeka8833.tntserver.requester.HypixelCache;
 import com.jeka8833.tntserver.requester.balancer.NodeRegisterManager;
+import com.jeka8833.tntserver.user.Anonymous;
+import com.jeka8833.tntserver.user.UserBase;
+import com.jeka8833.tntserver.user.UserDatabase;
 import com.jeka8833.tntserver.util.BiMap;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.java_websocket.WebSocket;
+import org.java_websocket.drafts.Draft;
+import org.java_websocket.drafts.Draft_6455;
+import org.java_websocket.exceptions.InvalidDataException;
+import org.java_websocket.framing.CloseFrame;
 import org.java_websocket.handshake.ClientHandshake;
+import org.java_websocket.handshake.ServerHandshakeBuilder;
+import org.java_websocket.protocols.Protocol;
 import org.java_websocket.server.WebSocketServer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class TNTServer extends WebSocketServer {
@@ -61,8 +76,14 @@ public class TNTServer extends WebSocketServer {
         PACKETS_LIST.put((byte) 255, AuthBotPacket.class);
     }
 
+    @Getter
+    private final UserDatabase userDatabase = new UserDatabase(this);
+
     public TNTServer(final InetSocketAddress address) {
-        super(address);
+        super(address, Collections.singletonList(new Draft_6455(
+                Collections.emptyList(),
+                Collections.singletonList(new Protocol("")),
+                2 * 1024)));
     }
 
     public static void serverSend(@NotNull WebSocket socket, @NotNull Packet packet) {
@@ -94,6 +115,51 @@ public class TNTServer extends WebSocketServer {
     }
 
     @Override
+    public ServerHandshakeBuilder onWebsocketHandshakeReceivedAsServer
+            (WebSocket conn, Draft draft, ClientHandshake request) throws InvalidDataException {
+        try {
+            ServerHandshakeBuilder builder = super.onWebsocketHandshakeReceivedAsServer(conn, draft, request);
+
+            String protocolVersionHeader = request.getFieldValue("TntServer-Protocol-Version");
+            int protocolVersion = protocolVersionHeader.isEmpty() ? 0 : Integer.parseInt(protocolVersionHeader);
+
+            String authorizationHeader = request.getFieldValue("Authorization");
+            if (authorizationHeader.isEmpty()) {
+                conn.setAttachment(new Anonymous(conn, protocolVersion, 1, TimeUnit.MINUTES));
+
+                return builder;    // Outdated handshake
+            }
+
+            if (!authorizationHeader.toLowerCase().startsWith("basic ")) {
+                throw new InvalidDataException(CloseFrame.POLICY_VALIDATION, "Invalid authorization header");
+            }
+
+            String base64Credentials = authorizationHeader.substring("basic".length()).trim();
+            byte[] credDecoded = Base64.getDecoder().decode(base64Credentials);
+            String credentials = new String(credDecoded, StandardCharsets.UTF_8);
+            String[] values = credentials.split(":", 2);
+
+            String username = values[0];
+            String password = values[1];
+            //To your checks and throw an InvalidDataException to indicate that you reject this handshake.
+
+            for (WebSocket user : server.getConnections()) {
+                if (user.equals(conn)) continue;
+
+                if (Objects.equals(user.getAttachment(), conn.getAttachment())) {
+                    user.close();
+                }
+            }
+
+            return builder;
+        } catch (Exception e) {
+            log.error("Error in handshake:", e);
+
+            throw new InvalidDataException(CloseFrame.POLICY_VALIDATION, "Internal server error");
+        }
+    }
+
+    @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
     }
 
@@ -104,6 +170,7 @@ public class TNTServer extends WebSocketServer {
         UUID userUUID = conn.getAttachment();
         conn.close();
 
+        PlayersDatabase.clearInactivePeople();
         User user = PlayersDatabase.getUser(userUUID);
         if (user != null) user.disconnect();
 
@@ -122,18 +189,23 @@ public class TNTServer extends WebSocketServer {
 
     @Override
     public void onMessage(WebSocket conn, ByteBuffer message) {
-        UUID userUUID = conn.getAttachment();
-        User user = PlayersDatabase.getUser(userUUID);
+        UserBase userBase = conn.getAttachment();
+        if (userBase == null) {
+            conn.close();
+
+            log.error("Attachment is null, bug.");
+            return;
+        }
 
         try (PacketInputStream stream = new PacketInputStream(message)) {
-            if ((user == null || user.isInactive()) &&
+            if (userBase instanceof Anonymous &&
                     !(stream.packet instanceof AuthClientPacket || stream.packet instanceof AuthBotPacket)) {
-                conn.close(); // The player doesn't exist in the cache, disconnecting...
+                conn.close();
                 return;
             }
 
             stream.packet.read(stream);
-            stream.packet.serverProcess(conn, user);
+            stream.packet.serverProcess(userBase, this);
         } catch (Exception e) {
             log.error("Fail parse packet", e);
         }

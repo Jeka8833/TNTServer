@@ -1,6 +1,6 @@
 package com.jeka8833.tntserver.gamechat;
 
-import com.jeka8833.tntserver.ServerType;
+import com.jeka8833.tntserver.user.player.GameServer;
 import com.jeka8833.tntserver.TNTServer;
 import com.jeka8833.tntserver.database.PlayersDatabase;
 import com.jeka8833.tntserver.database.storage.Bot;
@@ -42,7 +42,7 @@ public class GameChatManager {
         }
     }
 
-    public static void sendGlobalMessage(@Nullable UUID sender, @NotNull ServerType destination, @NotNull String message,
+    public static void sendGlobalMessage(@Nullable UUID sender, @NotNull GameServer destination, @NotNull String message,
                                          boolean isSystemMessage) {
         var packet = new ChatPacket(Objects.requireNonNullElse(sender, EMPTY_UUID), message);
 
@@ -54,7 +54,7 @@ public class GameChatManager {
                 try {
                     User user = PlayersDatabase.getUser(client.getAttachment());
                     if (user instanceof Player toPlayer &&
-                            (ServerType.UNKNOWN.equals(destination) ||
+                            (GameServer.UNKNOWN.equals(destination) ||
                                     destination.equals(toPlayer.serverType))) {
                         if (client.isOpen()) client.send(send);
                     }
@@ -71,7 +71,7 @@ public class GameChatManager {
     }
 
     public static void sendToHook(@Nullable UUID sender, @Nullable UUID receiver,
-                                  @NotNull ServerType server, @NotNull String text) {
+                                  @NotNull GameServer server, @NotNull String text) {
         log.info("Chat: {} -> {} {}: {}", sender, receiver, server, text);
 
         Iterable<Bot> bots = PlayersDatabase.getBotsWithPrivilege("SERVER_CHAT");
