@@ -1,95 +1,69 @@
 plugins {
     id 'java'
-    id 'org.graalvm.buildtools.native' version '0.10.2'
-    id("io.freefair.lombok") version "8.10.2"
+    id 'org.springframework.boot' version '3.4.1-SNAPSHOT'
+    id 'io.spring.dependency-management' version '1.1.6'
+    id 'org.hibernate.orm' version '6.6.3.Final'
+    id 'org.graalvm.buildtools.native' version '0.10.4'
 }
 
-group 'com.Jeka8833'
+group = 'com.jeka8833'
+version = '1.0.1'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(23)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
 
 repositories {
     mavenCentral()
+    maven { url 'https://repo.spring.io/snapshot' }
 }
 
 dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    compileOnly 'org.projectlombok:lombok'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    runtimeOnly 'org.postgresql:postgresql'
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
     // https://mvnrepository.com/artifact/com.github.loki4j/loki-logback-appender
     implementation group: 'com.github.loki4j', name: 'loki-logback-appender', version: '1.6.0-rc1'
 
-    // https://mvnrepository.com/artifact/info.picocli/picocli
-    implementation group: 'info.picocli', name: 'picocli', version: '4.7.6'
-    annotationProcessor 'info.picocli:picocli-codegen:4.7.6'
+    // https://mvnrepository.com/artifact/org.codehaus.janino/janino
+    implementation group: 'org.codehaus.janino', name: 'janino', version: '3.1.12'
 
-    // https://mvnrepository.com/artifact/com.github.ben-manes.caffeine/caffeine
-    implementation group: 'com.github.ben-manes.caffeine', name: 'caffeine', version: '3.1.8'
+    // https://mvnrepository.com/artifact/io.micrometer/micrometer-core
+    implementation 'io.micrometer:micrometer-core'
 
-    // https://mvnrepository.com/artifact/com.alibaba.fastjson2/fastjson2
-    implementation group: 'com.alibaba.fastjson2', name: 'fastjson2', version: '2.0.53'
+    // https://mvnrepository.com/artifact/org.cache2k/cache2k-spring
+    implementation group: 'org.cache2k', name: 'cache2k-spring', version: '2.6.1.Final'
 
-    // Fix conflict
-    // https://mvnrepository.com/artifact/org.checkerframework/checker-qual
-    implementation group: 'org.checkerframework', name: 'checker-qual', version: '3.42.0'
-
-    // Fix conflict
-    // https://mvnrepository.com/artifact/org.slf4j/slf4j-api
-    implementation group: 'org.slf4j', name: 'slf4j-api', version: '2.0.16'
+    // https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp
+    implementation group: 'com.squareup.okhttp3', name: 'okhttp', version: '4.12.0'
 
     // https://mvnrepository.com/artifact/org.jetbrains/annotations
     implementation group: 'org.jetbrains', name: 'annotations', version: '26.0.1'
 
-    // https://mvnrepository.com/artifact/org.postgresql/postgresql
-    implementation group: 'org.postgresql', name: 'postgresql', version: '42.7.4'
-
     // https://mvnrepository.com/artifact/org.java-websocket/Java-WebSocket
     implementation group: 'org.java-websocket', name: 'Java-WebSocket', version: '1.5.7'
-
-    // https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp
-    implementation group: 'com.squareup.okhttp3', name: 'okhttp', version: '5.0.0-alpha.14'
-
-    // Fix conflict
-    // https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-api
-    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.10.0'
 }
 
-compileJava.options.encoding = 'UTF-8'
-
-tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8'
-}
-
-graalvmNative {
-    toolchainDetection = true
-    binaries.configureEach {
-        resources.autodetect()
-        buildArgs.add('--verbose')
-        buildArgs.add('--enable-url-protocols=http,https')
-        sharedLibrary = false
-    }
-    binaries {
-        main {
-            mainClass = "com.jeka8833.tntserver.Main"
-            useFatJar = true
-        }
+hibernate {
+    enhancement {
+        enableAssociationManagement = true
     }
 }
 
-
-jar {
-    archivesBaseName="TNTServer"
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    manifest {
-        attributes["Manifest-Version"] = "1.0"
-        attributes["Main-Class"] = "com.jeka8833.tntserver.Main"
-        attributes["Multi-Release"] = "true"
-
-    }
-    from {
-        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
-    }
-}
-
-test {
+tasks.named('test') {
     useJUnitPlatform()
-}
-
-compileJava {
-    options.compilerArgs += ["-Aproject=${project.group}/${project.name}"]
 }

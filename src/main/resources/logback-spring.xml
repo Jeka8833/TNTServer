@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <springProperty name="LOKI_ENABLED" source="logging.loki.enable" defaultValue="false"/>
+
+    <if condition='${LOKI_ENABLED}'>
+        <then>
+            <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+            <property name="LOG_FILE"
+                      value="${LOG_FILE:-${LOG_PATH:-${LOG_TEMP:-${java.io.tmpdir:-/tmp}}}/spring.log}"/>
+
+            <springProperty name="SPRING_NAME" source="spring.application.name"/>
+            <springProperty name="LOKI_URL" source="logging.loki.url"/>
+            <springProperty name="LOKI_USERNAME" source="logging.loki.username" defaultValue=""/>
+            <springProperty name="LOKI_PASSWORD" source="logging.loki.password" defaultValue=""/>
+
+            <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+                <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+                    <level>${CONSOLE_LOG_THRESHOLD}</level>
+                </filter>
+                <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+                    <evaluator>
+                        <expression>return message.equals("analytics");</expression>
+                    </evaluator>
+                    <OnMismatch>NEUTRAL</OnMismatch>
+                    <OnMatch>DENY</OnMatch>
+                </filter>
+                <encoder>
+                    <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+                    <charset>${CONSOLE_LOG_CHARSET}</charset>
+                </encoder>
+            </appender>
+
+            <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+                <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+                    <level>${FILE_LOG_THRESHOLD}</level>
+                </filter>
+                <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+                    <evaluator>
+                        <expression>return message.equals("analytics");</expression>
+                    </evaluator>
+                    <OnMismatch>NEUTRAL</OnMismatch>
+                    <OnMatch>DENY</OnMatch>
+                </filter>
+                <encoder>
+                    <pattern>${FILE_LOG_PATTERN}</pattern>
+                    <charset>${FILE_LOG_CHARSET}</charset>
+                </encoder>
+                <file>${LOG_FILE}</file>
+                <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                    <fileNamePattern>${LOGBACK_ROLLINGPOLICY_FILE_NAME_PATTERN:-${LOG_FILE}.%d{yyyy-MM-dd}.%i.gz}
+                    </fileNamePattern>
+                    <cleanHistoryOnStart>${LOGBACK_ROLLINGPOLICY_CLEAN_HISTORY_ON_START:-false}</cleanHistoryOnStart>
+                    <maxFileSize>${LOGBACK_ROLLINGPOLICY_MAX_FILE_SIZE:-10MB}</maxFileSize>
+                    <totalSizeCap>${LOGBACK_ROLLINGPOLICY_TOTAL_SIZE_CAP:-0}</totalSizeCap>
+                    <maxHistory>${LOGBACK_ROLLINGPOLICY_MAX_HISTORY:-7}</maxHistory>
+                </rollingPolicy>
+            </appender>
+
+            <appender name="LOKI" class="com.github.loki4j.logback.Loki4jAppender">
+                <batchMaxBytes>65536</batchMaxBytes>
+                <batchTimeoutMs>15000</batchTimeoutMs>
+                <internalQueuesCheckTimeoutMs>1000</internalQueuesCheckTimeoutMs>
+                <http>
+                    <url>${LOKI_URL}</url>
+                    <auth>
+                        <username>${LOKI_USERNAME}</username>
+                        <password>${LOKI_PASSWORD}</password>
+                    </auth>
+                    <requestTimeoutMs>15000</requestTimeoutMs>
+                </http>
+                <format>
+                    <label>
+                        <pattern>service_name=${SPRING_NAME},host=${HOSTNAME}</pattern>
+                    </label>
+                    <message class="com.github.loki4j.logback.JsonLayout">
+                        <mdc>
+                            <fieldName>_</fieldName>
+                        </mdc>
+                        <pattern>
+                            {
+                            "level":"%level",
+                            "class":"%logger{36}",
+                            "thread":"%thread",
+                            "message": "%message"
+                            }
+                        </pattern>
+                    </message>
+                </format>
+            </appender>
+
+            <root level="INFO">
+                <appender-ref ref="LOKI"/>
+                <appender-ref ref="CONSOLE"/>
+                <appender-ref ref="FILE"/>
+            </root>
+        </then>
+        <else>
+            <include resource="org/springframework/boot/logging/logback/base.xml"/>
+        </else>
+    </if>
+</configuration>
