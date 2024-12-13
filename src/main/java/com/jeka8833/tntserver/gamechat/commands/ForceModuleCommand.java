@@ -20,7 +20,9 @@ import java.util.function.Consumer;
 
 public class ForceModuleCommand implements Command {
     private static final Map<String, Integer> MODULES = Map.of(
-            "djfix", 6
+            "djfix-deprecated", 6,
+            "djfix", 29,
+            "djfix-lite", 30
     );
 
     private static final String PRIVILEGE = "FORCE_MODULE";
