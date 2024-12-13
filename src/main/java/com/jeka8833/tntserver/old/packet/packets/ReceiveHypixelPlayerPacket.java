@@ -6,7 +6,7 @@ import com.jeka8833.tntserver.old.packet.PacketInputStream;
 import com.jeka8833.tntserver.old.packet.PacketOutputStream;
 import com.jeka8833.tntserver.old.requester.balancer.node.RemoteNode;
 import com.jeka8833.tntserver.old.requester.storage.HypixelCompactStructure;
-import com.jeka8833.tntserver.old.user.UserBase;
+import com.jeka8833.tntserver.services.tntclient.user.UserBase;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

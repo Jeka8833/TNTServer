@@ -1,13 +1,13 @@
 package com.jeka8833.tntserver.old.gamechat.commands;
 
 import com.jeka8833.tntserver.old.Main;
-import com.jeka8833.tntserver.old.user.player.GameServer;
 import com.jeka8833.tntserver.old.TNTServer;
 import com.jeka8833.tntserver.old.database.RemoteDB;
 import com.jeka8833.tntserver.old.database.storage.User;
 import com.jeka8833.tntserver.old.gamechat.CommandManager;
 import com.jeka8833.tntserver.old.gamechat.GameChatManager;
 import com.jeka8833.tntserver.old.requester.HypixelCache;
+import com.jeka8833.tntserver.services.tntclient.user.player.GameServer;
 import lombok.extern.slf4j.Slf4j;
 import org.java_websocket.WebSocket;
 import org.jetbrains.annotations.NotNull;

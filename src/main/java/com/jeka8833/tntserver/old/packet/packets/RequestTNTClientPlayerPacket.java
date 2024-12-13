@@ -6,7 +6,7 @@ import com.jeka8833.tntserver.old.database.storage.Player;
 import com.jeka8833.tntserver.old.packet.Packet;
 import com.jeka8833.tntserver.old.packet.PacketInputStream;
 import com.jeka8833.tntserver.old.packet.PacketOutputStream;
-import com.jeka8833.tntserver.old.user.UserBase;
+import com.jeka8833.tntserver.services.tntclient.user.UserBase;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -32,7 +32,7 @@ public class RequestTNTClientPlayerPacket implements Packet {
 
     @Override
     public void serverProcess(@NotNull UserBase user, @NotNull TNTServer server) {
-        if (user instanceof com.jeka8833.tntserver.old.user.player.Player player){
+        if (user instanceof com.jeka8833.tntserver.services.tntclient.user.player.Player player){
             RemoteDB.readUsers(users, resultUsers -> {
                 Player[] players = resultUsers.stream()
                         .filter(player -> player instanceof Player)

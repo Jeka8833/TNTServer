@@ -1,11 +1,11 @@
 package com.jeka8833.tntserver.old.database;
 
-import com.jeka8833.tntserver.old.user.player.GameServer;
 import com.jeka8833.tntserver.old.database.storage.Bot;
 import com.jeka8833.tntserver.old.database.storage.Player;
 import com.jeka8833.tntserver.old.database.storage.TNTPlayerStorage;
 import com.jeka8833.tntserver.old.database.storage.User;
 import com.jeka8833.tntserver.old.mojang.MojangAPI;
+import com.jeka8833.tntserver.services.tntclient.user.player.GameServer;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

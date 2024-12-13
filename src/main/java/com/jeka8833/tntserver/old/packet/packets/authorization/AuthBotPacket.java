@@ -8,7 +8,7 @@ import com.jeka8833.tntserver.old.database.storage.User;
 import com.jeka8833.tntserver.old.packet.Packet;
 import com.jeka8833.tntserver.old.packet.PacketInputStream;
 import com.jeka8833.tntserver.old.packet.PacketOutputStream;
-import com.jeka8833.tntserver.old.user.UserBase;
+import com.jeka8833.tntserver.services.tntclient.user.UserBase;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.java_websocket.WebSocket;

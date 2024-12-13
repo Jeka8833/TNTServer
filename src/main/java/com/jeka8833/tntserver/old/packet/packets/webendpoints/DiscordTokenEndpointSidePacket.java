@@ -4,7 +4,7 @@ import com.jeka8833.tntserver.old.TNTServer;
 import com.jeka8833.tntserver.old.packet.Packet;
 import com.jeka8833.tntserver.old.packet.PacketInputStream;
 import com.jeka8833.tntserver.old.packet.PacketOutputStream;
-import com.jeka8833.tntserver.old.user.UserBase;
+import com.jeka8833.tntserver.services.tntclient.user.UserBase;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;

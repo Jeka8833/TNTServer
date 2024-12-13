@@ -17,10 +17,10 @@ import com.jeka8833.tntserver.old.packet.packets.webendpoints.DiscordTokenEndpoi
 import com.jeka8833.tntserver.old.packet.packets.webendpoints.WebTokenEndpointSidePacket;
 import com.jeka8833.tntserver.old.requester.HypixelCache;
 import com.jeka8833.tntserver.old.requester.balancer.NodeRegisterManager;
-import com.jeka8833.tntserver.old.user.Anonymous;
-import com.jeka8833.tntserver.old.user.UserBase;
-import com.jeka8833.tntserver.old.user.UserDatabase;
 import com.jeka8833.tntserver.old.util.BiMap;
+import com.jeka8833.tntserver.services.tntclient.user.Anonymous;
+import com.jeka8833.tntserver.services.tntclient.user.UserBase;
+import com.jeka8833.tntserver.services.tntclient.user.UserDatabase;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.java_websocket.WebSocket;

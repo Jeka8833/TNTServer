@@ -6,9 +6,9 @@ import com.jeka8833.tntserver.old.database.storage.TNTPlayerPingStorage;
 import com.jeka8833.tntserver.old.packet.Packet;
 import com.jeka8833.tntserver.old.packet.PacketInputStream;
 import com.jeka8833.tntserver.old.packet.PacketOutputStream;
-import com.jeka8833.tntserver.old.user.UserBase;
-import com.jeka8833.tntserver.old.user.player.Player;
-import com.jeka8833.tntserver.old.user.player.PlayerPing;
+import com.jeka8833.tntserver.services.tntclient.user.UserBase;
+import com.jeka8833.tntserver.services.tntclient.user.player.Player;
+import com.jeka8833.tntserver.services.tntclient.user.player.PlayerPing;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

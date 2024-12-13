@@ -1,26 +1,26 @@
 package com.jeka8833.toprotocol.core.register;
 
 import com.jeka8833.toprotocol.core.packet.PacketBase;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
-import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
-public class PacketRegistryBuilder<
-        Key,
-        ClientboundType extends PacketBase,
-        ServerboundType extends PacketBase> {
+public final class PacketRegistryBuilder<Key, ClientboundType extends PacketBase<Attachment>,
+        ServerboundType extends PacketBase<Attachment>, Attachment> {
 
-    private final Map<Key, ConnectionBuilder<Key, ClientboundType, ServerboundType>> map = new ConcurrentHashMap<>();
+    private final Map<Key, ConnectionBuilder<Key, ClientboundType, ServerboundType, Attachment>> map =
+            new ConcurrentHashMap<>();
 
-    public PacketRegistryBuilder<Key, ClientboundType, ServerboundType> register(
-            Key identifier,
-            Consumer<ConnectionBuilder<Key, ClientboundType, ServerboundType>> builder) {
-        Objects.requireNonNull(identifier);
-        Objects.requireNonNull(builder);
-
-        ConnectionBuilder<Key, ClientboundType, ServerboundType> connectionBuilder =
+    @NotNull
+    @Contract(value = "_, _ -> this")
+    public PacketRegistryBuilder<Key, ClientboundType, ServerboundType, Attachment> register(
+            @NotNull Key identifier,
+            @NotNull Consumer<ConnectionBuilder<Key, ClientboundType, ServerboundType, Attachment>> builder) {
+        ConnectionBuilder<Key, ClientboundType, ServerboundType, Attachment> connectionBuilder =
                 map.computeIfAbsent(identifier, k -> new ConnectionBuilder<>());
         builder.accept(connectionBuilder);
 
@@ -31,15 +31,26 @@ public class PacketRegistryBuilder<
         return this;
     }
 
-    public ClientPacketRegistry<Key, ClientboundType, ServerboundType> buildForClient() {
+    @NotNull
+    public Set<Key> getRegisteredKeys() {
+        return map.keySet();
+    }
+
+    @NotNull
+    @Contract(value = " -> new", pure = true)
+    public ClientPacketRegistry<Key, ClientboundType, ServerboundType, Attachment> buildForClient() {
         return new ClientPacketRegistry<>(map);
     }
 
-    public ServerPacketRegistry<Key, ClientboundType, ServerboundType> buildForServer() {
+    @NotNull
+    @Contract(value = " -> new", pure = true)
+    public ServerPacketRegistry<Key, ClientboundType, ServerboundType, Attachment> buildForServer() {
         return new ServerPacketRegistry<>(map);
     }
 
-    public PacketRegistry<Key, ClientboundType, ServerboundType> build() {
+    @NotNull
+    @Contract(value = " -> new", pure = true)
+    public PacketRegistry<Key, ClientboundType, ServerboundType, Attachment> build() {
         return new PacketRegistry<>(map);
     }
 }

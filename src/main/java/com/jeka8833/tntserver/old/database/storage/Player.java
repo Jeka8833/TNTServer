@@ -1,6 +1,6 @@
 package com.jeka8833.tntserver.old.database.storage;
 
-import com.jeka8833.tntserver.old.user.player.GameServer;
+import com.jeka8833.tntserver.services.tntclient.user.player.GameServer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

@@ -5,32 +5,23 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
-import org.jetbrains.annotations.Nullable;
 
-import java.time.Instant;
 import java.util.UUID;
 
 @Getter
 @Entity
-@Table(name = "tntclient_user_roles_and_keys")
+@Table(name = "TC_Players")
 public class TNTClientPlayerModel {
     @Id
     @Column(name = "user", nullable = false)
     private UUID user;
 
-    @Nullable
-    @Column(name = "version")
+    @Column(name = "version", nullable = false)
     private String version;
 
-    @Column(name = "blockModules")
+    @Column(name = "blockModules", nullable = false)
     private long blockModules;
 
-    @Column(name = "donate")
+    @Column(name = "donate", nullable = false)
     private byte donate;
-
-    @Column(name = "timeLogin", nullable = false, updatable = false, insertable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
-    public Instant timeLogin;
-
-    @Column(name = "firstLogin", nullable = false, updatable = false, insertable = false)
-    public Instant firstLogin;
 }

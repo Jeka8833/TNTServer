@@ -1,7 +1,7 @@
 package com.jeka8833.tntserver.old.packet;
 
 import com.jeka8833.tntserver.old.TNTServer;
-import com.jeka8833.tntserver.old.user.UserBase;
+import com.jeka8833.tntserver.services.tntclient.user.UserBase;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;

@@ -6,9 +6,9 @@ import com.jeka8833.tntserver.old.packet.Packet;
 import com.jeka8833.tntserver.old.packet.PacketInputStream;
 import com.jeka8833.tntserver.old.packet.PacketOutputStream;
 import com.jeka8833.tntserver.old.packet.packets.webendpoints.DiscordTokenEndpointSidePacket;
-import com.jeka8833.tntserver.old.user.Bot;
-import com.jeka8833.tntserver.old.user.UserBase;
-import com.jeka8833.tntserver.old.user.player.Player;
+import com.jeka8833.tntserver.services.tntclient.user.Bot;
+import com.jeka8833.tntserver.services.tntclient.user.UserBase;
+import com.jeka8833.tntserver.services.tntclient.user.player.Player;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 

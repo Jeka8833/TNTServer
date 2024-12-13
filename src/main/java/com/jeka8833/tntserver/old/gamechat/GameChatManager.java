@@ -1,6 +1,5 @@
 package com.jeka8833.tntserver.old.gamechat;
 
-import com.jeka8833.tntserver.old.user.player.GameServer;
 import com.jeka8833.tntserver.old.TNTServer;
 import com.jeka8833.tntserver.old.database.PlayersDatabase;
 import com.jeka8833.tntserver.old.database.storage.Bot;
@@ -9,6 +8,7 @@ import com.jeka8833.tntserver.old.database.storage.User;
 import com.jeka8833.tntserver.old.packet.PacketOutputStream;
 import com.jeka8833.tntserver.old.packet.packets.ChatPacket;
 import com.jeka8833.tntserver.old.packet.packets.webendpoints.ChatHookPacket;
+import com.jeka8833.tntserver.services.tntclient.user.player.GameServer;
 import lombok.extern.slf4j.Slf4j;
 import org.java_websocket.WebSocket;
 import org.jetbrains.annotations.NotNull;
