@@ -1,7 +1,7 @@
 package com.jeka8833.toprotocol.core.register;
 
 import com.jeka8833.toprotocol.core.packet.PacketBase;
-import com.jeka8833.toprotocol.core.serializer.PacketInputSerializer;
+import com.jeka8833.toprotocol.core.serializer.InputByteArray;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,7 +43,7 @@ public final class PacketRegistry<Key, ClientboundType extends PacketBase<Attach
     @Nullable
     @Override
     public ClientboundType createClientBoundPacket(
-            @NotNull Key identifier, @NotNull PacketInputSerializer serializer, Attachment attachment) {
+            @NotNull Key identifier, @NotNull InputByteArray serializer, Attachment attachment) {
         PairFunction<ClientboundType, ServerboundType, Attachment> pairFunction = registrations.get(identifier);
         if (pairFunction == null || pairFunction.clientPacketFactory == null) return null;
 
@@ -59,7 +59,7 @@ public final class PacketRegistry<Key, ClientboundType extends PacketBase<Attach
     @Nullable
     @Override
     public ServerboundType createServerBoundPacket(
-            @NotNull Key identifier, @NotNull PacketInputSerializer serializer, Attachment attachment) {
+            @NotNull Key identifier, @NotNull InputByteArray serializer, Attachment attachment) {
         PairFunction<ClientboundType, ServerboundType, Attachment> pairFunction = registrations.get(identifier);
         if (pairFunction == null || pairFunction.serverPacketFactory == null) return null;
 
@@ -77,14 +77,14 @@ public final class PacketRegistry<Key, ClientboundType extends PacketBase<Attach
             ServerboundType extends PacketBase<Attachment>, Attachment> {
 
         @Nullable
-        private final BiFunction<PacketInputSerializer, Attachment, ClientboundType> clientPacketFactory;
+        private final BiFunction<InputByteArray, Attachment, ClientboundType> clientPacketFactory;
 
         @Nullable
-        private final BiFunction<PacketInputSerializer, Attachment, ServerboundType> serverPacketFactory;
+        private final BiFunction<InputByteArray, Attachment, ServerboundType> serverPacketFactory;
 
         private PairFunction(
-                @Nullable BiFunction<PacketInputSerializer, Attachment, ClientboundType> clientPacketFactory,
-                @Nullable BiFunction<PacketInputSerializer, Attachment, ServerboundType> serverPacketFactory) {
+                @Nullable BiFunction<InputByteArray, Attachment, ClientboundType> clientPacketFactory,
+                @Nullable BiFunction<InputByteArray, Attachment, ServerboundType> serverPacketFactory) {
             this.clientPacketFactory = clientPacketFactory;
             this.serverPacketFactory = serverPacketFactory;
         }

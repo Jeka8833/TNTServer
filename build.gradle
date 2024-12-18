@@ -63,6 +63,9 @@ dependencies {
 
     // https://mvnrepository.com/artifact/org.java-websocket/Java-WebSocket
     implementation group: 'org.java-websocket', name: 'Java-WebSocket', version: '1.5.7'
+
+    // https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-api
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.11.3'
 }
 
 hibernate {

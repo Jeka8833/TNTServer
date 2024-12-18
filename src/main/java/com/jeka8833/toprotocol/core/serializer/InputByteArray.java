@@ -14,13 +14,21 @@ public class InputByteArray extends ByteArrayInputStream {
     @Override
     @Contract(mutates = "this")
     public void skipNBytes(long n) {
-        if (skip(n) != n) throw new IndexOutOfBoundsException("Not enough data to skip " + n + " bytes");
+        if (n <= 0L) return;
+        if (count - pos < n) throw new IndexOutOfBoundsException("Not enough data to skip " + n + " bytes");
+
+        pos += (int) n;
     }
 
     @Override
     @Contract(mutates = "this")
     public byte @NotNull [] readNBytes(int len) {
-        return Arrays.copyOfRange(buf, pos, pos += len);
+        if (len < 0) throw new IndexOutOfBoundsException(len + " < 0");
+
+        byte[] bytes = Arrays.copyOfRange(buf, pos, pos + len);
+        pos += len;
+
+        return bytes;
     }
 
     @Override
@@ -31,42 +39,60 @@ public class InputByteArray extends ByteArrayInputStream {
 
     @Contract(mutates = "this")
     public boolean readBoolean() {
-        return buf[pos++] != 0;
+        boolean value = buf[pos] != 0;
+        pos++;
+
+        return value;
     }
 
     @Contract(mutates = "this")
     public byte readByte() {
-        return buf[pos++];
+        byte value = buf[pos];
+        pos++;
+
+        return value;
     }
 
     @Contract(mutates = "this")
     public short readShort() {
-        return (short) ((buf[pos++] & 0xFF) << 8 | (buf[pos++] & 0xFF));
+        short value = (short) ((buf[pos] & 0xFF) << 8 | (buf[pos + 1] & 0xFF));
+        pos += 2;
+
+        return value;
     }
 
     @Contract(mutates = "this")
     public char readChar() {
-        return (char) ((buf[pos++] & 0xFF) << 8 | (buf[pos++] & 0xFF));
+        char value = (char) ((buf[pos] & 0xFF) << 8 | (buf[pos + 1] & 0xFF));
+        pos += 2;
+
+        return value;
     }
 
     @Contract(mutates = "this")
     public int readInt() {
-        return (buf[pos++] & 0xFF) << 24 |
-                (buf[pos++] & 0xFF) << 16 |
-                (buf[pos++] & 0xFF) << 8 |
-                (buf[pos++] & 0xFF);
+        int value = (buf[pos] & 0xFF) << 24 |
+                (buf[pos + 1] & 0xFF) << 16 |
+                (buf[pos + 2] & 0xFF) << 8 |
+                (buf[pos + 3] & 0xFF);
+        pos += 4;
+
+        return value;
     }
 
     @Contract(mutates = "this")
     public long readLong() {
-        return (long) (buf[pos++] & 0xFF) << 56 |
-                (long) (buf[pos++] & 0xFF) << 48 |
-                (long) (buf[pos++] & 0xFF) << 40 |
-                (long) (buf[pos++] & 0xFF) << 32 |
-                (long) (buf[pos++] & 0xFF) << 24 |
-                (long) (buf[pos++] & 0xFF) << 16 |
-                (long) (buf[pos++] & 0xFF) << 8 |
-                (long) (buf[pos++] & 0xFF);
+        long value = (buf[pos] & 0xFFL) << 56 |
+                (buf[pos + 1] & 0xFFL) << 48 |
+                (buf[pos + 2] & 0xFFL) << 40 |
+                (buf[pos + 3] & 0xFFL) << 32 |
+                (buf[pos + 4] & 0xFFL) << 24 |
+                (buf[pos + 5] & 0xFFL) << 16 |
+                (buf[pos + 6] & 0xFFL) << 8 |
+                (buf[pos + 7] & 0xFFL);
+        pos += 8;
+
+        return value;
     }
 
     @Contract(mutates = "this")

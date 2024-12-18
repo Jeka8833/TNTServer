@@ -3,11 +3,10 @@ package com.jeka8833.tntserver.services.tntclient.packet.clientbound.tntendpoint
 import com.jeka8833.tntserver.services.tntclient.packet.ClientBoundPacket;
 import com.jeka8833.tntserver.services.tntclient.user.player.GameServer;
 import com.jeka8833.toprotocol.addons.serializer.OptionalSerialize;
+import com.jeka8833.toprotocol.addons.serializer.StringSerialize;
 import com.jeka8833.toprotocol.addons.serializer.UUIDSerialize;
 import com.jeka8833.toprotocol.core.serializer.InputByteArray;
 import com.jeka8833.toprotocol.core.serializer.OutputByteArray;
-import com.jeka8833.toprotocol.core.serializer.PacketInputSerializer;
-import com.jeka8833.toprotocol.core.serializer.PacketOutputSerializer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,18 +29,16 @@ public final class ClientboundBotChat implements ClientBoundPacket {
     public ClientboundBotChat(InputByteArray serializer, Integer protocolVersion) {
         this.sender = OptionalSerialize.readOptionally(serializer, UUIDSerialize::readUUID);
         this.receiver = OptionalSerialize.readOptionally(serializer, UUIDSerialize::readUUID);
-        this.server = GameServer.findByServerBrand(serializer.readString());
-        this.message = serializer.readString();
+        this.server = GameServer.findByServerBrand(StringSerialize.readUTF8(serializer));
+        this.message = StringSerialize.readUTF8(serializer);
     }
 
     @Override
     public void write(@NotNull OutputByteArray serializer, Integer protocolVersion) {
         OptionalSerialize.writeOptionally(serializer, sender, UUIDSerialize::writeUUID);
         OptionalSerialize.writeOptionally(serializer, receiver, UUIDSerialize::writeUUID);
-
-        serializer
-                .writeString(server.getServerBrands())
-                .writeString(message);
+        StringSerialize.writeUTF8(serializer, server.getServerBrands());
+        StringSerialize.writeUTF8(serializer, message);
     }
 
     public @Nullable UUID getSender() {

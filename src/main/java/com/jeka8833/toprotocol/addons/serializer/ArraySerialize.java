@@ -23,13 +23,10 @@ public final class ArraySerialize {
         return inputByteArray.readNBytes(len);
     }
 
-    @NotNull
-    @Contract(value = "_, _ -> param1", mutates = "param1")
-    public static OutputByteArray writeByteArray(@NotNull OutputByteArray outputByteArray, byte @NotNull [] bytes) {
+    @Contract(mutates = "param1")
+    public static void writeByteArray(@NotNull OutputByteArray outputByteArray, byte @NotNull [] bytes) {
         VarLengthSerialize.writeVarInt(outputByteArray, bytes.length);
         outputByteArray.writeBytes(bytes);  // TODO: check
-
-        return outputByteArray;
     }
 
     @NotNull
@@ -40,6 +37,8 @@ public final class ArraySerialize {
         int len = VarLengthSerialize.readVarInt(inputByteArray);
         if (len < 0) throw new IndexOutOfBoundsException(len + " < 0");
 
+        function = ValidateSerialization.validateRead(function);
+
         Collection<T> collection = new ArrayList<>();   // Don't pre allocate! Attacker can send us a huge array size
         for (int i = 0; i < len; i++) {
             collection.add(function.apply(inputByteArray));
@@ -48,16 +47,16 @@ public final class ArraySerialize {
         return collection;
     }
 
-    @NotNull
-    @Contract(value = "_, _, _ -> param1", mutates = "param1")
-    public static <T> OutputByteArray writeArray(
-            @NotNull OutputByteArray outputByteArray, Collection<@Nullable T> collection,
-            @NotNull BiConsumer<@NotNull OutputByteArray, @Nullable T> consumer) {
+    @Contract(mutates = "param1")
+    public static <T> void writeArray(@NotNull OutputByteArray outputByteArray,
+                                      @NotNull BiConsumer<@NotNull OutputByteArray, @Nullable T> consumer,
+                                      @NotNull Collection<@Nullable T> collection) {
         VarLengthSerialize.writeVarInt(outputByteArray, collection.size());
+
+        consumer = ValidateSerialization.validateWrite(consumer);
+
         for (T t : collection) {
             consumer.accept(outputByteArray, t);
         }
-
-        return outputByteArray;
     }
 }

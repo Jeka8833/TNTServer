@@ -18,12 +18,9 @@ public final class UUIDSerialize {
         return new UUID(inputByteArray.readLong(), inputByteArray.readLong());
     }
 
-    @NotNull
-    @Contract(value = "_, _ -> param1", mutates = "param1")
-    public static OutputByteArray writeUUID(@NotNull OutputByteArray outputByteArray, @NotNull UUID uuid) {
+    @Contract(mutates = "param1")
+    public static void writeUUID(@NotNull OutputByteArray outputByteArray, @NotNull UUID uuid) {
         outputByteArray.writeLong(uuid.getMostSignificantBits());
         outputByteArray.writeLong(uuid.getLeastSignificantBits());
-
-        return outputByteArray;
     }
 }

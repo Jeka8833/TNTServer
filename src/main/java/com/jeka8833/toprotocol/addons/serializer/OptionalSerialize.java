@@ -27,23 +27,17 @@ public final class OptionalSerialize {
         return OptionalInt.empty();
     }
 
-    @NotNull
-    @Contract(value = "_, _ -> param1", mutates = "param1")
-    public static OutputByteArray writeOptionalInt(@NotNull OutputByteArray outputByteArray,
-                                                   @NotNull OptionalInt optionalInt) {
+    @Contract(mutates = "param1")
+    public static void writeOptionalInt(@NotNull OutputByteArray outputByteArray,
+                                        @NotNull OptionalInt optionalInt) {
         outputByteArray.writeBoolean(optionalInt.isPresent());
         if (optionalInt.isPresent()) outputByteArray.writeInt(optionalInt.getAsInt());
-
-        return outputByteArray;
     }
 
-    @NotNull
-    @Contract(value = "_, _ -> param1", mutates = "param1")
-    public static OutputByteArray writeOptionalInt(@NotNull OutputByteArray outputByteArray, @Nullable Integer value) {
+    @Contract(mutates = "param1")
+    public static void writeOptionalInt(@NotNull OutputByteArray outputByteArray, @Nullable Integer value) {
         outputByteArray.writeBoolean(value != null);
         if (value != null) outputByteArray.writeInt(value);
-
-        return outputByteArray;
     }
 
     @NotNull
@@ -54,23 +48,17 @@ public final class OptionalSerialize {
         return OptionalLong.empty();
     }
 
-    @NotNull
-    @Contract(value = "_, _ -> param1", mutates = "param1")
-    public static OutputByteArray writeOptionalLong(@NotNull OutputByteArray outputByteArray,
-                                                    @NotNull OptionalLong optionalLong) {
+    @Contract(mutates = "param1")
+    public static void writeOptionalLong(@NotNull OutputByteArray outputByteArray,
+                                         @NotNull OptionalLong optionalLong) {
         outputByteArray.writeBoolean(optionalLong.isPresent());
         if (optionalLong.isPresent()) outputByteArray.writeLong(optionalLong.getAsLong());
-
-        return outputByteArray;
     }
 
-    @NotNull
-    @Contract(value = "_, _ -> param1", mutates = "param1")
-    public static OutputByteArray writeOptionalLong(@NotNull OutputByteArray outputByteArray, @Nullable Long value) {
+    @Contract(mutates = "param1")
+    public static void writeOptionalLong(@NotNull OutputByteArray outputByteArray, @Nullable Long value) {
         outputByteArray.writeBoolean(value != null);
         if (value != null) outputByteArray.writeLong(value);
-
-        return outputByteArray;
     }
 
     @NotNull
@@ -81,59 +69,47 @@ public final class OptionalSerialize {
         return OptionalDouble.empty();
     }
 
-    @NotNull
-    @Contract(value = "_, _ -> param1", mutates = "param1")
-    public static OutputByteArray writeOptionalDouble(@NotNull OutputByteArray outputByteArray,
-                                                      @NotNull OptionalDouble optionalDouble) {
+    @Contract(mutates = "param1")
+    public static void writeOptionalDouble(@NotNull OutputByteArray outputByteArray,
+                                           @NotNull OptionalDouble optionalDouble) {
         outputByteArray.writeBoolean(optionalDouble.isPresent());
         if (optionalDouble.isPresent()) outputByteArray.writeDouble(optionalDouble.getAsDouble());
-
-        return outputByteArray;
     }
 
-    @NotNull
-    @Contract(value = "_, _ -> param1", mutates = "param1")
-    public static OutputByteArray writeOptionalDouble(@NotNull OutputByteArray outputByteArray,
-                                                      @Nullable Double value) {
+    @Contract(mutates = "param1")
+    public static void writeOptionalDouble(@NotNull OutputByteArray outputByteArray,
+                                           @Nullable Double value) {
         outputByteArray.writeBoolean(value != null);
         if (value != null) outputByteArray.writeDouble(value);
-
-        return outputByteArray;
     }
 
     @NotNull
     @Contract(mutates = "param1")
     public static <T> Optional<T> readOptional(@NotNull InputByteArray inputByteArray,
                                                @NotNull Function<@NotNull InputByteArray, @Nullable T> function) {
-        return inputByteArray.readBoolean() ? Optional.ofNullable(function.apply(inputByteArray)) : Optional.empty();
+        return inputByteArray.readBoolean() ? Optional.ofNullable(
+                ValidateSerialization.validateRead(function).apply(inputByteArray)) : Optional.empty();
     }
 
-    @NotNull
-    @Contract(value = "_, _, _ -> param1", mutates = "param1")
-    public static <T> OutputByteArray writeOptional(
+    @Contract(mutates = "param1")
+    public static <T> void writeOptional(
             @NotNull OutputByteArray outputByteArray, @NotNull Optional<@NotNull T> optional,
             @NotNull BiConsumer<@NotNull OutputByteArray, @NotNull T> consumer) {
         outputByteArray.writeBoolean(optional.isPresent());
-        optional.ifPresent(t -> consumer.accept(outputByteArray, t));
-
-        return outputByteArray;
+        optional.ifPresent(t -> ValidateSerialization.validateWrite(consumer).accept(outputByteArray, t));
     }
 
     @Nullable
     @Contract(mutates = "param1")
     public static <T> T readOptionally(@NotNull InputByteArray inputByteArray,
                                        @NotNull Function<@NotNull InputByteArray, @NotNull T> function) {
-        return inputByteArray.readBoolean() ? function.apply(inputByteArray) : null;
+        return inputByteArray.readBoolean() ? ValidateSerialization.validateRead(function).apply(inputByteArray) : null;
     }
 
-    @NotNull
-    @Contract(value = "_, _, _ -> param1", mutates = "param1")
-    public static <T> OutputByteArray writeOptionally(
-            @NotNull OutputByteArray outputByteArray, @Nullable T optional,
-            @NotNull BiConsumer<@NotNull OutputByteArray, @NotNull T> consumer) {
+    @Contract(mutates = "param1")
+    public static <T> void writeOptionally(@NotNull OutputByteArray outputByteArray, @Nullable T optional,
+                                           @NotNull BiConsumer<@NotNull OutputByteArray, @NotNull T> consumer) {
         outputByteArray.writeBoolean(optional != null);
-        if (optional != null) consumer.accept(outputByteArray, optional);
-
-        return outputByteArray;
+        if (optional != null) ValidateSerialization.validateWrite(consumer).accept(outputByteArray, optional);
     }
 }

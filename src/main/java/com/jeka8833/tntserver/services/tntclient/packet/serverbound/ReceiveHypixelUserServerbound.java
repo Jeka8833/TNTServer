@@ -53,16 +53,16 @@ public final class ReceiveHypixelUserServerbound implements ServerBoundPacket {
 
         int wins_tntrun = serializer.readInt();
         int deaths_tntrun = serializer.readInt();
-        serializer.skip(4);       // new_tntrun_double_jumps
+        serializer.skipNBytes(4);       // new_tntrun_double_jumps
 
         int wins_pvprun = serializer.readInt();
         int deaths_pvprun = serializer.readInt();
-        serializer.skip(4);       // new_pvprun_double_jumps
+        serializer.skipNBytes(4);       // new_pvprun_double_jumps
         int kills_pvprun = serializer.readInt();
 
         int wins_bowspleef = serializer.readInt();
         int deaths_bowspleef = serializer.readInt();
-        serializer.skip(4);       // new_spleef_double_jumps
+        serializer.skipNBytes(4);       // new_spleef_double_jumps
 
         int wins_tntag = serializer.readInt();
         int deaths_tntag = serializer.readInt();

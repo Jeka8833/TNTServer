@@ -5,5 +5,9 @@ import org.jetbrains.annotations.NotNull;
 
 public interface PacketBase<Attachment> {
     default void write(@NotNull OutputByteArray serializer, Attachment attachment) {
+        write(serializer);
+    }
+
+    default void write(@NotNull OutputByteArray serializer) {
     }
 }

@@ -21,17 +21,14 @@ public class OutputByteArray extends ByteArrayOutputStream {
         this.limit = limit;
     }
 
-    private void ensureCapacity(int minCapacity) {
-        if (minCapacity <= 0 || minCapacity > limit) {
-            throw new IndexOutOfBoundsException("PacketOutputSerializer exceeded limit of " + limit);
+    private void reserveOrGrow(int reserve) {
+        if (limit - count < reserve) {
+            throw new IndexOutOfBoundsException("OutputByteArray.reserveOrGrow() exceeded the limit");
         }
 
+        int minCapacity = count + reserve;
         if (minCapacity > buf.length) {
-            int newCapacity = Math.max(minCapacity, buf.length << 1);
-
-            if (newCapacity > limit) {
-                newCapacity = limit;
-            }
+            int newCapacity = Math.min(Math.max(minCapacity, buf.length << 1), limit);
 
             buf = Arrays.copyOf(buf, newCapacity);
         }
@@ -50,75 +47,76 @@ public class OutputByteArray extends ByteArrayOutputStream {
     }
 
     @Override
+    public void writeBytes(byte[] b) {
+        write(b, 0, b.length);
+    }
+
+    @Override
     @Contract(mutates = "this")
     public void write(byte[] b, int off, int len) {
         Objects.checkFromIndexSize(off, len, b.length);
-        ensureCapacity(count + len);
+        reserveOrGrow(len);
         System.arraycopy(b, off, buf, count, len);
         count += len;
     }
 
-    @NotNull
-    @Contract(value = "_ -> this", mutates = "this")
-    public OutputByteArray skip(int n) {
-        if (n < 0) throw new IllegalArgumentException("Can't skip negative bytes");
+    @Contract(mutates = "this")
+    public void setSize(int size) {
+        if (size < 0) throw new IllegalArgumentException("size cannot be < 0");
+        if (size > limit) throw new IllegalArgumentException("size cannot be > limit: " + limit);
 
+        count = size;
+    }
+
+    public int available() {
+        return Math.max(0, limit - count);
+    }
+
+    @Contract(mutates = "this")
+    public void skip(int n) {
+        if (n <= 0) return;
+
+        if (limit - count < n) throw new IndexOutOfBoundsException("OutputByteArray.skip() exceeded the limit");
         count += n; // Without array grow
-
-        return this;
     }
 
-    @NotNull
-    @Contract(value = "_ -> this", mutates = "this")
-    public OutputByteArray writeBoolean(boolean b) {
-        return writeByte(b ? (byte) 1 : (byte) 0);
+    @Contract(mutates = "this")
+    public void writeBoolean(boolean b) {
+        writeByte(b ? (byte) 1 : (byte) 0);
     }
 
-    @NotNull
-    @Contract(value = "_ -> this", mutates = "this")
-    public OutputByteArray writeByte(byte b) {
-        ensureCapacity(count + 1);
+    @Contract(mutates = "this")
+    public void writeByte(byte b) {
+        reserveOrGrow(1);
         buf[count++] = b;
-
-        return this;
     }
 
-    @NotNull
-    @Contract(value = "_ -> this", mutates = "this")
-    public OutputByteArray writeShort(short s) {
-        ensureCapacity(count + 2);
+    @Contract(mutates = "this")
+    public void writeShort(short s) {
+        reserveOrGrow(2);
         buf[count++] = (byte) (s >> 8);
         buf[count++] = (byte) s;
-
-        return this;
     }
 
-    @NotNull
-    @Contract(value = "_ -> this", mutates = "this")
-    public OutputByteArray writeChar(char c) {
-        ensureCapacity(count + 2);
+    @Contract(mutates = "this")
+    public void writeChar(char c) {
+        reserveOrGrow(2);
         buf[count++] = (byte) (c >> 8);
         buf[count++] = (byte) c;
-
-        return this;
     }
 
-    @NotNull
-    @Contract(value = "_ -> this", mutates = "this")
-    public OutputByteArray writeInt(int i) {
-        ensureCapacity(count + 4);
+    @Contract(mutates = "this")
+    public void writeInt(int i) {
+        reserveOrGrow(4);
         buf[count++] = (byte) (i >> 24);
         buf[count++] = (byte) (i >> 16);
         buf[count++] = (byte) (i >> 8);
         buf[count++] = (byte) i;
-
-        return this;
     }
 
-    @NotNull
-    @Contract(value = "_ -> this", mutates = "this")
-    public OutputByteArray writeLong(long l) {
-        ensureCapacity(count + 8);
+    @Contract(mutates = "this")
+    public void writeLong(long l) {
+        reserveOrGrow(8);
         buf[count++] = (byte) (l >> 56);
         buf[count++] = (byte) (l >> 48);
         buf[count++] = (byte) (l >> 40);
@@ -127,19 +125,15 @@ public class OutputByteArray extends ByteArrayOutputStream {
         buf[count++] = (byte) (l >> 16);
         buf[count++] = (byte) (l >> 8);
         buf[count++] = (byte) l;
-
-        return this;
     }
 
-    @NotNull
-    @Contract(value = "_ -> this", mutates = "this")
-    public OutputByteArray writeFloat(float f) {
-        return writeInt(Float.floatToRawIntBits(f));
+    @Contract(mutates = "this")
+    public void writeFloat(float f) {
+        writeInt(Float.floatToRawIntBits(f));
     }
 
-    @NotNull
-    @Contract(value = "_ -> this", mutates = "this")
-    public OutputByteArray writeDouble(double d) {
-        return writeLong(Double.doubleToRawLongBits(d));
+    @Contract(mutates = "this")
+    public void writeDouble(double d) {
+        writeLong(Double.doubleToRawLongBits(d));
     }
 }
